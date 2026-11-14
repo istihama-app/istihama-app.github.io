@@ -139,6 +139,8 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .sched tr.p td{background:var(--faith-s)}
 .entry-list button{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:9px 4px}
 .entry-list button.on{font-weight:700}
+.gtabs{display:flex;gap:3px;padding:3px;background:var(--soft);border-radius:12px;margin:-2px 0 10px;overflow-x:auto} .gtabs a{flex:1;text-align:center;padding:6px 10px;border-radius:10px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;white-space:nowrap} .gtabs a.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+@media (min-width:900px){.gtabs.mob{display:none}}
 #ev{position:fixed;inset:0;z-index:46} .evbg{position:absolute;inset:0;background:rgba(0,0,0,.4)} body.evon{overflow:hidden}
 .evsheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + var(--sab, 0px));box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:evup .25s ease-out}
 @keyframes evup{from{transform:translateY(40px);opacity:0}} @media (prefers-reduced-motion:reduce){.evsheet{animation:none}}
@@ -614,7 +616,13 @@ const inp = (path, ph='', type='text', extra='') => `<input class="in" data-bind
 const txt = (path, ph='', rows=3) => `<textarea class="in" rows="${rows}" data-bind="${path}" placeholder="${esc(ph)}">${esc(getPath(path) ?? '')}</textarea>`;
 
 /* ================== НАВИГАЦИЯ ================== */
-const NAV_B = ['today','town','home','tools','more'], NAV_S = ['today','week','tools','town','home','plot','tree','stats','path','diary','plan','setup'], NAV_MORE = ['week','stats','path','diary','plan','setup'];
+// Меню (v24): внизу пять групп; у групп из нескольких разделов сверху вкладки. Кнопка группы ведёт в раздел, где был в последний раз.
+// «Ещё» убран из меню (раздел #more остаётся для старых ссылок). План и настройки — кнопками в шапке.
+const GROUPS = [{id:'today', n:'Сегодня', v:['today']}, {id:'tools', n:'Практика', v:['tools']}, {id:'diary', n:'Дневник', v:['diary']},
+  {id:'town', n:'Город', v:['town','home','plot'], t:{town:'Город', home:'Дом', plot:'Участок'}}, {id:'sum', n:'Итоги', v:['stats','week','tree','path'], t:{stats:'Итоги', week:'Неделя', tree:'Дерево', path:'Путь'}}];
+const grpOf = v => GROUPS.find(g => g.v.includes(v)), grpLast = {};
+const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['today','tools','diary','town','home','plot','stats','week','tree','path','plan','setup'], NAV_MORE = [];
+function gtabs(){ const g = grpOf(view); if (!g || g.v.length < 2) return ''; return `<div class="gtabs mob" role="tablist">${g.v.map(id=>`<a href="#${id}" role="tab" class="${id===view?'on':''}">${g.t[id]}</a>`).join('')}</div>`; }
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
   {id:'path', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
@@ -627,10 +635,11 @@ function renderNav(){
   $('#side').innerHTML = `<div class="brand">Истихама</div><div class="brand-s">постоянство на пути</div>` +
     NAV_S.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view?'on':''}"><span>${v.i}</span>${v.n}</a>`).join('') +
     `<div class="foot">Все данные хранятся только на этом устройстве.</div>`;
-  $('#bnav').innerHTML = NAV_B.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view || (v.id==='town' && (view==='plot' || view==='tree')) || (v.id==='more' && NAV_MORE.includes(view)) ?'on':''}"><span class="i">${v.i}</span>${v.n}</a>`).join('');
+  const cg = grpOf(view); if (cg) grpLast[cg.id] = view;
+  $('#bnav').innerHTML = GROUPS.map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}</span>${g.n}</a>`; }).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); evSync(); }
+function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; let html = f(); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
