@@ -281,6 +281,7 @@ body.tfull #tsel{position:fixed;left:8px;right:64px;bottom:calc(8px + var(--sab)
 .flycoin{position:fixed;z-index:80;width:18px;height:18px;margin:0;pointer-events:none}
 .giftcard{background:linear-gradient(150deg,color-mix(in srgb,var(--gold) 16%,var(--card)),var(--card) 60%);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
 .owni .item{flex:1;min-width:0} .owndel{flex:none;width:36px;height:36px;font-size:20px;line-height:1}
+.banner.tmove{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,var(--card))}
 .gchip{border-color:var(--gold);color:var(--ink)} .gchip .ic{color:var(--gold)}
 .herofoot{gap:6px} .herofoot .chip{padding:4px 10px;font-size:12.5px;min-height:30px}
 .gtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} .gtile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px;text-align:left;min-height:92px;transition:transform .12s}
@@ -612,7 +613,7 @@ function renderNav(){
   $('#bnav').innerHTML = NAV_B.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view || (v.id==='town' && (view==='plot' || view==='tree')) || (v.id==='more' && NAV_MORE.includes(view)) ?'on':''}"><span class="i">${v.i}</span>${v.n}</a>`).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view !== 'town' && townFull) townFullSet(false); renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); }
+function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
@@ -1420,6 +1421,7 @@ function vTree(){
 const ECON = {
   item:10,                 // за полностью выполненный пункт дня (половина — 5); пункты Веры не считаются
   timer:5, timerMax:2,     // задача, доведённая таймером до нуля: разные таймеры, не больше 2 в день
+  taxK:.25,                // налог города: доля от монет за пункты дня, но не больше числа уровней зданий (devN)
   own:5, ownMax:5,         // «Мои дела»: своё дело на день — 5 монет, в день засчитывается не больше 5 дел
   week:30,                 // неделя без пропусков: каждый день отмечена хотя бы половина «монетных» пунктов
   fear:40,                 // пройденный страх
@@ -1472,8 +1474,9 @@ const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 function coins(){
   const tk = key(today()), its = ITEMS.filter(i=>i.ax!=='faith'), bn = townBonus(), kx = ax => 1 + (bn[ax] + bn.all)/100;   // здания города прибавляют проценты
   const sumD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id),0) : 0, coinD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id)*kx(i.ax),0)*ECON.item : 0;
-  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0, own:0, nOwn:0};
+  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0, own:0, nOwn:0, tax:0, taxToday:0}, tf = S.town && S.town.taxFrom, dv = tf ? devN() : 0;
   for (const k in S.days){ if (k > tk) continue; const c = coinD(S.days[k]); r.items += c; r.bonus += c - sumD(S.days[k])*ECON.item; if (k===tk) r.today += c;
+    if (tf && k >= tf && dv){ const tx = Math.min(dv, Math.round(c*ECON.taxK)); r.tax += tx; if (k===tk){ r.today += tx; r.taxToday = tx; } }
     const no = Math.min(ECON.ownMax, (S.days[k].own||[]).filter(o=>o && o.d).length); r.nOwn += no; r.own += no*ECON.own; if (k===tk) r.today += no*ECON.own; }
   for (const k in S.timers.log){ if (k > tk) continue;
     const ids = new Set((S.timers.log[k]||[]).filter(l=>{ const it = tItem(tPreset(l.id)); return !it || it.ax!=='faith'; }).map(l=>l.id));
@@ -1481,7 +1484,7 @@ function coins(){
   for (let m = monday(startDate()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){
     let ok = true; for (let j=0;j<7&&ok;j++) ok = sumD(getDay(key(addD(m,j))))/its.length >= .5; if (ok) r.nWeeks++; }
   r.weeks = r.nWeeks*(ECON.week + bn.week); r.nFears = S.fears.filter(f=>f.done).length; r.fears = r.nFears*ECON.fear;
-  r.earned = r.items + r.timers + r.weeks + r.fears + r.own; r.spent = S.build.log.reduce((a,l)=>a+(+l.c||0),0); r.bal = r.earned - r.spent;
+  r.earned = r.items + r.timers + r.weeks + r.fears + r.own + r.tax; r.spent = S.build.log.reduce((a,l)=>a+(+l.c||0),0); r.bal = r.earned - r.spent;
   return r; }
 // Очки силы: сумма баллов оси по дням (полностью выполненная сила за день = 1 очко).
 function power(){ const tk = key(today()), p = {faith:0, mind:0, spirit:0, body:0};
@@ -2023,6 +2026,7 @@ function coinsCard(C){
       <div class="g"><span>Таймер доведён до конца · +${ECON.timer} <span class="muted tiny">до ${ECON.timerMax} в день</span></span><b>${nf(C.timers)}</b></div>
       ${C.bonus > .5 ? `<div class="g"><span class="muted">из них прибавка от зданий города</span><b>${nf(C.bonus)}</b></div>` : ''}
       <div class="g"><span>Мои дела · +${ECON.own} <span class="muted tiny">до ${ECON.ownMax} в день</span></span><b>${nf(C.own)}</b></div>
+      <div class="g"><span>Налоги города <span class="muted tiny">${pct(ECON.taxK)}% от дел дня, до ${devN()} в день</span></span><b>${nf(C.tax)}</b></div>
       <div class="g"><span>Неделя без пропусков · +${ECON.week + townBonus().week}</span><b>${nf(C.weeks)}</b></div>
       <div class="g"><span>Пройденный страх · +${ECON.fear}</span><b>${nf(C.fears)}</b></div>
       <div class="g"><span>Потрачено на стройку и город</span><b>${C.spent?'−'+nf(C.spent):'0'}</b></div></div>
@@ -2040,8 +2044,9 @@ const devN = () => Object.keys(ECON.town).reduce((a,id)=>a + (S.town.bld[id]||0)
 const MOSQUE_N = ['Молельный дом','Мечеть с минаретом','Мечеть с двумя минаретами','Мечеть с площадью','Соборная мечеть','Большая мечеть с четырьмя минаретами','Сердце города'];
 const NB_STEPS = 27, NB_WEEKS = 36;   // 9 соседей × 3 шага; всё соседство застроено за 36 хороших недель
 const TOWN = { W:84, H:57, pw:10, pd:10.5, own:7, land:8,
+  move:['shop','school','bakery','admin','clinic','library','post','fire','hospital','medrese','culture','museum'],   // эти здания можно переставлять местами
   plots:[[2,31],[13.5,31],[25,31],[36.5,31],[48,31],[2,45.5],[13.5,45.5],[25,45.5],[36.5,45.5],[48,45.5]],
-  at:{ mosque:[32,1.5,56,25.2], road:[-32,26,71.4,29], spring:[62,59,68,64.5], shop:[60,31,70,41.5],
+  at0:{ mosque:[32,1.5,56,25.2], road:[-32,26,71.4,29], spring:[62,59,68,64.5], shop:[60,31,70,41.5],
        school:[18,4,30,24.5], bakery:[-12,31,-2,41.5], square:[-14,13,-1,24.5], stop:[43.5,29.4,49.5,30.9],
        admin:[58,6,70,24.5], clinic:[-12,45.5,-2,56], bazaar:[60,45.5,70,56], library:[18,-17,30,-4.5], post:[-24,31,-14,41.5],
        stadium:[2,1.5,16,11.5], fire:[-24,45.5,-14,56], wtower:[-12,2,-4,10.5], park:[2,13,16,24.5],
@@ -2049,12 +2054,15 @@ const TOWN = { W:84, H:57, pw:10, pd:10.5, own:7, land:8,
        culture:[2,-17,16,-4.5], museum:[58,-17,70,-4.5], station:[-30,-17,-17,-5], garden:[4,60,30,76],
        tower:[77,3,84,13], cable:[84,31,93,40] },
   zh:{mosque:12, tower:11, wtower:6, cable:5, road:0, quay:1, stadium:2, square:3, park:3, garden:3, bridge:1, spring:2, stop:2} };
+const slotOf = id => (S.town && S.town.pos && S.town.pos[id]) || id;   // чьё исходное место занимает здание
+Object.defineProperty(TOWN, 'at', { get(){ const p = (S.town && S.town.pos) || {}, o = {...TOWN.at0}; for (const id in p) if (TOWN.at0[p[id]] && TOWN.move.includes(id)) o[id] = TOWN.at0[p[id]]; return o; } });
+function townSwap(a, b){ const T = S.town; T.pos = T.pos || {}; const sa = slotOf(a), sb = slotOf(b); T.pos[a] = sb; T.pos[b] = sa; for (const id of [a,b]) if (T.pos[id] === id) delete T.pos[id]; }
 const TOWN_D = { spring:'Чистая вода у реки.', road:'Грунт → асфальт → тротуары и фонари.', shop:'Вместо ларька — магазин стройматериалов. Нажми ещё раз — откроется магазин.', school:'Школа для детей города.', bakery:'Свежий хлеб по утрам.', square:'Скамейки и деревья у дороги.',
   stop:'Остановка на главной улице.', admin:'Здание с колоннами и флагом.', clinic:'Врач рядом с домом.', bazaar:'Ряды под цветными навесами.', library:'Читальный зал за школой.', post:'Письма и посылки.', stadium:'Поле, дорожки и трибуны.',
   fire:'Гараж с красными воротами и вышка.', wtower:'Вода во все дома.', park:'Аллеи, фонтан, скамейки.', hospital:'Большое белое здание на западе.', medrese:'Учёба рядом с мечетью.', bridge:'Путь на тот берег — к башне и канатке.',
   power:'Свет во всём городе.', quay:'Прогулка вдоль реки.', culture:'Зал для собраний и праздников.', museum:'История края.', station:'Поезда на запад.', garden:'Пруд, беседка и много деревьев на юге.', tower:'Вайнахская башня на склоне за рекой.', cable:'Кабинки в горы.' };
 const BONUS_T = {mind:'к монетам за пункты Разума', spirit:'к монетам за пункты Духа', body:'к монетам за пункты Тела', all:'к монетам за все пункты', mat:'скидка на материалы', week:'монет за каждую неделю без пропусков'};
-let townSel = '', townFull = false;
+let townSel = '', townFull = false, townMove = '';
 function townFullSet(on){ townFull = !!on; document.body.classList.toggle('tfull', townFull); }
 // --- рузба (пятничная молитва): d.rz = 1 — был, 'x' — не смог (серию не рвёт), нет поля — не отмечено ---
 function ruzStats(){ const tk = key(today()), ks = Object.keys(S.days).filter(k=>S.days[k].rz).sort(); let n = 0, best = 0, run = 0; if (!ks.length) return {n, best, cur:0};
@@ -2078,6 +2086,7 @@ function bState(id){ const o = ECON.town[id], l = bLvl(id), L = cityLvl(), cap =
   return {next:l+1, cost:bPrice(id, l+1)}; }
 // запомнить достигнутое: уровень города, серия рузбы и шаги соседей только прибавляются
 function townSync(){ const T = S.town, D = devN(); let ch = false;
+  if (!T.taxFrom){ T.taxFrom = key(today()); ch = true; }   // налоги считаются с этого дня, прошлое не пересчитываем
   const l = CITY.need.filter(n=>D >= n).length; if (l > (T.lvl || 1)){ T.lvl = l; ch = true; }
   const nb = Math.min(NB_STEPS, Math.floor(goodWeeks()*NB_STEPS/NB_WEEKS)); if (nb > T.nb){ T.nb = nb; ch = true; }
   if (!T.mig5){ const was = T.was || {};   // перенос оплаченного из прежнего города: построенное остаётся, внесённые монеты засчитываются в цену
@@ -2202,7 +2211,7 @@ function townSVG(ph){
       if (L < 4){ tree(35,21,1.8,1); tree(53,21.5,1.7,2); } } }
 
   // --- здания по таблице ---
-  std('school', (F,hw,hd,zt,l) => l >= 3 ? simple(21,19.5,2.3,1.9,2,'#cfc0a0','#4a6d95','hip',{win:3,winR:2,door:0,rise:.9}) : '');
+  std('school', (F,hw,hd,zt,l) => l >= 3 ? simple(F.cx-3,F.cy+7.7,2.3,1.9,2,'#cfc0a0','#4a6d95','hip',{win:3,winR:2,door:0,rise:.9}) : '');
   std('bakery', (F,hw,hd,zt) => poly([F.G(hw-.9,-.2,zt+.9),F.G(hw-.4,-.2,zt+.9),F.G(hw-.4,-.2,zt+1.9),F.G(hw-.9,-.2,zt+1.9)], dk('#8f5a45')));
   std('admin', (F,hw,hd,zt,l) => { const cc = dk('#f3ecdc'); let g = F.box(-1.6,1.6,hd,hd+.9,0,.3,mix(C.tile,'#fff',88),C.tile,mix(C.tile,'#000',76)); [-1.4,-.5,.5,1.4].forEach(u=>{ g += line([F.G(u,hd+.8,.3),F.G(u,hd+.8,zt*.78)], cc, 1.3); });
     g += poly([F.G(-1.8,hd+.9,zt*.78),F.G(1.8,hd+.9,zt*.78),F.G(0,hd+.9,zt*1.02)], cc); if (l >= 2) g += line([F.G(hw+1,hd+1,0),F.G(hw+1,hd+1,5)], C.steel, .8) + poly([F.G(hw+1,hd+1,5),F.G(hw+1,hd+2.8,4.7),F.G(hw+1,hd+1,4)], 'var(--faith)'); return g; });
@@ -2302,10 +2311,11 @@ function vTown(){
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
   h += `<div class="card axis-faith citycard"><div class="rhead"><span class="clv">${L}</span><div class="grow"><b style="font-size:18px">${CITY.names[L-1]}</b><div class="tiny muted">уровень города ${L} из 7 · ${MOSQUE_N[L-1].toLowerCase()}</div></div><button class="chip btn" data-act="twn" data-t="mosque">мечеть</button></div>
     ${L < 7 ? `<div class="bar" style="margin:10px 0 5px"><i style="width:${pct(Math.max(0,Math.min(1,(D-prevN)/(nextN-prevN))))}%"></i></div><div class="tiny muted">До уровня ${L+1} — «${CITY.names[L].toLowerCase()}»: построй или улучши ещё ${Math.max(1,nextN-D)} ур. зданий. Город растёт от застройки, мечеть жители расширяют вместе с ним.</div>` : `<div class="tiny muted" style="margin-top:8px">Высший уровень. Город вырос.</div>`}</div>`;
+  if (townMove) h += `<div class="banner tmove">Переставляем: <b>${ECON.town[townMove].n.toLowerCase()}</b>. Нажми на карте другое здание — они поменяются местами. Пустое место будущего здания тоже подходит.<div class="row" style="margin-top:8px"><button class="btn" data-act="tmcancel">Отмена</button></div></div>`;
   h += `<div class="card" style="padding:8px"><div class="townwrap${townFull?' full':''}" id="townwrap"><canvas id="tmap" role="img" aria-label="Карта города. Двигается пальцем, приближается двумя пальцами."></canvas>
       <button class="navbtn tfbtn" data-act="tfull" aria-label="${townFull?'Свернуть карту':'Карта на весь экран'}" title="${townFull?'Свернуть карту':'Карта на весь экран'}">${townFull?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>':'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}</button><div class="tmbtn"><button class="navbtn" data-act="tzoom" data-d="1" aria-label="Крупнее">+</button><button class="navbtn" data-act="tzoom" data-d="-1" aria-label="Мельче">−</button></div></div>
     <div class="row" style="margin-top:8px;gap:8px"><button class="chip btn" data-act="tfly" data-t="plot">${ic('plot')}К моему участку</button><button class="chip btn" data-act="tfly" data-t="mosque">${ic('mosque')}К мечети</button><a class="chip btn on" style="text-decoration:none;margin-left:auto" href="#plot">Войти на участок</a></div>
-    <div class="tiny muted" style="margin-top:6px">Нажми на любую постройку — откроется её карточка. Кнопка в углу карты разворачивает её на весь экран. ${SEASON_N[curSeason()]}, ${PHASE_N[curPhase()].toLowerCase()}, ${Wx.N[Wx.now().k]}.</div></div>`;
+    <div class="tiny muted" style="margin-top:6px">Налог города сегодня: <b>+${nf(X.taxToday)}</b>${CO} (${pct(ECON.taxK)}% от дел дня, до ${D}; нет дел — нет налога). Нажми на любую постройку — откроется её карточка. Кнопка в углу карты разворачивает её на весь экран. ${SEASON_N[curSeason()]}, ${PHASE_N[curPhase()].toLowerCase()}, ${Wx.N[Wx.now().k]}.</div></div>`;
   // карточка выбранного объекта
   if (townSel === 'mosque'){
     h += `<div class="card axis-faith selc" id="tsel"><div class="rhead"><span class="rdot"></span><b style="font-size:17px">${MOSQUE_N[L-1]}</b><span class="rst">уровень ${L} из 7</span></div><div class="tiny muted" style="margin:2px 0 8px">Главное здание города. Жители расширяют её сами, когда город растёт. ${L < 7 ? `Следующий вид: ${MOSQUE_N[L].toLowerCase()}.` : ''}</div>
@@ -2313,7 +2323,7 @@ function vTown(){
       <div class="muted small" style="margin:12px 0 4px">Украшения по уровню города</div>${CITY.deco.map(([n,t])=>`<div class="row tiny" style="gap:8px;padding:3px 0"><span class="${L>=n?'done':'muted'}">${L>=n?'✓':'○'}</span><span class="grow">уровень ${n} — ${t}</span></div>`).join('')}</div>`; }
   else if (townSel === 'nb') h += `<div class="card selc" id="tsel"><div class="rhead"><b style="font-size:17px">Соседи</b><span class="rst">${T.nb} из ${NB_STEPS} шагов</span></div><div class="bar" style="margin:8px 0;--a:var(--gold)"><i style="width:${pct(T.nb/NB_STEPS)}%"></i></div>
       <div class="small">Хороших недель: <b>${gw}</b>. Соседи расчищают участки и строятся сами, когда неделя в среднем закрыта на 60% и больше. Построенное не рушится.</div></div>`;
-  else if (ECON.town[townSel]) h += `<div class="card selc" id="tsel" style="padding-top:6px;padding-bottom:6px">${bCard(townSel, X, 1).replace('class="tgoal', 'style="border-top:0" class="tgoal')}</div>`;
+  else if (ECON.town[townSel]) h += `<div class="card selc" id="tsel" style="padding-top:6px;padding-bottom:6px">${bCard(townSel, X, 1).replace('class="tgoal', 'style="border-top:0" class="tgoal')}${TOWN.move.includes(townSel) ? `<div class="row" style="gap:8px;margin:2px 0 6px"><button class="chip btn" data-act="tmove" data-g="${townSel}">${ic('town')}Переставить</button>${S.town.pos && S.town.pos[townSel] ? `<button class="chip btn" data-act="tmback" data-g="${townSel}">Вернуть на своё место</button>` : ''}</div>` : ''}</div>`;
   h += `<div class="kpis pk"><div class="kpi"><div class="v">${ids.filter(i=>bLvl(i)).length}<span class="muted" style="font-size:.6em"> из ${ids.length}</span></div><div class="l">Зданий построено</div></div><div class="kpi"><div class="v">${lvSum}<span class="muted" style="font-size:.6em"> из ${lvAll}</span></div><div class="l">Уровней зданий</div></div><div class="kpi"><div class="v">${nb.filter(s=>s===3).length}<span class="muted" style="font-size:.6em"> из 9</span></div><div class="l">Соседей построились</div></div></div>`;
   const now = ids.filter(i=>bState(i).next).sort((a,b)=>bState(a).cost - bState(b).cost), later = ids.filter(i=>!bState(i).next && !bState(i).max), done = ids.filter(i=>bState(i).max);
   h += `<div class="towngrid"><div><div class="card"><div class="rhead"><b style="font-size:17px">Можно строить сейчас</b><span class="rst">${now.length}</span></div>${now.length ? now.map(i=>bCard(i, X)).join('') : `<div class="small muted" style="margin-top:6px">Всё доступное построено. Новые здания откроет следующий уровень города.</div>`}</div></div><div>`;
@@ -2377,7 +2387,11 @@ function townLights(ts){
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${TV.W}" height="${TV.H}" viewBox="0 0 ${TV.W} ${TV.H}"><defs><filter id="gl" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="2.6"/></filter>
     <radialGradient id="fl"><stop offset="0" stop-color="#ffe2a8" stop-opacity=".5"/><stop offset=".6" stop-color="#ffd58a" stop-opacity=".16"/><stop offset="1" stop-color="#ffd58a" stop-opacity="0"/></radialGradient></defs>${fl}<g filter="url(#gl)">${els}</g><g opacity=".75">${els}</g></svg>`; }
 // нажатие на объект карты
-function townTap(t){ if (!t) return; if (t === 'plot'){ location.hash = '#plot'; return; }
+function townTap(t){ if (!t) return;
+  if (townMove){ if (t === townMove){ townMove = ''; render(); return; }
+    if (!TOWN.move.includes(t)) return toast('С этим местом не поменять — выбери другое обычное здание');
+    const a = ECON.town[townMove].n, b = ECON.town[t].n; townSwap(townMove, t); townSel = townMove; townMove = ''; save(); TownMap.pop(townSel); toast(`${a} и ${b.toLowerCase()} поменялись местами ✓`); render(); return; }
+  if (t === 'plot'){ location.hash = '#plot'; return; }
   if (t === 'shop' && townSel === 'shop'){ shopTab = 'mat'; location.hash = '#plot'; setTimeout(()=>{ const c = $('#shopCard'); if (c) c.scrollIntoView({block:'start'}); }, 80); return; }
   townSel = townSel === t ? '' : t; if (townSel) afterFns.push(()=>{ const c = $('#tsel'); if (c) c.scrollIntoView({block:'nearest', behavior:'smooth'}); }); render(); }
 // Движок: готовые картинки слоёв лежат в памяти, каждый кадр — одно-два копирования на холст. Камера: x, y — центр в единицах рисунка, z — пикселей экрана на единицу.
@@ -2518,10 +2532,10 @@ const Life = (()=>{
   // кто и где сейчас: [{k:'p'|'car'|'bus', x, y, dx, dy, a (прозрачность), c (цвет), i}]
   function list(t){ if (S.settings.life === false) return [];
     t = t === undefined ? now() : t; const md = mode(), L = cityLvl(), T = S.town, dk = key(today()), ls = lines(), nbs = nbStages();
-    const k2 = [dk, md, L, T.nb, JSON.stringify(T.bld), S.build.house.roof ? 1 : 0].join('|'); if (k2 !== ckey){ ckey = k2; cache = new Map(); }
+    const k2 = [dk, md, L, T.nb, JSON.stringify(T.bld), JSON.stringify(T.pos || {}), S.build.house.roof ? 1 : 0].join('|'); if (k2 !== ckey){ ckey = k2; cache = new Map(); }
     const homes = TOWN.plots.map(([x,y],i)=>({i, d:[1, y < 40 ? 27.5 : 43.5, x+5]})).filter(h=>h.i === TOWN.own ? !!S.build.house.roof : nbs[h.i > TOWN.own ? h.i-1 : h.i] >= 3).map(h=>pt(ls,h.d)).filter(Boolean);
     const W = pt(ls,[1,27.5,-32]), E = pt(ls,[1,27.5,ls[0].b]), edges = [W, E, pt(ls,[1,43.5,-26]), pt(ls,[0,59.1,57.7])].filter(Boolean);
-    const places = ids => ids.filter(id=>id === 'mosque' || bLvl(id)).map(id=>pt(ls, DOOR[id])).filter(Boolean), mq = pt(ls, DOOR.mosque), out = [];
+    const places = ids => ids.filter(id=>id === 'mosque' || bLvl(id)).map(id=>pt(ls, DOOR[slotOf(id)] || DOOR[id])).filter(Boolean), mq = pt(ls, DOOR.mosque), out = [];
     const trip = (id, n, mk) => { const ck = id + '|' + n; if (!cache.has(ck)) cache.set(ck, mk(rng(hstr(dk + '|' + id + '|' + n)))); return cache.get(ck); };
     const leg = (r, s0, t0, sp, fade) => { if (!r) return null; const s = (t0 - s0)*sp; if (s < 0 || s > r.L) return null; const q = at(r, s); return {x:q[0], y:q[1], dx:q[2], dy:q[3], a:Math.min(1, s/fade, (r.L-s)/fade)}; };
     const np = md === 'night' ? Math.ceil(NP[L-1]/8) : md === 'juma' ? Math.round(NP[L-1]*1.4) : NP[L-1], sk = md === 'juma' ? .7 : 1;   // в пятницу выходят чаще и почти все
@@ -2806,6 +2820,9 @@ document.addEventListener('click', async e => {
     case 'proom': plotSel = plotSel === el.dataset.r ? '' : el.dataset.r; if (plotSel && !e.target.closest('.plegend') && innerWidth < 900) afterFns.push(()=>{ const c = $('#room-'+plotSel); if (c) c.scrollIntoView({block:'center', behavior:'smooth'}); }); break;
     case 'gotree': location.hash = '#tree'; return;
     case 'twn': townTap(el.dataset.t); return;
+    case 'tmove': townMove = el.dataset.g; townSel = ''; render(); setTimeout(()=>{ const w = $('#townwrap'); if (w) w.scrollIntoView({block:'center', behavior:'smooth'}); }, 60); return;
+    case 'tmcancel': townMove = ''; render(); return;
+    case 'tmback': { const g = el.dataset.g, holder = Object.keys(ECON.town).find(id => slotOf(id) === g); if (holder && holder !== g) townSwap(g, holder); else if (S.town.pos) delete S.town.pos[g]; save(); toast('Вернули на своё место ✓'); break; }
     case 'gogift': { const c = $('#giftCard'); if (c) c.scrollIntoView({block:'center', behavior:'smooth'}); return; }
     case 'gift': { const t = el.dataset.t; if (!giftAvail() || !giftOffer().includes(t) || !trinkFree(t)) return; const msg = trinkAdd(t); S.gift.p = key(addD(giftBase(), 1)); save(); toast('Подарок: ' + msg); break; }
     case 'tbuy': { const t = el.dataset.t, o = TRINK[t]; if (!o || !trinkFree(t)) return; if (!buy(o.p, `Мелочь: ${o.n.toLowerCase()}`)) return; const msg = trinkAdd(t); save(); toast(msg + ' ✓'); break; }
