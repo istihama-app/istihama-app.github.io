@@ -284,6 +284,7 @@ body.tfull #tsel{position:fixed;left:8px;right:64px;bottom:calc(8px + var(--sab)
 .gtools{position:absolute;left:8px;right:56px;top:8px;display:flex;gap:6px;overflow-x:auto;z-index:2;scrollbar-width:none;padding-bottom:2px} .gtools::-webkit-scrollbar{display:none} .gtools .chip{white-space:nowrap;background:color-mix(in srgb,var(--card) 92%,transparent);flex:none} .gtools .chip.on{background:var(--ink);color:var(--card)}
 .banner.tmove{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,var(--card))}
 .gchip{border-color:var(--gold);color:var(--ink)} .gchip .ic{color:var(--gold)}
+.mtag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;font-size:10.5px;font-weight:600;line-height:16px;vertical-align:1px;color:color-mix(in srgb, var(--gold) 75%, var(--ink));background:color-mix(in srgb, var(--gold) 16%, transparent)}
 .herofoot{gap:6px} .herofoot .chip{padding:4px 10px;font-size:12.5px;min-height:30px}
 .gtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} .gtile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px;text-align:left;min-height:92px;transition:transform .12s}
 .gtile:active{transform:scale(.96)} .gtile .ic{font-size:20px;color:var(--gold)} .gtile b{font-size:13.5px;line-height:1.2} .gtile .gp{margin-top:auto;font-weight:650;font-size:13px} .gtile:disabled{opacity:.5}
@@ -492,7 +493,7 @@ const mk = a => new Date(a[0],a[1],a[2]);
 
 /* ================== ДАННЫЕ ================== */
 function defaults(){
-  return {v:1, settings:{start:'2026-11-16', name:'', mode:'work', season:'auto', tod:'auto', life:true}, days:{}, weeks:{}, rev:{week:{},month:{},stage:{},year:{}},
+  return {v:1, settings:{start:'2026-11-16', name:'', mode:'work', season:'auto', tod:'auto', life:true, minDay:['namaz','light','train']}, days:{}, weeks:{}, rev:{week:{},month:{},stage:{},year:{}},
     measures:[], books:BOOKS0.map(b=>({st:b[0],ax:b[1],t:b[2],s:0,idea:'',done:''})), suras:SURAS0.map(n=>({n,s:0})),
     fears:[], before:{}, after:{}, capsule:{text:'',open:'2027-11-14',sealed:false,sealedAt:''}, diary:{}, crypto:null,
     timers:{list:TPRESETS.map(p=>({...p})), run:{}, log:{}, sound:true},
@@ -561,9 +562,18 @@ function dayScore(day){ if (!day) return 0; const r = day.rz === 1 ? 1 : 0; retu
 function axisScore(day,ax){ const its = ITEMS.filter(i=>i.ax===ax), r = ax === 'faith' && day && day.rz === 1 ? 1 : 0; return (its.reduce((a,i)=>a+itemVal(day,i.id),0) + r)/(its.length + r); }
 function stageIdx(d){ for (let i=STAGES.length-1;i>=0;i--) if (d >= mk(STAGES[i].from)) return i; return 0; }
 function weekNo(d){ return Math.floor((monday(d) - monday(startDate()))/ (7*864e5)) + 1; }
+// минимальный день: до трёх пунктов на выбор; сделаны все — день засчитан и серия не рвётся, даже если меньше 50%
+// намазы — все пять, остальное — любая отметка (и «½»). Монет минимум не добавляет: монеты, как и раньше, за сами пункты.
+const MIN_S = {namaz:'Намазы', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Религия', deep:'Глуб. чтение', light:'Чтение', fear:'Страх', muhasaba:'Мухасаба', train:'Тренировка', food:'Белок', sleep:'Сон'};
+const MIN_T = {namaz:'Пять намазов', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Изучение религии', deep:'Глубокое чтение', light:'Чтение или аудио', fear:'Шаг вопреки страху', muhasaba:'Мухасаба', train:'Тренировка или шаги', food:'Белок и вода', sleep:'Лёг вовремя'};
+const minSet = () => (S.settings.minDay || []).filter(id => ITEMS.some(i=>i.id === id)).slice(0,3);
+const minOk = (day,id) => id === 'namaz' ? itemVal(day,id) >= 1 : itemVal(day,id) > 0;
+function minDone(day){ const m = minSet(); return !!day && m.length > 0 && m.every(id => minOk(day,id)); }
+const mtag = id => minSet().includes(id) ? '<span class="mtag" title="Пункт минимального дня: сделаны все такие — день засчитан">минимум</span>' : '';
+const dayKept = day => dayScore(day) >= .5 || minDone(day);
 function streak(){
-  let d = today(); if (dayScore(getDay(key(d))) < .5) d = addD(d,-1);
-  let n = 0; while (d >= startDate() && dayScore(getDay(key(d))) >= .5) { n++; d = addD(d,-1); }
+  let d = today(); if (!dayKept(getDay(key(d)))) d = addD(d,-1);
+  let n = 0; while (d >= startDate() && dayKept(getDay(key(d)))) { n++; d = addD(d,-1); }
   return n;
 }
 
@@ -720,7 +730,7 @@ function vToday(){
   const k = key(viewDate), day = getDay(k), t = today(), isT = k === key(t);
   const sc = dayScore(day), st = STAGES[stageIdx(viewDate)], mp = MONTHPLAN[k.slice(0,7)];
   const y = getDay(key(addD(t,-1)));
-  const warn = isT && addD(t,-1) >= startDate() && dayScore(y) < .3 ? `<div class="banner">Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума.</div>` : '';
+  const warn = isT && addD(t,-1) >= startDate() && dayScore(y) < .3 && !minDone(y) ? `<div class="banner">Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума${minSet().length ? `: ${minSet().map(id=>MIN_S[id].toLowerCase()).join(', ')}` : ''}.</div>` : '';
   const name = S.settings.name ? `, ${esc(S.settings.name)}` : '';
   const before = viewDate < startDate() ? `<div class="banner">План стартует ${fmtD(startDate())}. Отмечать можно уже сейчас.</div>` : '';
   let h = topbar(isT ? `Ассаляму алейкум${name}` : 'День');
@@ -728,7 +738,7 @@ function vToday(){
   if (!isT) h += `<div style="text-align:center;margin:-4px 0 10px"><button class="chip btn" data-act="dtoday">Вернуться к сегодня</button></div>`;
   h += warn + before;
   h += `<div class="card hero"><div class="rings">${ringsSVG(day)}<div class="legend">
-    <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${ITEMS.filter(i=>itemVal(day,i.id) < 1).length} из ${ITEMS.length}</small></div>
+    <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${ITEMS.filter(i=>itemVal(day,i.id) < 1).length} из ${ITEMS.length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
     <div class="herofoot"><span class="chip">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
   h += `<details class="card dfold" ${day && day.focus ? 'open' : ''}><summary>${ic('target')}<b>Главный поступок дня</b><span class="muted tiny">необязательно</span></summary>${inp(`days|${k}|focus`,'Что сегодня самое важное? Одна строка')}</details>`;
@@ -737,9 +747,9 @@ function vToday(){
     h += `<div class="card axcard axis-${a}"><h2><span class="axb">${ic(AXI[a])}</span>${AX[a].n}<span class="pct">${pct(day?axisScore(day,a):0)}%</span></h2>`;
     its.forEach(i=>{
       if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz');
-        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}<div class="pr">${PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}</button>`).join('')}</div></div></div>`;
+        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}</button>`).join('')}</div></div></div>`;
       } else { const v = itemVal(day,i.id);
-        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
+        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
     });
     if (a === 'faith' && viewDate.getDay() === 5){ const rz = day && day.rz;
       h += `<button class="item" data-act="rz" id="rzItem"><span class="mark ${rz===1?'full':rz==='x'?'half':''}">${rz===1?'✓':rz==='x'?'–':''}</span><span class="lbl">Рузба в мечети<div class="hint">${rz==='x' ? 'Не смог (болезнь, дорога) — серия не прерывается' : 'Пятничная молитва — отметка для себя. Второе нажатие — «не смог»'}</div></span></button>`; }
@@ -806,7 +816,7 @@ function collect(a,b){
     pr:days.reduce((x,d)=>x+(d?.p||[]).reduce((y,z)=>y+(z?1:0),0),0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
     pages:days.reduce((x,d)=>x+(+d?.n?.pages||0),0), quran:days.reduce((x,d)=>x+(+d?.n?.quran||0),0), fear:days.filter(d=>d?.c?.fear).length,
     sleep:(()=>{const v=days.map(d=>+d?.n?.sleep).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})()};
-  let best = 0, cur = 0; days.forEach(d=>{ if (dayScore(d)>=.5){cur++;best=Math.max(best,cur);} else cur=0; }); r.best = best;
+  let best = 0, cur = 0; days.forEach(d=>{ if (dayKept(d)){cur++;best=Math.max(best,cur);} else cur=0; }); r.best = best;
   return r;
 }
 function barChart(vals, labels, h=120){
@@ -836,9 +846,9 @@ function weightPoints(a,b){
 function heatmap(){
   const s0 = monday(startDate()), t = today(); let h = `<div class="heat">`;
   for (let i=0;i<53*7;i++){ const d = addD(s0,i), k = key(d), sc = dayScore(getDay(k)), ok = d>=startDate() && d<=t;
-    const bg = !ok ? 'var(--soft)' : sc>=.75 ? 'var(--good)' : sc>=.5 ? 'var(--gold)' : sc>0 ? 'color-mix(in srgb, var(--gold) 40%, var(--soft))' : 'var(--line)';
-    h += `<i style="background:${bg};${d>addD(startDate(),363)?'opacity:.2':''}" title="${fmtD(d)}: ${pct(sc)}%"></i>`; }
-  return h + `</div><div class="row tiny muted" style="margin-top:8px;gap:14px"><span><span class="dot" style="background:var(--line)"></span> пропуск</span><span><span class="dot" style="background:var(--gold)"></span> 50–74%</span><span><span class="dot" style="background:var(--good)"></span> от 75%</span></div>`;
+    const bg = !ok ? 'var(--soft)' : sc>=.75 ? 'var(--good)' : sc>=.5 ? 'var(--gold)' : minDone(getDay(k)) ? 'color-mix(in srgb, var(--gold) 70%, var(--soft))' : sc>0 ? 'color-mix(in srgb, var(--gold) 40%, var(--soft))' : 'var(--line)';
+    h += `<i style="background:${bg};${d>addD(startDate(),363)?'opacity:.2':''}" title="${fmtD(d)}: ${pct(sc)}%${sc < .5 && minDone(getDay(k)) ? ', минимум' : ''}"></i>`; }
+  return h + `</div><div class="row tiny muted" style="margin-top:8px;gap:14px"><span><span class="dot" style="background:var(--line)"></span> пропуск</span><span><span class="dot" style="background:color-mix(in srgb, var(--gold) 70%, var(--soft))"></span> минимум</span><span><span class="dot" style="background:var(--gold)"></span> 50–74%</span><span><span class="dot" style="background:var(--good)"></span> от 75%</span></div>`;
 }
 function vStats(){
   const R = periodRange(), c = collect(R.a, R.b);
@@ -1052,6 +1062,9 @@ function vSetup(){
     <div class="muted small" style="margin:12px 0 6px">Погода в городе</div><div class="chips">${[['auto','Авто — сама'],['off','Всегда ясно'],['rain','Дождь'],['snow','Снег'],['fog','Туман'],['clouds','Облачно']].map(([v,n])=>`<button class="chip btn ${(S.settings.weather||'auto')===v?'on':''}" data-act="wx" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${Wx.N[Wx.now().k]}. «Авто» — погода меняется сама по дням и времени года: летом чаще ясно, осенью дожди, зимой снег. Без интернета.</div>
     <div class="row" style="margin-top:12px;flex-wrap:nowrap"><span class="small" style="flex:1">Жизнь в городе<br><span class="tiny muted">Человечки, машины и автобус на карте. Выключи, если телефон греется или карта идёт рывками.</span></span><button class="chip btn ${S.settings.life!==false?'on':''}" data-act="life">${S.settings.life!==false?'вкл':'выкл'}</button></div><div></div></div>`;
+  h += `<div class="card"><h2>${ic('flame')} Минимальный день</h2><div class="small">До трёх пунктов, которые держат день в плохие дни. Сделал все — день засчитан и серия не рвётся, даже если остальное не успел. Монет минимум сам по себе не даёт.</div>
+    <div class="chips" style="margin-top:10px">${ITEMS.map(i=>`<button class="chip btn ${minSet().includes(i.id)?'on':''}" data-act="minpick" data-id="${i.id}">${MIN_T[i.id]}</button>`).join('')}</div>
+    <div class="tiny muted" style="margin-top:6px">Выбрано ${minSet().length} из 3. Намазы считаются, когда отмечены все пять; остальное — любая отметка, и «½» тоже. Ничего не выбрано — минимума нет, день засчитывается только от 50%.</div></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Копия и перенос на другой телефон</h2><div class="small">Все данные лежат только в этом браузере. Если очистить браузер или сменить телефон, данные пропадут. Раз в неделю сохраняй копию в файл: в Telegram «Избранное», на флешку или в облако. Дневник в копии остаётся зашифрованным.</div>
     <div class="row" style="margin-top:12px"><button class="btn pri" data-act="export"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Скачать копию</button><button class="btn" data-act="copyexp"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Скопировать копию</button><button class="btn" data-act="import"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Загрузить из файла</button></div>
     <div class="muted tiny" style="margin-top:8px">Перенос на другой телефон: здесь нажми «Скачать копию» и отправь файл себе (например, в Telegram «Избранное»), на новом телефоне открой приложение и нажми «Загрузить из файла». Загрузка заменяет все данные на этом устройстве.</div>
@@ -2892,6 +2905,7 @@ document.addEventListener('click', async e => {
     case 'ptab': pathTab = el.dataset.t; break;
     case 'pltab': planTab = el.dataset.t; break;
     case 'mode': S.settings.mode = el.dataset.m; save(); break;
+    case 'minpick': { const m = minSet(), id = el.dataset.id; if (m.includes(id)) S.settings.minDay = m.filter(x=>x !== id); else if (m.length >= 3){ toast('Не больше трёх — сначала сними один'); return; } else S.settings.minDay = [...m, id]; save(); break; }
     case 'bcyc': { const b = S.books[+el.dataset.i]; b.s = (b.s+1)%3; b.done = b.s===2 ? key(today()) : ''; save(); break; }
     case 'bdel': if (await ask('Удалить книгу из списка?','Удалить')) { S.books.splice(+el.dataset.i,1); save(); } break;
     case 'badd': { const t = $('#b_t').value.trim(); if (!t) return toast('Впиши название'); S.books.push({st:0, ax:$('#b_ax').value, t, s:0, idea:'', done:''}); save(); toast('Добавлено'); break; }
