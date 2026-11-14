@@ -144,7 +144,8 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 #ev{position:fixed;inset:0;z-index:46} .evbg{position:absolute;inset:0;background:rgba(0,0,0,.4)} body.evon{overflow:hidden}
 .evsheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + var(--sab, 0px));box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:evup .25s ease-out}
 @keyframes evup{from{transform:translateY(40px);opacity:0}} @media (prefers-reduced-motion:reduce){.evsheet{animation:none}}
-.evblk{background:var(--card);border-radius:var(--r,16px);padding:12px 14px;margin:10px 0} .evbig{display:flex;align-items:baseline;gap:10px} .evbig b{font-size:30px;line-height:1} .evbig.ok b{color:var(--good)} .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
+.evblk{background:var(--card);border-radius:var(--r,16px);padding:12px 14px;margin:10px 0} .evbig{display:flex;align-items:baseline;gap:10px} .evbig b{font-size:30px;line-height:1} .evbig.ok b{color:var(--good)} .bkcard{border-left:3px solid var(--spirit)} .evsheet .bkcard{margin:10px 0;box-shadow:none}
+.evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
 #toast{position:fixed;left:50%;bottom:calc(84px + var(--sab));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;transition:.25s;pointer-events:none}
@@ -779,10 +780,22 @@ function vToday(){
   if (mp) h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Фокус месяца · ${MN[viewDate.getMonth()]}</h2><div class="muted small" style="margin:-6px 0 8px">${st.n} — «${st.t}»</div>${AXO.map((a,i)=>`<div class="row" style="margin:6px 0;align-items:flex-start;flex-wrap:nowrap"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div><b>${AX[a].n}.</b> ${esc(mp[i])}</div></div>`).join('')}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg> Правило дня</h2><div>${RULES[(viewDate.getDate()+viewDate.getMonth())%RULES.length]}</div></div>`;
   if (isT) h += giftCard();
+  if (isT) h += bkCard();
   if (isT) h += `<button class="btn pri" style="display:block;width:100%;text-align:center;padding:13px;margin-bottom:10px" data-act="evopen">${day && day.ev ? '✓ Итог дня подведён — открыть' : 'Подвести итог дня'}</button>`;
   h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
   return h;
 }
+
+/* ================== НАПОМИНАНИЕ О КОПИИ ================== */
+// Весь год лежит только в этом браузере. Раз в неделю мягко просим сделать копию: на «Сегодня» над кнопкой итога и в окне итога.
+// S.lastExport ставят «Скачать копию» и «Скопировать копию»; «Позже» (S.bkSnooze) откладывает на 3 дня. Пока отмечено меньше 3 дней — не просим.
+const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
+function bkDue(){ if (Object.values(S.days).filter(d => d && (Object.keys(d.c||{}).length || (d.p||[]).some(Boolean))).length < 3) return null;
+  const now = Date.now(); if (S.bkSnooze && now - S.bkSnooze < 3*864e5) return null; const l = S.lastExport || 0, n = Math.floor((now - l)/864e5);
+  return !l ? 'ни разу' : n >= 7 ? `${n} ${plural(n,'день','дня','дней')} назад` : null; }
+function bkCard(){ const w = bkDue(); if (!w) return '';
+  return `<div class="card bkcard"><b>${ic('save')}Копия данных: последняя — ${w}</b><div class="tiny muted" style="margin:4px 0 10px">Весь твой год лежит только в этом телефоне. Потеряется телефон или очистится браузер — без копии пропадёт всё. Скачай файл или скопируй и отправь себе в «Избранное».</div>
+    <div class="row" style="gap:8px"><button class="btn pri" data-act="export">${ic('down')}Скачать</button><button class="btn" data-act="copyexp">${ic('copy')}Скопировать</button><button class="btn" data-act="bklater">Позже</button></div></div>`; }
 
 /* ================== ВЕЧЕРНИЙ ИТОГ ================== */
 // Итог дня за полминуты: что сделано и держится ли серия, одна строка в дневник, что прибавилось в городе.
@@ -805,6 +818,7 @@ function evHTML(){
   h += `<div class="evblk"><b>Город сегодня</b><div class="small" style="margin-top:4px">Заработано за день: <b>+${nf(X.today)}</b>${CO}${X.taxToday ? `, из них налог ${nf(X.taxToday)}` : ''}. В казне ${nf(X.bal)}${CO}.</div>
     ${buys.length ? `<div class="small" style="margin-top:6px">Построено сегодня:</div><ul class="evbuys">${buys.map(l=>`<li>${esc(l.t)} <span class="muted">· ${nf(+l.c)}</span></li>`).join('')}</ul>` : `<div class="muted tiny" style="margin-top:4px">Сегодня ничего не строил — монеты копятся.</div>`}
     <a class="btn" style="margin-top:8px;display:inline-flex;text-decoration:none" href="#town" data-act="evclose">${ic('town')}Посмотреть город</a></div>`;
+  h += bkCard();
   return h + `<button class="btn pri" style="width:100%;padding:13px" data-act="evdone">${day && day.ev ? 'Закрыть' : 'Итог подведён'}</button></div>`; }
 function evSync(){ let w = document.getElementById('ev'); if (view !== 'today') evOpen = false;
   if (!evOpen){ if (w) w.remove(); document.body.classList.remove('evon'); evPass = ''; return; }
@@ -3065,8 +3079,9 @@ document.addEventListener('click', async e => {
     case 'qhome': Object.assign(S.qibla, {lat:GROZNY.lat, lon:GROZNY.lon, place:GROZNY.place}); save(); break;
     case 'qset': { const la = +$('#q_lat').value, lo = +$('#q_lon').value; if ($('#q_lat').value==='' || $('#q_lon').value==='' || !(Math.abs(la) <= 90) || !(Math.abs(lo) <= 180)) return toast('Проверь широту и долготу');
       S.qibla.lat = la; S.qibla.lon = lo; S.qibla.place = (Math.abs(la-GROZNY.lat) < .05 && Math.abs(lo-GROZNY.lon) < .05) ? 'Грозный' : 'Своё место'; save(); toast('Место сохранено'); break; }
-    case 'export': doExport(); return;
-    case 'copyexp': { try { await navigator.clipboard.writeText(await exportText()); S.lastExport = Date.now(); save(); toast('Скопировано — вставь в «Избранное» в Telegram'); } catch(err){ toast('Не получилось скопировать'); } return; }
+    case 'export': await doExport(); render(); return;
+    case 'bklater': S.bkSnooze = Date.now(); save(); toast('Напомню через три дня'); break;
+    case 'copyexp': { try { await navigator.clipboard.writeText(await exportText()); S.lastExport = Date.now(); save(); toast('Скопировано — вставь в «Избранное» в Telegram'); render(); } catch(err){ toast('Не получилось скопировать'); } return; }
     case 'import': $('#importFile').click(); return;
     case 'reset': if (await ask('Стереть ВСЕ данные на этом устройстве? Сначала сделай резервную копию.','Дальше') && await ask('Точно? Отменить будет нельзя.','Стереть')) { S = defaults(); KEY = null; diaryCache = null; PH.before = PH.after = null; await idbSet('photo_before',null); await idbSet('photo_after',null); save(true); toast('Данные стёрты'); } break;
     default: return;
