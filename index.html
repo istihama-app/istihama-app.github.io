@@ -145,6 +145,7 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .evsheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + var(--sab, 0px));box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:evup .25s ease-out}
 @keyframes evup{from{transform:translateY(40px);opacity:0}} @media (prefers-reduced-motion:reduce){.evsheet{animation:none}}
 .evblk{background:var(--card);border-radius:var(--r,16px);padding:12px 14px;margin:10px 0} .evbig{display:flex;align-items:baseline;gap:10px} .evbig b{font-size:30px;line-height:1} .evbig.ok b{color:var(--good)} .bkcard{border-left:3px solid var(--spirit)} .evsheet .bkcard{margin:10px 0;box-shadow:none}
+.yban{display:block;text-decoration:none;color:inherit;font-weight:600} .ybig{display:flex;align-items:baseline;gap:10px;margin-top:6px} .ybig b{font-size:40px;line-height:1;color:var(--good)} .ylinks{display:grid;grid-template-columns:1fr 1fr;gap:8px} .ylinks .btn{text-align:center;text-decoration:none}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -502,7 +503,7 @@ const mk = a => new Date(a[0],a[1],a[2]);
 function defaults(){
   return {v:1, settings:{start:'2026-11-16', name:'', mode:'work', season:'auto', tod:'auto', life:true, minDay:['namaz','light','train']}, days:{}, weeks:{}, rev:{week:{},month:{},stage:{},year:{}},
     measures:[], books:BOOKS0.map(b=>({st:b[0],ax:b[1],t:b[2],s:0,idea:'',done:''})), suras:SURAS0.map(n=>({n,s:0})),
-    fears:[], before:{}, after:{}, capsule:{text:'',open:'2027-11-14',sealed:false,sealedAt:''}, diary:{}, crypto:null,
+    fears:[], before:{}, after:{}, capsule:{text:'',open:'2027-11-14',sealed:false,sealedAt:''}, diary:{}, crypto:null, years:[],
     timers:{list:TPRESETS.map(p=>({...p})), run:{}, log:{}, sound:true},
     tasbih:{cur:0, list:DHIKR0.map(x=>({...x, c:0, l:0})), day:{}},
     qibla:{...GROZNY},
@@ -563,6 +564,10 @@ window.addEventListener('pagehide', () => save(true));
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
 
 const startDate = () => parse(S.settings.start || '2026-11-16');
+// Годы: S.years — архив прошедших лет [{n, start, end, before, after, capsule}]. Текущий год идёт от settings.start на 364 дня.
+// Монеты, недели для монет и города, серия и итоги считаются от самого первого старта (firstStart), чтобы переход в новый год ничего не обнулил.
+const yearEnd = () => addD(startDate(), 363), yearNo = () => (S.years || []).length + 1;
+const firstStart = () => (S.years && S.years.length) ? parse(S.years[0].start) : startDate();
 function getDay(k){ return S.days[k] || null; }
 function ensureDay(k){ if (!S.days[k]) S.days[k] = {c:{}, p:[0,0,0,0,0], n:{}, tr:'', focus:''}; const d = S.days[k]; d.c ||= {}; d.p ||= [0,0,0,0,0]; d.n ||= {}; return d; }
 function itemVal(day,id){ if (!day) return 0; if (id === 'namaz') return (day.p||[]).reduce((a,b)=>a+(b?1:0),0)/5; return day.c?.[id] || 0; }
@@ -583,7 +588,7 @@ const dayKept = day => dayScore(day) >= .5 || minDone(day);
 // Сегодня, пока не засчитано, — не пропуск, а «день идёт».
 function streak(){
   let d = today(); if (!dayKept(getDay(key(d)))) d = addD(d,-1);
-  let n = 0, gap = 0; while (d >= startDate()){ if (dayKept(getDay(key(d)))){ n++; gap = 0; } else if (++gap >= 2) break; d = addD(d,-1); }
+  let n = 0, gap = 0; while (d >= firstStart()){ if (dayKept(getDay(key(d)))){ n++; gap = 0; } else if (++gap >= 2) break; d = addD(d,-1); }
   return n;
 }
 
@@ -621,13 +626,13 @@ const txt = (path, ph='', rows=3) => `<textarea class="in" rows="${rows}" data-b
 // Меню (v24): внизу пять групп; у групп из нескольких разделов сверху вкладки. Кнопка группы ведёт в раздел, где был в последний раз.
 // «Ещё» убран из меню (раздел #more остаётся для старых ссылок). План и настройки — кнопками в шапке.
 const GROUPS = [{id:'today', n:'Сегодня', v:['today']}, {id:'tools', n:'Практика', v:['tools']}, {id:'diary', n:'Дневник', v:['diary']},
-  {id:'town', n:'Город', v:['town','home','plot'], t:{town:'Город', home:'Дом', plot:'Участок'}}, {id:'sum', n:'Итоги', v:['stats','week','tree','path'], t:{stats:'Итоги', week:'Неделя', tree:'Дерево', path:'Путь'}}];
+  {id:'town', n:'Город', v:['town','home','plot'], t:{town:'Город', home:'Дом', plot:'Участок'}}, {id:'sum', n:'Итоги', v:['stats','week','tree','path','year'], t:{stats:'Итоги', week:'Неделя', tree:'Дерево', path:'Путь'}}];
 const grpOf = v => GROUPS.find(g => g.v.includes(v)), grpLast = {};
-const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['today','tools','diary','town','home','plot','stats','week','tree','path','plan','setup'], NAV_MORE = [];
-function gtabs(){ const g = grpOf(view); if (!g || g.v.length < 2) return ''; return `<div class="gtabs mob" role="tablist">${g.v.map(id=>`<a href="#${id}" role="tab" class="${id===view?'on':''}">${g.t[id]}</a>`).join('')}</div>`; }
+const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['today','tools','diary','town','home','plot','stats','week','tree','path','year','plan','setup'], NAV_MORE = [];
+function gtabs(){ const g = grpOf(view); if (!g || g.v.length < 2) return ''; return `<div class="gtabs mob" role="tablist">${g.v.filter(id=>g.t[id]).map(id=>`<a href="#${id}" role="tab" class="${id===view?'on':''}">${g.t[id]}</a>`).join('')}</div>`; }
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
-  {id:'path', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
+  {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
 ];
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
 async function route(){ const h = location.hash.replace('#',''); const nv = VIEWS.find(v=>v.id===h) ? h : 'today'; if (view === 'diary' && nv !== 'diary') { clearTimeout(dTimer); await flushDiary(); KEY = null; diaryCache = null; } if (nv !== 'tools') stopCompass(); view = nv; render(); window.scrollTo(0,0); const m = $('#main'); m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); }
@@ -641,7 +646,7 @@ function renderNav(){
   $('#bnav').innerHTML = GROUPS.map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}</span>${g.n}</a>`; }).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; let html = f(); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); }
+function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear}[view]; let html = f(); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
@@ -754,7 +759,7 @@ function vToday(){
   let h = topbar(isT ? `Ассаляму алейкум${name}` : 'День');
   h += `<div class="datebar"><button class="navbtn" data-act="dprev">‹</button><div class="d"><b>${fmtD(viewDate)}</b><span class="muted small">${DFULL[viewDate.getDay()]}${isT?' · сегодня':''} · неделя ${Math.max(1,weekNo(viewDate))} из 52</span></div><button class="navbtn" data-act="dnext">›</button></div>`;
   if (!isT) h += `<div style="text-align:center;margin:-4px 0 10px"><button class="chip btn" data-act="dtoday">Вернуться к сегодня</button></div>`;
-  h += warn + before;
+  h += yearBanner(isT) + warn + before;
   h += `<div class="card hero"><div class="rings">${ringsSVG(day)}<div class="legend">
     <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${ITEMS.filter(i=>itemVal(day,i.id) < 1).length} из ${ITEMS.length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
@@ -797,6 +802,44 @@ function bkDue(){ if (Object.values(S.days).filter(d => d && (Object.keys(d.c||{
 function bkCard(){ const w = bkDue(); if (!w) return '';
   return `<div class="card bkcard"><b>${ic('save')}Копия данных: последняя — ${w}</b><div class="tiny muted" style="margin:4px 0 10px">Весь твой год лежит только в этом телефоне. Потеряется телефон или очистится браузер — без копии пропадёт всё. Скачай файл или скопируй и отправь себе в «Избранное».</div>
     <div class="row" style="gap:8px"><button class="btn pri" data-act="export">${ic('down')}Скачать</button><button class="btn" data-act="copyexp">${ic('copy')}Скопировать</button><button class="btn" data-act="bklater">Позже</button></div></div>`; }
+
+/* ================== ФИНАЛ ГОДА ================== */
+// Страница #year: итоги года числами, город, ссылки на эссе, «До / После» и письмо себе. После последнего дня — кнопка «Начать второй год».
+// Прошлые годы — в S.years; их итоги считаются тем же collect() по датам. План (этапы, фокус месяцев) написан только на первый год.
+let yearSel = 0;
+function yearBanner(isT){ if (!isT) return ''; const t = today(), end = yearEnd(), left = Math.round((end - t)/864e5);
+  if (left > 6 || t < startDate()) return '';
+  return `<a class="banner yban" href="#year">${left >= 0 ? `До финала ${yearNo()}-го года ${left ? `${left} ${plural(left,'день','дня','дней')}` : '— последний день'}. Посмотри, каким был год →` : `Год пройден. Итоги года и начало следующего →`}</a>`; }
+function vYear(){
+  const ys = [...(S.years || []).map(y => ({n:y.n, a:parse(y.start), b:parse(y.end), arch:y})), {n:yearNo(), a:startDate(), b:yearEnd()}];
+  const Y = ys.find(y => y.n === yearSel) || ys[ys.length-1], cur = !Y.arch, t = today(), over = t > Y.b;
+  const c = collect(Y.a, Y.b < t ? Y.b : t), kept = c.days.filter(dayKept).length, total = Math.round((Y.b - Y.a)/864e5) + 1, done = Math.min(total, c.n);
+  const wp = weightPoints(Y.a, Y.b), w0 = wp.length ? wp[0].v : null, w1 = wp.length ? wp[wp.length-1].v : null;
+  const inY = ds => ds && parse(ds) >= Y.a && parse(ds) <= Y.b, books = S.books.filter(b => b.s === 2 && inY(b.done)).length;
+  const k = (v, l) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  let h = topbar(`${Y.n}-й год`);
+  if (ys.length > 1) h += `<div class="chips" style="margin-bottom:10px">${ys.map(y=>`<button class="chip btn ${y.n===Y.n?'on':''}" data-act="ysel" data-n="${y.n}">${y.n}-й год</button>`).join('')}</div>`;
+  h += `<div class="card yhero"><div class="muted small">${fmtD(Y.a)} ${Y.a.getFullYear()} — ${fmtD(Y.b)} ${Y.b.getFullYear()}</div>
+    <div class="ybig"><b>${kept}</b><span>засчитанных дней из ${done}${done < total ? ` прошедших (всего ${total})` : ''}</span></div>
+    <div class="bar" style="margin-top:8px"><i style="width:${pct(kept/Math.max(1,total))}%;background:var(--good)"></i></div>
+    <div class="muted small" style="margin-top:8px">${over ? (cur ? 'Год пройден. То, что ты делал каждый день, никуда не делось — оно в тебе и в городе.' : 'Этот год в архиве.') : `До финала ${Math.max(0, Math.round((Y.b - t)/864e5))} дн.`}</div></div>`;
+  h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.n ? pct(c.pr/(c.n*5))+'%' : '0%','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
+  h += `<div class="card"><h2>Разделы за год</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}</div>`;
+  if (cur){ const G = gGrid(), gh = Object.values(G).filter(x => UP.includes(x)).length;
+    h += `<div class="card"><h2>${ic('town')} Город</h2><div class="small">Уровень: <b>${CITY.names[cityLvl()-1]}</b>. Уровней у зданий: ${devN()}.${gh ? ` В своём квартале домов: ${gh}.` : ''} Монет заработано за всё время: ${nf(coins().earned)}${CO}.</div><div class="muted tiny" style="margin-top:6px">Город, дом и участок переходят в следующий год целиком.</div></div>`;
+    h += `<div class="card"><h2>${ic('mirror')} Подвести год</h2><div class="ylinks">
+      <a class="btn" href="#stats" data-act="ystat">Итоговое эссе года</a><a class="btn" href="#path" data-act="yba">До / После</a><a class="btn" href="#tree">Дерево года</a><a class="btn" href="#path" data-act="ycap">Письмо себе</a></div></div>`;
+    if (over) h += `<div class="card"><h2>${ic('plus')} ${Y.n + 1}-й год</h2><div class="small">Новый год начнётся ${fmtD(addD(Y.b,1))} ${addD(Y.b,1).getFullYear()}: новое дерево, новое «До / После», новое письмо себе. Город, дом, монеты, книги, суры и дневник остаются. Итоги этого года будут здесь, во вкладке «${Y.n}-й год».</div>
+      <div class="muted tiny" style="margin-top:6px">План по этапам и фокус месяцев написаны только на первый год — для второго их нужно составить заново.</div>
+      <button class="btn pri" style="margin-top:12px" data-act="ynext">Начать ${Y.n + 1}-й год</button></div>`; }
+  else if (Y.arch.capsule && Y.arch.capsule.sealed) h += `<div class="card"><h2>${ic('mail')} Письмо того года</h2><div style="white-space:pre-wrap">${esc(Y.arch.capsule.text)}</div></div>`;
+  return h; }
+async function yearNext(){ const end = yearEnd(); if (today() <= end) return;
+  if (!await ask(`Начать ${yearNo() + 1}-й год? Итоги этого года сохранятся. Начнутся новое дерево, «До / После» и письмо себе. Город, дом и монеты останутся.`, 'Начать')) return;
+  const d = defaults(), nx = addD(end, 1); S.years = S.years || [];
+  S.years.push({n:yearNo(), start:S.settings.start, end:key(end), before:S.before, after:S.after, capsule:S.capsule});
+  S.settings.start = key(nx); S.before = d.before; S.after = d.after; S.capsule = {...d.capsule, open:key(addD(nx,363))};
+  yearSel = 0; save(true); toast(`${yearNo()}-й год начался. Бисмиллях`); render(); }
 
 /* ================== ВЕЧЕРНИЙ ИТОГ ================== */
 // Итог дня за полминуты: что сделано и держится ли серия, одна строка в дневник, что прибавилось в городе.
@@ -870,10 +913,10 @@ function periodRange(){
   if (statT === 'week'){ const a = addD(monday(t), 7*statO); return {a, b:addD(a,6), title:`${fmtD(a)} — ${fmtD(addD(a,6))}`, key:key(a)}; }
   if (statT === 'month'){ const a = new Date(t.getFullYear(), t.getMonth()+statO, 1); const b = new Date(a.getFullYear(), a.getMonth()+1, 0); return {a, b, title:`${MN[a.getMonth()]} ${a.getFullYear()}`, key:`${a.getFullYear()}-${pad(a.getMonth()+1)}`}; }
   if (statT === 'stage'){ const i = Math.min(4, Math.max(0, stageIdx(t)+statO)); const s = STAGES[i]; return {a:mk(s.from), b:mk(s.to), title:`${s.n} — «${s.t}»`, key:String(i), idx:i}; }
-  const a = startDate(); return {a, b:addD(a,363), title:`Год: ${fmtD(a)} ${a.getFullYear()} — ${fmtD(addD(a,363))} ${addD(a,363).getFullYear()}`, key:'year'};
+  const a = startDate(); return {a, b:addD(a,363), title:`Год${yearNo() > 1 ? ' ' + yearNo() : ''}: ${fmtD(a)} ${a.getFullYear()} — ${fmtD(addD(a,363))} ${addD(a,363).getFullYear()}`, key: yearNo() > 1 ? 'year' + yearNo() : 'year'};
 }
 function collect(a,b){
-  const t = today(), s = startDate(), list = [];
+  const t = today(), s = firstStart(), list = [];
   for (let d = new Date(a); d <= b; d = addD(d,1)) if (d <= t && d >= s) list.push(d);
   const n = list.length || 1, days = list.map(d=>getDay(key(d)));
   const r = {n:list.length, list, days, avg:days.reduce((x,d)=>x+dayScore(d),0)/n, good:days.filter(d=>dayScore(d)>=.75).length,
@@ -934,6 +977,7 @@ function vStats(){
   h += `<div class="card"><h2>Разделы за период</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}
     <div class="muted small" style="margin-top:6px">${(()=>{const s=[...AXO].sort((x,y)=>c.ax[x]-c.ax[y]);return `Слабее всего сейчас — <b>${AX[s[0]].n}</b>. Сильнее всего — <b>${AX[s[3]].n}</b>.`})()}</div></div>`;
   if (statT === 'year'){
+    h += `<a class="card yhero" href="#year" style="display:block;text-decoration:none;color:inherit"><b>Страница года</b><div class="muted small">Год в цифрах, город, эссе, «До / После», письмо себе${today() > yearEnd() ? ' и переход в следующий год' : ''} →</div></a>`;
     const weeks = []; for (let w=0; w<52; w++){ const a = addD(monday(startDate()),7*w); const cc = collect(a, addD(a,6)); weeks.push(cc.n?cc.avg:null); }
     h += `<div class="card"><h2>По неделям</h2>${barChart(weeks, weeks.map((_,i)=>String(i+1)))}</div>`;
     h += `<div class="card"><h2>Карта года</h2>${heatmap()}</div>`;
@@ -1561,7 +1605,7 @@ function coins(){
   for (const k in S.timers.log){ if (k > tk) continue;
     const ids = new Set((S.timers.log[k]||[]).filter(l=>{ const it = tItem(tPreset(l.id)); return !it || it.ax!=='faith'; }).map(l=>l.id));
     const n = Math.min(ids.size, ECON.timerMax); r.nTimers += n; r.timers += n*ECON.timer; if (k===tk) r.today += n*ECON.timer; }
-  for (let m = monday(startDate()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){
+  for (let m = monday(firstStart()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){
     let ok = true; for (let j=0;j<7&&ok;j++) ok = sumD(getDay(key(addD(m,j))))/its.length >= .5; if (ok) r.nWeeks++; }
   r.weeks = r.nWeeks*(ECON.week + bn.week); r.nFears = S.fears.filter(f=>f.done).length; r.fears = r.nFears*ECON.fear;
   r.earned = r.items + r.timers + r.weeks + r.fears + r.own + r.tax; r.spent = S.build.log.reduce((a,l)=>a+(+l.c||0),0); r.bal = r.earned - r.spent;
@@ -2197,7 +2241,7 @@ function ruzStats(){ const tk = key(today()), ks = Object.keys(S.days).filter(k=
   return {n, best, cur:run}; }
 const cityLvl = () => Math.max(1, Math.min(7, S.town.lvl || 1));
 const gameScore = day => { const its = ITEMS.filter(i=>i.ax!=='faith'); return day ? its.reduce((a,i)=>a+itemVal(day,i.id),0)/its.length : 0; };   // без Веры
-function goodWeeks(){ let n = 0; for (let m = monday(startDate()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){ let s = 0; for (let j=0;j<7;j++) s += gameScore(getDay(key(addD(m,j)))); if (s/7 >= .6) n++; } return n; }
+function goodWeeks(){ let n = 0; for (let m = monday(firstStart()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){ let s = 0; for (let j=0;j<7;j++) s += gameScore(getDay(key(addD(m,j)))); if (s/7 >= .6) n++; } return n; }
 // --- здания ---
 const bLvl = id => S.town.bld[id] || 0;
 const bFull = (id, n) => Math.round(ECON.town[id].p*ECON.upK[n-1]/10)*10;                 // полная цена уровня n
@@ -2943,6 +2987,11 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, k = key(viewDate);
   switch(a){
+    case 'ysel': yearSel = +el.dataset.n; break;
+    case 'ynext': await yearNext(); return;
+    case 'ystat': statT = 'year'; statO = 0; return;
+    case 'yba': pathTab = 'ba'; return;
+    case 'ycap': pathTab = 'capsule'; return;
     case 'evopen': viewDate = today(); evOpen = true; break;
     case 'evclose': evOpen = false; if (el.tagName === 'A') return; break;
     case 'evdone': { const d = ensureDay(key(today())), kept = dayKept(d); d.ev = 1; save(); evOpen = false; toast(kept ? 'Итог подведён. Доброй ночи' : 'Итог подведён. Завтра — новый день'); break; }
