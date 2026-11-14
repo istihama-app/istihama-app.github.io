@@ -2060,8 +2060,11 @@ Object.defineProperty(TOWN, 'at', { get(){ const p = (S.town && S.town.pos) || {
 function townSwap(a, b){ const T = S.town; T.pos = T.pos || {}; const sa = slotOf(a), sb = slotOf(b); T.pos[a] = sb; T.pos[b] = sa; for (const id of [a,b]) if (T.pos[id] === id) delete T.pos[id]; }
 /* ---- новый квартал: сетка клеток к югу от нижней улицы (y = 57…58.4) ---- */
 const GRID = {x0:-32, y0:59.5, c:8, nx:11, ny:5};
-const DIST = { road:{n:'Дорога', p:15}, house:{n:'Жилой дом', p:80, cap:2}, house2:{n:'Дом в два этажа', p:120, cap:4}, shop:{n:'Лавка', p:120, cap:3}, park:{n:'Сквер', p:50, cap:1}, trees:{n:'Деревья', p:15, cap:0} };
-const DTOOLS = [['road','Дорога'],['house','Дом'],['shop','Лавка'],['park','Сквер'],['trees','Деревья'],['move','Перенести'],['del','Снести']];
+const DIST = { road:{n:'Дорога', p:15}, house:{n:'Жилой дом', p:80, cap:2}, house2:{n:'Дом в два этажа', p:120, cap:4}, house5:{n:'Многоэтажка', p:250, cap:6, L:5}, house9:{n:'Высотка', p:450, cap:9, L:6}, tower:{n:'Небоскрёб', p:800, cap:14, L:7, max:3}, office:{n:'Деловой центр', p:300, cap:7, L:5, max:4}, shop:{n:'Лавка', p:120, cap:3}, park:{n:'Сквер', p:50, cap:1}, trees:{n:'Деревья', p:15, cap:0} };
+const DTOOLS = [['road','Дорога'],['house','Дом'],['office','Деловой центр'],['shop','Лавка'],['park','Сквер'],['trees','Деревья'],['move','Перенести'],['del','Снести']];
+const UP = ['house','house2','house5','house9','tower'];   // ступени жилого дома: каждое нажатие «Домом» поднимает на ступень
+const gOpen = t => !DIST[t].L || cityLvl() >= DIST[t].L, gLvlTxt = t => `${DIST[t].n} — с уровня города ${DIST[t].L}, «${CITY.names[DIST[t].L-1].toLowerCase()}»`;
+const gMax = t => DIST[t].max && Object.values(gGrid()).filter(x=>x === t).length >= DIST[t].max;
 let townBuild = false, townTool = 'road', townPick = '';
 const gKey = (i,j) => i + ',' + j, gGrid = () => (S.town && S.town.grid) || {};
 const gBlocked = (i,j) => i < 0 || j < 0 || i >= GRID.nx || j >= GRID.ny || (i >= 4 && i <= 7 && j <= 1);   // сад занимает свои клетки
@@ -2074,24 +2077,25 @@ const gNearRoad = (G, C, i, j) => gN4(i,j).some(([a,b]) => C.has(gKey(a,b)));
 function gValid(G){ const C = gConn(G); for (const k in G){ const [i,j] = k.split(',').map(Number), t = G[k]; if (t === 'road' ? !C.has(k) : t !== 'trees' && !gNearRoad(G, C, i, j)) return false; } return true; }
 const distCap = () => Object.values(gGrid()).reduce((a,t)=>a + ((DIST[t] && DIST[t].cap) || 0), 0);
 const gHasRoad = () => Object.values(gGrid()).includes('road');
-const gPaid = t => t === 'house2' ? DIST.house.p + DIST.house2.p : (DIST[t] ? DIST[t].p : 0);
+const gPaid = t => UP.includes(t) ? UP.slice(0, UP.indexOf(t)+1).reduce((a,u)=>a + DIST[u].p, 0) : (DIST[t] ? DIST[t].p : 0);
 // что можно сделать текущим инструментом на клетке: {ok, cost, txt}
 function gCan(i, j, tool){ const G = gGrid(), k = gKey(i,j), t = G[k], C = gConn(G);
   if (gBlocked(i,j)) return {no:'Здесь строить нельзя'};
   if (tool === 'del'){ if (!t) return {no:'Здесь пусто'}; const G2 = {...G}; delete G2[k]; return gValid(G2) ? {ok:1, back:Math.round(gPaid(t)/2)} : {no:'Сначала убери то, что стоит у этой дороги'}; }
   if (tool === 'move'){ if (!townPick){ return t && t !== 'road' ? {ok:1, pick:1} : {no: t === 'road' ? 'Дорогу не переносят — снеси и проложи заново' : 'Выбери, что перенести'}; }
     if (k === townPick) return {ok:1, unpick:1}; if (t) return {no:'Место занято'}; const G2 = {...G}; G2[k] = G[townPick]; delete G2[townPick]; return gValid(G2) ? {ok:1, cost:0} : {no:'Дом должен стоять у дороги'}; }
-  if (tool === 'house' && t === 'house') return {ok:1, cost:DIST.house2.p, up:1};
+  if (tool === 'house' && UP.includes(t)){ const nx = UP[UP.indexOf(t)+1]; if (!nx) return {no:'Выше небоскрёба уже некуда'}; if (!gOpen(nx)) return {no:gLvlTxt(nx)}; if (gMax(nx)) return {no:`${DIST[nx].n} — не больше ${DIST[nx].max} на квартал`}; return {ok:1, cost:DIST[nx].p, up:nx}; }
   if (t) return {no:'Место занято'};
   if (tool === 'road') return j === 0 || gNearRoad(G, C, i, j) ? {ok:1, cost:DIST.road.p} : {no:'Дорога должна идти от улицы или от другой дороги'};
   if (tool === 'trees') return {ok:1, cost:DIST.trees.p};
+  if (!gOpen(tool)) return {no:gLvlTxt(tool)}; if (gMax(tool)) return {no:`${DIST[tool].n} — не больше ${DIST[tool].max} на квартал`};
   return gNearRoad(G, C, i, j) ? {ok:1, cost:DIST[tool].p} : {no:'Здание ставится рядом с дорогой'}; }
 function gTap(x, y){ const [i,j] = gCell(x,y), c = gCan(i, j, townTool), T = S.town;
   if (c.no){ if (!gBlocked(i,j) || (i >= 0 && i < GRID.nx && j >= 0 && j < GRID.ny)) toast(c.no); else toast('Строить можно только в новом квартале — он подсвечен'); return; }
   const k = gKey(i,j); T.grid = T.grid || {};
   if (townTool === 'del'){ const t = T.grid[k]; S.build.log.push({d:key(today()), t:`Квартал: снос — ${DIST[t].n.toLowerCase()}`, c:-c.back}); delete T.grid[k]; toast(`Снесено, вернули ${c.back} монет`); }
   else if (townTool === 'move'){ if (c.pick){ townPick = k; render(); return; } if (c.unpick){ townPick = ''; render(); return; } T.grid[k] = T.grid[townPick]; delete T.grid[townPick]; townPick = ''; toast('Перенесено ✓'); }
-  else { const tt = c.up ? 'house2' : townTool; if (!buy(c.cost, `Квартал: ${DIST[tt].n.toLowerCase()}`)) return; T.grid[k] = tt; toast(c.up ? 'Дом надстроен до двух этажей ✓' : `${DIST[tt].n} — построено ✓`); }
+  else { const tt = c.up || townTool; if (!buy(c.cost, `Квартал: ${DIST[tt].n.toLowerCase()}`)) return; T.grid[k] = tt; toast(c.up ? `Надстроено: ${DIST[tt].n.toLowerCase()} ✓` : `${DIST[tt].n} — построено ✓`); }
   save(); render(); }
 // линии улиц квартала для жителей: ряды и столбцы дорог; столбцы первого ряда тянутся до нижней улицы
 function gLines(){ const G = gGrid(), C = gConn(G), out = [], has = (i,j) => C.has(gKey(i,j));
@@ -2099,7 +2103,7 @@ function gLines(){ const G = gGrid(), C = gConn(G), out = [], has = (i,j) => C.h
   for (let i=0;i<GRID.nx;i++){ let j0 = -1; for (let j=0;j<=GRID.ny;j++){ if (j < GRID.ny && has(i,j)){ if (j0 < 0) j0 = j; } else if (j0 >= 0){ out.push({h:0, c:gCX(i), a:j0 === 0 ? 57.7 : gCY(j0), b:gCY(j-1), off:.6}); j0 = -1; } } }
   return out; }
 // двери домов квартала: на соседней связанной дороге
-function gHomes(){ const G = gGrid(), C = gConn(G), out = []; for (const k in G){ if (G[k] !== 'house' && G[k] !== 'house2') continue; const [i,j] = k.split(',').map(Number), r = gN4(i,j).find(([a,b]) => C.has(gKey(a,b))); if (r) out.push([1, gCY(r[1]), gCX(r[0])]); } return out; }
+function gHomes(){ const G = gGrid(), C = gConn(G), out = []; for (const k in G){ if (!UP.includes(G[k])) continue; const [i,j] = k.split(',').map(Number), r = gN4(i,j).find(([a,b]) => C.has(gKey(a,b))); if (r) out.push([1, gCY(r[1]), gCX(r[0])]); } return out; }
 const TOWN_D = { spring:'Чистая вода у реки.', road:'Грунт → асфальт → тротуары и фонари.', shop:'Вместо ларька — магазин стройматериалов. Нажми ещё раз — откроется магазин.', school:'Школа для детей города.', bakery:'Свежий хлеб по утрам.', square:'Скамейки и деревья у дороги.',
   stop:'Остановка на главной улице.', admin:'Здание с колоннами и флагом.', clinic:'Врач рядом с домом.', bazaar:'Ряды под цветными навесами.', library:'Читальный зал за школой.', post:'Письма и посылки.', stadium:'Поле, дорожки и трибуны.',
   fire:'Гараж с красными воротами и вышка.', wtower:'Вода во все дома.', park:'Аллеи, фонтан, скамейки.', hospital:'Большое белое здание на западе.', medrese:'Учёба рядом с мечетью.', bridge:'Путь на тот берег — к башне и канатке.',
@@ -2205,6 +2209,27 @@ function townSVG(ph){
     if (l === o.lv){ put(cx-1.6+a[3]-1, lamp(cx-1.6, a[3]-1)); put(cx+1.6+a[3]-1, lamp(cx+1.6, a[3]-1)); }
     return false; };
 
+  // высокие дома квартала: этажи окнами; ночью окна горят вразнобой, но одинаково каждый вечер (от зерна клетки)
+  const TALL = { house5:{hw:2.6, hd:2.3, zt:6.6, fl:5, c:3, cr:2}, house9:{hw:2.5, hd:2.5, zt:11.6, fl:10, c:3, cr:3, wall:'#d9d3c8'}, tower:{hw:2.7, hd:2.7, zt:16, fl:14, c:4, cr:4, glass:1}, office:{hw:3.1, hd:2.8, zt:9, fl:6, c:0, cr:0, glass:1, band:1} };
+  const tall = (x, y, t, sd, wcol) => { const s = TALL[t], F = K.frame(x,y,0), {hw,hd,zt,fl} = s, gl = s.glass, wc = dk(gl ? (t === 'office' ? '#7fa6bd' : '#6f97b3') : s.wall || mix(wcol,'#fff',80)), wR = mix(wc,'#141b22',gl ? 62 : 66);
+    const on = (f,i) => !dark || ((sd + f*29 + i*13) % 10) < 6, top = t === 'tower' ? zt + 8.5 : zt, off = c => mix(c,'#1d2730',55);
+    let g = F.shadow(hw, hd, top + 1) + poly(F.fr(-hw,hw,0,zt,hd), wc) + poly(F.rt(-hd,hd,0,zt,hw), wR);
+    const st = zt/fl;
+    if (s.band) for (let f=0; f<fl; f++){ const za = f*st + st*.3, zb = za + st*.5;   // ленточные окна во весь фасад
+      g += poly(F.fr(-hw+.2,hw-.2,za,zb,hd), on(f,0) ? C.win : off(wc)) + poly(F.rt(-hd+.2,hd-.2,za,zb,hw), on(f,1) ? C.win : off(wR), 'opacity=".85"'); }
+    else for (let f=0; f<fl; f++){ const za = f*st + st*.28, zb = za + st*.5;
+      for (let i=0;i<s.c;i++){ const u = -hw + (i+.5)*2*hw/s.c; if (f === 0 && i === Math.floor(s.c/2) && !gl) continue; g += poly(F.fr(u-.3,u+.3,za,zb,hd), on(f,i) ? C.win : off(wc)); }
+      for (let i=0;i<s.cr;i++){ const u = -hd + (i+.5)*2*hd/s.cr; g += poly(F.rt(u-.28,u+.28,za,zb,hw), on(f,i+7) ? C.win : off(wR), 'opacity=".85"'); } }
+    if (gl) for (let i=1;i<4;i++) g += line([F.G(-hw + i*hw/2, hd, 0), F.G(-hw + i*hw/2, hd, zt)], mix(wc,'#fff',70), .5, 'opacity=".6"');   // рёбра стекла
+    if (!gl) g += poly(F.fr(-.45,.45,0,1.3,hd), dark ? '#3a2a1c' : '#6b4a2c') + F.box(-.8,.8,hd,hd+.5,1.3,1.5, mix(wc,'#fff',70), mix(wc,'#000',80), mix(wc,'#000',70));   // подъезд с козырьком
+    const roofC = W ? C.snow : mix(wc,'#fff',72);
+    if (t === 'tower'){ const h2 = 1.9; g += poly(F.rect(-hw,hw,-hd,hd,zt), roofC) + poly(F.fr(-h2,h2,zt,zt+6,h2), wc) + poly(F.rt(-h2,h2,zt,zt+6,h2), wR);   // уступ и верхняя часть
+      for (let f=0; f<4; f++){ const za = zt + f*1.5 + .4, zb = za + .75; g += poly(F.fr(-h2+.25,h2-.25,za,zb,h2), on(f+fl,3) ? C.win : off(wc)) + poly(F.rt(-h2+.25,h2-.25,za,zb,h2), on(f+fl,5) ? C.win : off(wR), 'opacity=".85"'); }
+      g += poly(F.rect(-h2,h2,-h2,h2,zt+6), roofC) + line([F.G(0,0,zt+6), F.G(0,0,top)], dark ? '#c9c4bb' : '#8d949c', 1.1);
+      const p = F.S2(0,0,top); g += circ(p[0], p[1], 1.4, dark ? '#ff5b4a' : '#d9473a') + (dark ? circ(p[0], p[1], 3.5, '#ff5b4a', 'opacity=".25"') : ''); }
+    else { g += poly(F.rect(-hw,hw,-hd,hd,zt), roofC) + line([F.G(-hw,hd,zt),F.G(hw,hd,zt),F.G(hw,-hd,zt)], mix(wc,'#000',70), .8);
+      if (t !== 'house5') g += F.box(-.9,.6,-1,.5,zt,zt+1.1, mix(C.conc,'#fff',85), C.conc, mix(C.conc,'#000',75)); }   // машинное отделение на крыше
+    return g; };
   // --- новый квартал: дороги по клеткам, дома, лавки, скверы ---
   { const G = gGrid(), CN = gConn(G), rw = 1.25, rd = rl >= 1 ? C2road : C.earth, WC = Object.values(LOOK.wall.o).map(o=>o.c), RC = Object.values(LOOK.roofc.o).map(o=>o.c), hasR = (i,j) => G[gKey(i,j)] === 'road';
     for (const k in G){ const [i,j] = k.split(',').map(Number), t = G[k], x = gCX(i), y = gCY(j), x0 = GRID.x0 + GRID.c*i, y0 = GRID.y0 + GRID.c*j, sd = hstr(k + (S.settings.start||''));
@@ -2216,6 +2241,7 @@ function townSVG(ph){
       if (t === 'house') put(x+y, simple(x,y,2.1,1.6,1.5,WC[sd%WC.length],RC[(sd>>3)%RC.length],sd%2?'hip':'gable',{win:2,winR:1,door:0}));
       else if (t === 'house2') put(x+y, simple(x,y,2.4,1.8,2.7,WC[sd%WC.length],RC[(sd>>3)%RC.length],'gable',{win:3,winR:2,door:0,two:true}));
       else if (t === 'shop') put(x+y, simple(x,y,2.6,1.9,1.8,'#e6c9a0','#a4553a','flat',{win:3,winR:1,door:0}));
+      else if (TALL[t]) put(x+y, tall(x, y, t, sd, WC[sd%WC.length]));
       else if (t === 'park'){ h += ell(...XY(x+.4,y+.4), 6, 3.4, mix(C.water,'#fff',70)); tree(x-2.2,y-1.6,1.5,sd); tree(x+2.1,y+2,1.6,sd+1); put(x+1.8+y-2.2, K.bush(x+1.8,y-2.2,.45,sd)); }
       else if (t === 'trees'){ tree(x-1.8,y-1.7,1.6,sd); tree(x+1.7,y-.5,1.8,sd+1); tree(x-.2,y+2,1.5,sd+2); } } }
   // --- подложки участков и свой участок в миниатюре ---
@@ -2367,13 +2393,13 @@ function vTown(){
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
   h += `<div class="card axis-faith citycard"><div class="rhead"><span class="clv">${L}</span><div class="grow"><b style="font-size:18px">${CITY.names[L-1]}</b><div class="tiny muted">уровень города ${L} из 7 · ${MOSQUE_N[L-1].toLowerCase()}</div></div><button class="chip btn" data-act="twn" data-t="mosque">мечеть</button></div>
     ${L < 7 ? `<div class="bar" style="margin:10px 0 5px"><i style="width:${pct(Math.max(0,Math.min(1,(D-prevN)/(nextN-prevN))))}%"></i></div><div class="tiny muted">До уровня ${L+1} — «${CITY.names[L].toLowerCase()}»: построй или улучши ещё ${Math.max(1,nextN-D)} ур. зданий. Город растёт от застройки, мечеть жители расширяют вместе с ним.</div>` : `<div class="tiny muted" style="margin-top:8px">Высший уровень. Город вырос.</div>`}</div>`;
-  const G = gGrid(), gn = t => Object.values(G).filter(x=>x === t).length, TH = {road:'Дорога — 15 монет за клетку. Первая клетка — у нижней улицы, дальше — рядом с другой дорогой.', house:'Жилой дом — 80 монет, ставится рядом с дорогой. Нажми на свой дом ещё раз — надстроишь второй этаж за 120.', shop:'Лавка — 120 монет, рядом с дорогой.', park:'Сквер — 50 монет, рядом с дорогой: деревья и пруд.', trees:'Деревья — 15 монет, можно где угодно в квартале.', move:townPick ? 'Теперь нажми на пустую клетку — туда и перенесём. Нажми на то же место — отмена.' : 'Нажми на дом, лавку, сквер или деревья, которые хочешь перенести.', del:'Снос возвращает половину цены. Дорогу, у которой что-то стоит, снести нельзя.'};
+  const G = gGrid(), gn = t => Object.values(G).filter(x=>x === t).length, TH = {road:'Дорога — 15 монет за клетку. Первая клетка — у нижней улицы, дальше — рядом с другой дорогой.', house:`Жилой дом — 80 монет, ставится рядом с дорогой. Нажми на свой дом ещё раз — надстроишь: два этажа 120, многоэтажка 250 (уровень города 5), высотка 450 (уровень 6), небоскрёб 800 (уровень 7, не больше 3).`, office:'Деловой центр — 300 монет, рядом с дорогой, не больше 4. Стеклянная башня с офисами: +7 к потолку налога.', shop:'Лавка — 120 монет, рядом с дорогой.', park:'Сквер — 50 монет, рядом с дорогой: деревья и пруд.', trees:'Деревья — 15 монет, можно где угодно в квартале.', move:townPick ? 'Теперь нажми на пустую клетку — туда и перенесём. Нажми на то же место — отмена.' : 'Нажми на дом, лавку, сквер или деревья, которые хочешь перенести.', del:'Снос возвращает половину цены. Дорогу, у которой что-то стоит, снести нельзя.'};
   if (townBuild) h += `<div class="banner tmove"><b>Стройка квартала.</b> ${TH[townTool]}</div>`;
   if (townMove) h += `<div class="banner tmove">Переставляем: <b>${ECON.town[townMove].n.toLowerCase()}</b>. Нажми на карте другое здание — они поменяются местами. Пустое место будущего здания тоже подходит.<div class="row" style="margin-top:8px"><button class="btn" data-act="tmcancel">Отмена</button></div></div>`;
   h += `<div class="card" style="padding:8px"><div class="townwrap${townFull?' full':''}" id="townwrap"><canvas id="tmap" role="img" aria-label="Карта города. Двигается пальцем, приближается двумя пальцами."></canvas>
-      <button class="navbtn tfbtn" data-act="tfull" aria-label="${townFull?'Свернуть карту':'Карта на весь экран'}" title="${townFull?'Свернуть карту':'Карта на весь экран'}">${townFull?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>':'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}</button>${townBuild ? `<div class="gtools">${DTOOLS.map(([t,n])=>`<button class="chip btn ${townTool===t?'on':''}" data-act="gtool" data-t="${t}">${n}${DIST[t] ? ` · ${DIST[t].p}` : ''}</button>`).join('')}<button class="chip btn on" data-act="gdone">Готово</button></div>` : ''}<div class="tmbtn"><button class="navbtn" data-act="tzoom" data-d="1" aria-label="Крупнее">+</button><button class="navbtn" data-act="tzoom" data-d="-1" aria-label="Мельче">−</button></div></div>
+      <button class="navbtn tfbtn" data-act="tfull" aria-label="${townFull?'Свернуть карту':'Карта на весь экран'}" title="${townFull?'Свернуть карту':'Карта на весь экран'}">${townFull?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>':'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}</button>${townBuild ? `<div class="gtools">${DTOOLS.filter(([t])=>!DIST[t] || gOpen(t)).map(([t,n])=>`<button class="chip btn ${townTool===t?'on':''}" data-act="gtool" data-t="${t}">${n}${DIST[t] ? ` · ${DIST[t].p}` : ''}</button>`).join('')}<button class="chip btn on" data-act="gdone">Готово</button></div>` : ''}<div class="tmbtn"><button class="navbtn" data-act="tzoom" data-d="1" aria-label="Крупнее">+</button><button class="navbtn" data-act="tzoom" data-d="-1" aria-label="Мельче">−</button></div></div>
     <div class="row" style="margin-top:8px;gap:8px"><button class="chip btn" data-act="tfly" data-t="plot">${ic('plot')}К моему участку</button><button class="chip btn" data-act="tfly" data-t="mosque">${ic('mosque')}К мечети</button><a class="chip btn on" style="text-decoration:none;margin-left:auto" href="#plot">Войти на участок</a></div>
-    ${L < 2 ? `<div class="tiny muted" style="margin-top:8px">${ic('lock')}Новый квартал к югу откроется с уровня города 2 — «село».</div>` : townBuild ? '' : `<div class="row" style="margin-top:8px;gap:8px;align-items:center"><button class="btn pri" data-act="gbuild">${ic('town')}Строить квартал</button><span class="tiny muted grow">Новый квартал: ${gn('house') + gn('house2')} дом., ${gn('shop')} лав., ${gn('park')} скв., ${gn('road')} клеток дорог · +${distCap()} к потолку налога</span></div>`}
+    ${L < 2 ? `<div class="tiny muted" style="margin-top:8px">${ic('lock')}Новый квартал к югу откроется с уровня города 2 — «село».</div>` : townBuild ? '' : `<div class="row" style="margin-top:8px;gap:8px;align-items:center"><button class="btn pri" data-act="gbuild">${ic('town')}Строить квартал</button><span class="tiny muted grow">Новый квартал: ${UP.reduce((a,u)=>a + gn(u), 0)} дом.,${gn('house5')+gn('house9')+gn('tower') ? ` из них ${gn('house5')+gn('house9')+gn('tower')} высок.,` : ''}${gn('office') ? ` ${gn('office')} дел. центр.,` : ''} ${gn('shop')} лав., ${gn('park')} скв., ${gn('road')} клеток дорог · +${distCap()} к потолку налога</span></div>`}
     <div class="tiny muted" style="margin-top:6px">Налог города сегодня: <b>+${nf(X.taxToday)}</b>${CO} (${pct(ECON.taxK)}% от дел дня, до ${D + distCap()}; нет дел — нет налога). Нажми на любую постройку — откроется её карточка. Кнопка в углу карты разворачивает её на весь экран. ${SEASON_N[curSeason()]}, ${PHASE_N[curPhase()].toLowerCase()}, ${Wx.N[Wx.now().k]}.</div></div>`;
   // карточка выбранного объекта
   if (townSel === 'mosque'){
