@@ -79,7 +79,7 @@ nav.bottom a.on .i{transform:scale(1.08)}
 .pr button{width:44px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--soft);font-size:12px;font-weight:600}
 .pr button.on{background:var(--faith);border-color:var(--faith);color:#fff}
 .axis-faith{--a:var(--faith);--as:var(--faith-s)} .axis-mind{--a:var(--mind);--as:var(--mind-s)}
-.axis-spirit{--a:var(--spirit);--as:var(--spirit-s)} .axis-body{--a:var(--body);--as:var(--body-s)}
+.axis-spirit{--a:var(--spirit);--as:var(--spirit-s)} .axis-gold{--a:var(--gold);--as:color-mix(in srgb,var(--gold) 16%,var(--card))} .axis-body{--a:var(--body);--as:var(--body-s)}
 .axcard{border-left:5px solid var(--a)}
 .axcard h2 .pct{margin-left:auto;font-size:14px;color:var(--a)}
 .mark.full{background:var(--a);border-color:var(--a);color:#fff}
@@ -1434,7 +1434,8 @@ const ECON = {
   stage:{ found:{n:'Фундамент', need:{beton:21, armat:45, sand:30}, tools:['mixer']},
           walls:{n:'Стены', need:{brick:36, cement:36, sand:30}, tools:['scaff']},
           roof:{n:'Крыша', need:{board:24, roof:48}, tools:['scaff']} },
-  pray:{ found:250, walls:400, roof:550 },   // мечеть на участке — за монеты (дела Веры ни на что в игре не влияют)
+  pray:{ found:250, walls:400, roof:550 },
+  land:1500, annex:{ found:300, walls:450, roof:600 },   // соседний участок и гостевой дом на нём (открывает «Гостиную»)   // мечеть на участке — за монеты (дела Веры ни на что в игре не влияют)
   room:{open:60, furn:140, furnP:500},                             // комната: очки своей силы, чтобы открыть и чтобы обставить
   yard:{ beds:{n:'Грядки', p:200, d:'три грядки у забора'}, fruit:{n:'Плодовые деревья', p:300, d:'яблони по краю двора'}, bench:{n:'Скамейка', p:150, d:'у дерева года'},
          flowers:{n:'Цветник', p:150, d:'вдоль дорожки', roof:1}, gazebo:{n:'Беседка', p:600, d:'во дворе, под цвет крыши', roof:1} },
@@ -1458,7 +1459,8 @@ const ROOMS = [
   {id:'body',   n:'Спортзал',             furn:'штанга, груша и татами'},
 ];
 const STG = ['found','walls','roof'];
-const PLOT = {house:{cx:13.3, cy:7.6, hw:5.7, hd:2.7}, mosque:{cx:4.5, cy:8.8, hw:2.1, hd:2.1}, tree:[4.3, 23]};
+const PLOT = {house:{cx:13.3, cy:7.6, hw:5.7, hd:2.7}, mosque:{cx:4.5, cy:8.8, hw:2.1, hd:2.1}, tree:[4.3, 23], annex:{cx:25.2, cy:8.4, hw:3.3, hd:2.3}};
+const annexSt = () => S.build.annex || {};
 let plotSel = '', shopTab = 'mat', lookTry = {}, lookOpen = false;
 const CO = '<i class="coin" aria-label="монет"></i>';
 const nf = n => Math.round(n).toLocaleString('ru-RU');
@@ -1740,23 +1742,24 @@ function isoMosque(K, F, o){
 function plotSVG(X){
   const dark = isDark(), sn = curSeason(), B = S.build, W = sn==='winter';
   const K = mkIso({A:8.2, Bv:4.75, Zs:9.4, OX:261, OY:44, dark, sn}), {XY,P,n1,mix,poly,line,circ,ell,C,gA,gB,put,gsh,pbox,bush,fence,LEAF} = K;
+  const PW = B.land ? 30 : 20, VW = B.land ? 530 : 440, VH = B.land ? 362 : 314;   // ширина участка в клетках и размер рисунка
   const R = rng(hstr('plot' + (S.settings.start || '')));
   const cleared = !!B.clear, active = cleared && !B.house.roof, Y = B.yard;
   const rot = Math.max(-25, Math.min(25, ((qiblaCalc(S.qibla.lat, S.qibla.lon).brg - 180 + 540) % 360) - 180));   // михраб смотрит на киблу
 
-  let h = `<svg viewBox="0 0 440 314" role="img" aria-label="Участок: мечеть, дом, двор и дерево года"><defs>
+  let h = `<svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Участок: мечеть, дом, двор и дерево года${B.land ? ', гостевой дом' : ''}"><defs>
     <radialGradient id="pbg" cx=".25" cy=".15" r="1"><stop offset="0" stop-color="${W ? mix(C.bg0,'#9fb4c4',70) : C.bg0}"/><stop offset="1" stop-color="${C.bg1}"/></radialGradient>
     <linearGradient id="pgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${gA}"/><stop offset="1" stop-color="${gB}"/></linearGradient>
     <linearGradient id="plt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb66e" stop-opacity="${dark?.2:.22}"/><stop offset=".55" stop-color="#ffb66e" stop-opacity="0"/><stop offset="1" stop-color="#1c1236" stop-opacity="${dark?.26:.1}"/></linearGradient></defs>
-    <rect width="440" height="314" fill="url(#pbg)"/>
-    <ellipse cx="236" cy="296" rx="190" ry="13" fill="#000" opacity="${dark?.35:.13}"/>`;
+    <rect width="${VW}" height="${VH}" fill="url(#pbg)"/>
+    <ellipse cx="${B.land ? 282 : 236}" cy="${B.land ? 344 : 296}" rx="${B.land ? 236 : 190}" ry="13" fill="#000" opacity="${dark?.35:.13}"/>`;
   // плита земли: срез почвы спереди
   const turf = W ? C.snowS : mix(gB,'#1d2a14',78), turf2 = W ? mix(C.snowS,'#000',88) : mix(gB,'#1d2a14',58);
-  h += poly([P(0,30),P(20,30),P(20,30,-1.8),P(0,30,-1.8)], C.soilA) + poly([P(20,0),P(20,30),P(20,30,-1.8),P(20,0,-1.8)], C.soilB);
-  h += poly([P(0,30,-1.1),P(20,30,-1.1),P(20,30,-1.8),P(0,30,-1.8)], mix(C.soilA,'#000',82)) + poly([P(20,0,-1.1),P(20,30,-1.1),P(20,30,-1.8),P(20,0,-1.8)], mix(C.soilB,'#000',82));
-  h += poly([P(0,30),P(20,30),P(20,30,-.32),P(0,30,-.32)], turf) + poly([P(20,0),P(20,30),P(20,30,-.32),P(20,0,-.32)], turf2);
-  for (let i=0;i<9;i++){ const t = R()*20, z = -.55 - R()*1, p = XY(t,30,z); h += ell(p[0], p[1], 1.5+R()*2, 1.3, mix(C.stone,C.soilA,45)); }
-  h += poly([P(0,0),P(20,0),P(20,30),P(0,30)], 'url(#pgr)');
+  h += poly([P(0,30),P(PW,30),P(PW,30,-1.8),P(0,30,-1.8)], C.soilA) + poly([P(PW,0),P(PW,30),P(PW,30,-1.8),P(PW,0,-1.8)], C.soilB);
+  h += poly([P(0,30,-1.1),P(PW,30,-1.1),P(PW,30,-1.8),P(0,30,-1.8)], mix(C.soilA,'#000',82)) + poly([P(PW,0,-1.1),P(PW,30,-1.1),P(PW,30,-1.8),P(PW,0,-1.8)], mix(C.soilB,'#000',82));
+  h += poly([P(0,30),P(PW,30),P(PW,30,-.32),P(0,30,-.32)], turf) + poly([P(PW,0),P(PW,30),P(PW,30,-.32),P(PW,0,-.32)], turf2);
+  for (let i=0;i<9;i++){ const t = R()*PW, z = -.55 - R()*1, p = XY(t,30,z); h += ell(p[0], p[1], 1.5+R()*2, 1.3, mix(C.stone,C.soilA,45)); }
+  h += poly([P(0,0),P(PW,0),P(PW,30),P(0,30)], 'url(#pgr)');
   if (cleared && !W) for (let y=17.5; y<29; y+=3) h += poly([P(.3,y),P(19.7,y),P(19.7,y+1.5),P(.3,y+1.5)], '#fff', 'opacity=".06"');
   else for (let i=0;i<7;i++){ const x = 2+R()*16, y = 2+R()*26, p = XY(x,y); h += ell(p[0], p[1], 26+R()*22, 9+R()*7, i%2?'#000':'#fff', 'opacity=".06"'); }
   if (cleared){ // утоптанная земля у построек и плитка от калитки
@@ -1767,7 +1770,7 @@ function plotSVG(X){
     const stone = (x,y,j) => { const p = XY(x,y), rx = 5.2 + (j%3)*.7; return ell(p[0], p[1]+.9, rx, rx*.5, mix(C.tile,'#000',62)) + ell(p[0], p[1], rx, rx*.5, j%2?C.tile:mix(C.tile,'#fff',88)); };
     [[7.3,9.4],[12.1,11.2],[16.6,11.6]].forEach(([tx,ty],j)=>{ const n = Math.round(Math.hypot(tx-10,ty-15.6)/1.25); for (let i=1;i<=n;i++) h += stone(10+(tx-10)*i/n, 15.6+(ty-15.6)*i/n, i+j); });
   } else { for (let j=0;j<3;j++){ const y = 29.3-j*1.15; h += poly([P(9.3,y-.85),P(10.7,y-.85),P(10.7,y),P(9.3,y)], mix(C.tile,gB,55)); } }
-  h += fence(0,0,20,0, mix(C.wood,'#000',88), C.woodD) + fence(0,0,0,30, mix(C.wood,'#000',74), mix(C.woodD,'#000',80));
+  h += fence(0,0,PW,0, mix(C.wood,'#000',88), C.woodD) + fence(0,0,0,30, mix(C.wood,'#000',74), mix(C.woodD,'#000',80));
 
   // --- мелочь: трава, камни, пни ---
   const tuft = (x,y,ht,j) => { const p = XY(x,y), c = W ? mix(C.weak,'#6b5a3a',60) : j%3===0 ? mix(gA,'#e9d98a',70) : j%3===1 ? mix(gB,'#16260f',70) : gA, s = ht*9.4; let d = '';
@@ -1825,6 +1828,14 @@ function plotSVG(X){
       const fr2 = T.fruits.slice(0,10); fr2.forEach((f,i)=>{ const an = i*2.39996 + a0 + 1, rad = Math.sqrt((i+.5)/fr2.length), x = bx + Math.cos(an)*rad*Rc*.78, y = cyc + Rc*.08 + Math.sin(an)*rad*Rc*.56, r = f.p>=1 ? 2.3 : 1.6;
         cr += circ(x+.5,y+.7,r,'#000','opacity=".25"') + circ(x,y,r,`var(--${f.ax==='gold'?'gold':f.ax})`) + circ(x-r*.3,y-r*.3,r*.32,'#fff','opacity=".6"'); }); }
     put(TREE[0]+TREE[1], `<g data-act="gotree" style="cursor:pointer"><rect x="${n1(bx-Math.max(14,Rc)-4)}" y="${n1(by-Ht-Rc*1.1-4)}" width="${n1(Math.max(14,Rc)*2+8)}" height="${n1(Ht+Rc*1.1+10)}" fill="transparent"/>${t}<g class="psway" style="transform-origin:${n1(bx)}px ${n1(by)}px">${cr}</g></g>`); }
+
+  // --- соседний участок: кусты по краю, трава, гостевой дом ---
+  if (B.land){ const R2 = rng(hstr('land' + (S.settings.start || '')));
+    [[21.5,1.3],[24.6,1.2],[27.8,1.3],[29.2,4],[29.1,13.5],[29.2,17.8],[29.1,22.6],[29.2,27.2],[21.4,28.9],[25,28.8],[28.4,28.9]].forEach(([x,y],i)=>put(x+y, bush(x, y, .6 + R2()*.35, i+3)));
+    if (!W) for (let i=0;i<26;i++){ const x = 20.8+R2()*8.4, y = 13+R2()*15.5; put(x+y, tuft(x,y,.35+R2()*.25,i)); }
+    for (let y=29.4, j=0; y>11.4; y-=1.05, j++){ const a = j%2 ? .07 : -.07; h += poly([P(24.4+a,y-.9),P(25.9+a,y-.9),P(25.9+a,y),P(24.4+a,y)], j%3 ? C.tile : mix(C.tile,'#fff',88)); }
+    const An = PLOT.annex, Hs = isoHouse(K, K.frame(An.cx,An.cy,0), {hw:An.hw, hd:An.hd, st:annexSt(), look:B.look, open: annexSt().roof ? {spirit:1, mind:1, body:1} : {}});
+    put(An.cx+An.cy, `<g data-act="proom" data-r="annex" style="cursor:pointer">${Hs.g}</g>`); }
 
   // --- мечеть с минаретом и дом на три комнаты ---
   let smoke = '';
@@ -1886,10 +1897,10 @@ function plotSVG(X){
 
   h += K.flush() + smoke;
   // передний забор и калитка
-  h += fence(20,0,20,30, mix(C.wood,'#000',78), mix(C.woodD,'#000',80)) + fence(0,30,9,30, C.wood, C.woodD) + fence(11,30,20,30, C.wood, C.woodD);
+  h += fence(PW,0,PW,30, mix(C.wood,'#000',78), mix(C.woodD,'#000',80)) + fence(0,30,9,30, C.wood, C.woodD) + fence(11,30,20,30, C.wood, C.woodD) + (B.land ? fence(20,30,24.3,30, C.wood, C.woodD) + fence(26,30,PW,30, C.wood, C.woodD) : '');
   h += line([P(9,30),P(9,30,1.75)], C.woodD, 3, 'stroke-linecap="round"') + line([P(11,30),P(11,30,1.75)], C.woodD, 3, 'stroke-linecap="round"') + line([P(8.8,30,1.72),P(11.2,30,1.72)], C.wood, 2.4, 'stroke-linecap="round"') + fence(9,29.75,9,28.35, mix(C.wood,'#fff',90), C.woodD);
-  if (W){ const SR = rng(hstr('snow')); for (let i=0;i<46;i++) h += circ(SR()*440, SR()*300, .8+SR()*.9, '#fff', `opacity="${n1(.35+SR()*.4)}"`); }
-  h += `<rect width="440" height="314" fill="url(#plt)" pointer-events="none"/></svg>`;
+  if (W){ const SR = rng(hstr('snow')); for (let i=0;i<46;i++) h += circ(SR()*VW, SR()*(VH-14), .8+SR()*.9, '#fff', `opacity="${n1(.35+SR()*.4)}"`); }
+  h += `<rect width="${VW}" height="${VH}" fill="url(#plt)" pointer-events="none"/></svg>`;
   return h; }
 // примерка вида дома: готовый дом, лето, все комнаты открыты
 function housePrev(L){
@@ -1940,6 +1951,15 @@ function houseCard(X){
   h += `<button class="btn wide ${can?'pri':''}" data-act="pbuild" data-r="house" data-s="${s}" ${can?'':'disabled'}>${sg.n}: ${I.cost?`построить за ${nf(I.cost)}${CO}`:'построить из запасов'}</button>`;
   const why = I.tools.length ? 'Сначала купи инструмент — кнопка выше.' : !can ? `Не хватает ${nf(I.cost - Math.max(0,X.C.bal))} монет.` : '';
   return h + (why ? `<div class="tiny muted" style="margin-top:5px">${why}</div>` : '') + `</div>`; }
+function landCard(X){
+  const B = S.build, A = annexSt(), s = STG.find(x=>!A[x]), bal = X.C.bal, btn = (act, extra, cost, txt) => `<button class="btn ${cost <= bal ? 'pri' : ''} wide" data-act="${act}" ${extra} ${cost <= bal ? '' : 'disabled'}>${txt} · ${nf(cost)}${CO}</button>${cost <= bal ? '' : `<div class="tiny muted" style="margin-top:6px">Не хватает ${nf(cost - Math.max(0,bal))} монет.</div>`}`;
+  let h = `<div class="card proom ${plotSel==='annex'?'sel':''}" id="room-annex" style="--a:var(--gold)"><div class="rhead">${ico('brick')}<b>Участок побольше</b><span class="rst">${!B.land ? 'не куплен' : !s ? 'готово' : STG.filter(x=>A[x]).length + ' из 3'}</span></div>`;
+  if (!B.land){
+    if (!B.house.roof) return h + `<div class="small muted">Соседний участок можно будет купить, когда у дома появится крыша. На нём встанет гостевой дом с гостиной.</div></div>`;
+    return h + `<div class="small muted" style="margin-bottom:10px">Соседний участок справа: двор станет в полтора раза шире, на нём можно построить гостевой дом — в «Доме» появится пятая комната, гостиная.</div>` + btn('pland', '', ECON.land, 'Купить соседний участок') + `</div>`; }
+  h += `<div class="small" style="margin-bottom:6px"><b>Гостевой дом</b></div>${stageSteps(A, s)}`;
+  if (!s) return h + `<div class="small muted">Построен. Гостиная открыта — <a href="#home" data-act="hroom" data-r="guest">зайти в «Дом»</a>.</div></div>`;
+  return h + btn('pannex', `data-s="${s}"`, ECON.annex[s], s==='found'?'Заложить фундамент':s==='walls'?'Поднять стены':'Накрыть крышей') + `</div>`; }
 function roomsCard(X){
   const B = S.build, E = ECON.room;
   return `<div class="card" id="roomsCard"><div class="rhead"><b style="font-size:17px">Комнаты</b><span class="rst">открыто ${ROOMS.filter(r=>B.open[r.id]).length} из 3</span></div>` + ROOMS.map(r=>{
@@ -1985,7 +2005,7 @@ function vPlot(){
       <div class="needs">${ECON.clear.tools.map(t=>B.tools[t] ? `<span class="need have">${ico(t)}<span>${ECON.tool[t].n}</span><b>✓</b></span>` : toolBtn(t)).join('')}</div>
       <button class="btn wide ${can?'pri':''}" data-act="pclear" ${can?'':'disabled'}>Расчистить за ${nf(ECON.clear.work)}${CO}</button>
       ${can ? '' : `<div class="tiny muted" style="margin-top:5px">${miss.length ? 'Нужны лопата и тачка.' : `Не хватает ${nf(ECON.clear.work - Math.max(0,C.bal))} монет.`}</div>`}</div>`; }
-  h += (plotSel==='mosque' ? mosqueCard(X) + houseCard(X) : houseCard(X) + mosqueCard(X)) + roomsCard(X) + lookCard(X) + yardCard(X);
+  h += (plotSel==='mosque' ? mosqueCard(X) + houseCard(X) : houseCard(X) + mosqueCard(X)) + roomsCard(X) + lookCard(X) + yardCard(X) + landCard(X);
   h += `<div class="card" id="shopCard"><div class="rhead"><b style="font-size:17px">Магазин</b><span class="rst" style="display:flex;gap:6px"><button class="chip btn ${shopTab==='mat'?'on':''}" data-act="pshop" data-t="mat">Материалы</button><button class="chip btn ${shopTab==='tool'?'on':''}" data-act="pshop" data-t="tool">Инструменты</button></span></div>`;
   if (shopTab==='mat') h += `<div class="shop">${Object.entries(ECON.mat).map(([m,o])=>`<div class="sitem">${ico(m)}<div class="sn"><b>${o.n}</b><span class="tiny muted">${f1(matP(m)).replace(/\.0$/,'')}${CO} за ${o.u}</span></div>
       <span class="sinv ${B.inv[m]?'has':''}">${B.inv[m]||0}</span><div class="sbtn"><button class="chip btn" data-act="pmat" data-m="${m}" data-q="1">+1</button><button class="chip btn" data-act="pmat" data-m="${m}" data-q="10">+10</button></div></div>`).join('')}</div>
@@ -2019,7 +2039,7 @@ const decoN = () => [0,0,4,12,26,52,52,52][cityLvl()];   // прежняя шк�
 const devN = () => Object.keys(ECON.town).reduce((a,id)=>a + (S.town.bld[id]||0), 0);   // застройка: сумма уровней зданий
 const MOSQUE_N = ['Молельный дом','Мечеть с минаретом','Мечеть с двумя минаретами','Мечеть с площадью','Соборная мечеть','Большая мечеть с четырьмя минаретами','Сердце города'];
 const NB_STEPS = 27, NB_WEEKS = 36;   // 9 соседей × 3 шага; всё соседство застроено за 36 хороших недель
-const TOWN = { W:84, H:57, pw:10, pd:10.5, own:7,
+const TOWN = { W:84, H:57, pw:10, pd:10.5, own:7, land:8,
   plots:[[2,31],[13.5,31],[25,31],[36.5,31],[48,31],[2,45.5],[13.5,45.5],[25,45.5],[36.5,45.5],[48,45.5]],
   at:{ mosque:[32,1.5,56,25.2], road:[-32,26,71.4,29], spring:[62,59,68,64.5], shop:[60,31,70,41.5],
        school:[18,4,30,24.5], bakery:[-12,31,-2,41.5], square:[-14,13,-1,24.5], stop:[43.5,29.4,49.5,30.9],
@@ -2135,7 +2155,7 @@ function townSVG(ph){
 
   // --- подложки участков и свой участок в миниатюре ---
   const nb = nbStages();
-  TOWN.plots.forEach(([x,y],i)=>{ const own = i===TOWN.own, st = own ? (B.clear ? 1 : 0) : nb[i > TOWN.own ? i-1 : i];
+  TOWN.plots.forEach(([x,y],i)=>{ const own = i===TOWN.own || (i===TOWN.land && !!B.land), st = own ? (B.clear ? 1 : 0) : nb[i > TOWN.own ? i-1 : i];
     h += lot([x,y,x+TOWN.pw,y+TOWN.pd], st ? lawn : wildC, `stroke="${own ? C.gold : edge}" stroke-width="${own?1.6:.9}" stroke-linejoin="round"`); });
   { const [px,py] = TOWN.plots[TOWN.own], o = XY(px,py), K2 = mkIso({A:1.5, Bv:.87, Zs:1.725, OX:o[0], OY:o[1], dark, sn, win:C.win, tk:1.15}), dep = (mx,my) => px+py+(mx+my)/2;
     if (!B.clear) wild([px,py,px+TOWN.pw,py+TOWN.pd], 9, 0);
@@ -2145,11 +2165,14 @@ function townSVG(ph){
       if (B.yard.fruit) [[17.5,13],[17.5,17.5]].forEach(([mx,my],i)=>put(dep(mx,my), K2.treeS(mx,my,2.4,i,1)));
       if (B.yard.gazebo){ const F = K2.frame(14,17,0), rb = dk(lookOf('roofc',B.look.roofc).c); put(dep(14,17), F.shadow(1.6,1.6,2.4) + F.box(-1.5,1.5,-1.5,1.5,0,.2,mix(C.wood,'#fff',80),C.wood,C.woodD) + line([F.G(-1.4,1.4,0),F.G(-1.4,1.4,2.3)], C.wood, .7) + line([F.G(1.4,1.4,0),F.G(1.4,1.4,2.3)], C.wood, .7) + poly([F.G(-1.9,1.9,2.25),F.G(1.9,1.9,2.25),F.G(0,0,3.5)], rb) + poly([F.G(1.9,1.9,2.25),F.G(1.9,-1.9,2.25),F.G(0,0,3.5)], mix(rb,'#120c0a',62))); } }
     const Td = treeData(); put(dep(4.5,16), K2.treeS(4.5,16, 2.2 + 5*ez(Td.F), 0, Td.fruits.length > 0));
+    if (B.land){ const [lx,ly] = TOWN.plots[TOWN.land], lo = XY(lx,ly), K3 = mkIso({A:1.5, Bv:.87, Zs:1.725, OX:lo[0], OY:lo[1], dark, sn, win:C.win, tk:1.15}), dl = (mx,my) => lx+ly+(mx+my)/2;
+      if (annexSt().found){ const Ha = isoHouse(K3, K3.frame(5,6.2,0), {hw:3.3, hd:2.3, st:annexSt(), look:B.look, open: annexSt().roof ? {spirit:1, mind:1, body:1} : {}, lod:1, cid:'ta'}); put(dl(5,6.2), Ha.g); }
+      put(dl(8.4,15), K3.treeS(8.4,15,2,3,1)); put(dl(1.6,15.5), K3.bush(1.6,15.5,.45,2)); }
     const pin = XY(px+TOWN.pw/2, py+TOWN.pd-1.2, 0);
     put(999, `<g><path d="M${n1(pin[0])} ${n1(pin[1]+7)}l-4.5 -7a5.2 5.2 0 1 1 9 0z" fill="${C.gold}" stroke="${C.ink}" stroke-width=".6"/><circle cx="${n1(pin[0])}" cy="${n1(pin[1]-3)}" r="1.8" fill="${C.ink}"/><text x="${n1(pin[0])}" y="${n1(pin[1]+15)}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="6.5" font-weight="700" fill="${dark ? '#f3ead6' : '#3a2d22'}" stroke="${dark ? '#15130f' : '#fff8ea'}" stroke-width="2" paint-order="stroke">мой участок</text></g>`); }
   // --- соседи: пустырь → фундамент → стены → дом с садом ---
   const WCOL = Object.values(LOOK.wall.o).map(o=>o.c), RCOL = Object.values(LOOK.roofc.o).map(o=>o.c);
-  TOWN.plots.forEach(([x,y],i)=>{ if (i===TOWN.own) return; const j = i > TOWN.own ? i-1 : i, st = nb[j], a = [x,y,x+TOWN.pw,y+TOWN.pd], cx = x+5.2+(j%3-1)*.6, cy = y+3.4, hw = 2.7+(j%2)*.4, hd = 1.6;
+  TOWN.plots.forEach(([x,y],i)=>{ if (i===TOWN.own || (i===TOWN.land && B.land)) return; const j = i > TOWN.own ? i-1 : i, st = nb[j], a = [x,y,x+TOWN.pw,y+TOWN.pd], cx = x+5.2+(j%3-1)*.6, cy = y+3.4, hw = 2.7+(j%2)*.4, hd = 1.6;
     if (!st) return wild(a, 7, j);
     if (st < 3) put(cx+cy, site(cx,cy,hw,hd, st===1 ? .2 : .9));
     else { put(cx+cy, simple(cx,cy,hw,hd,1.55,WCOL[(j*3+1)%8],RCOL[(j*5+2)%6],j%3===1?'hip':'gable',{win:3,winR:1,door:0}));
@@ -2426,7 +2449,7 @@ const TownMap = (()=>{
   const unit = (px,py,v) => { const [w,h] = size(); v = v || shown(); return [v.x + (px - w/2)/v.z, v.y + (py - h/2)/v.z]; };   // точка экрана → единицы рисунка
   function zoomAt(px, py, f, ms){ const v = shown(), u = unit(px,py,v), z = clampZ(v.z*f), [w,h] = size(); to({x:u[0] - (px - w/2)/z, y:u[1] - (py - h/2)/z, z}, ms); }
   // что под пальцем: ближние объекты проверяются первыми, с учётом их высоты
-  const targets = () => [...Object.entries(TOWN.at).map(([id,a])=>[id,a,TOWN.zh[id] ?? 4]), ...TOWN.plots.map(([x,y],i)=>[i===TOWN.own ? 'plot' : 'nb', [x,y,x+TOWN.pw,y+TOWN.pd], 3])].sort((a,b)=>(a[0]==='road') - (b[0]==='road') || (b[1][2]+b[1][3])-(a[1][2]+a[1][3]));
+  const targets = () => [...Object.entries(TOWN.at).map(([id,a])=>[id,a,TOWN.zh[id] ?? 4]), ...TOWN.plots.map(([x,y],i)=>[i===TOWN.own || (i===TOWN.land && S.build.land) ? 'plot' : 'nb', [x,y,x+TOWN.pw,y+TOWN.pd], 3])].sort((a,b)=>(a[0]==='road') - (b[0]==='road') || (b[1][2]+b[1][3])-(a[1][2]+a[1][3]));
   function selRect(id){ return !id ? null : id === 'plot' ? targets().find(t=>t[0]==='plot')[1] : TOWN.at[id] || null; }
   function hit(px, py){ const u = unit(px,py); for (const [id,a,zh] of targets()) for (let z=0; z<=zh; z+=.5){ const p = (u[0]-TV.OX)/TV.A, q = (u[1] + z*TV.Zs - TV.OY)/TV.Bv, x = (p+q)/2, y = (q-p)/2; if (x >= a[0]-.4 && x <= a[2]+.4 && y >= a[1]-.4 && y <= a[3]+.4) return id; } return ''; }
   function center(id){ const a = selRect(id) || TOWN.at.mosque, x = (a[0]+a[2])/2, y = (a[1]+a[3])/2; return [TV.OX + (x-y)*TV.A, TV.OY + (x+y)*TV.Bv - (id==='mosque' ? 14 : 4)]; }
@@ -2544,7 +2567,7 @@ const Life = (()=>{
 // В каждой — места под вещи (HOME.slots): стены, пол, ковёр, свет, мелочи. Часть бесплатно, часть за монеты (p), часть за достижения (need).
 // Вещи в комнате — ещё и быстрые кнопки приложения (действие hgo). Купленное общее для всех комнат и хранится в S.home.own.
 const HOME = {
-  rooms:[{id:'faith', n:'Молельная', ax:'faith'}, {id:'mind', n:'Читальня', ax:'mind'}, {id:'spirit', n:'Кузница', ax:'spirit'}, {id:'body', n:'Спортзал', ax:'body'}],
+  rooms:[{id:'faith', n:'Молельная', ax:'faith'}, {id:'mind', n:'Читальня', ax:'mind'}, {id:'spirit', n:'Кузница', ax:'spirit'}, {id:'body', n:'Спортзал', ax:'body'}, {id:'guest', n:'Гостиная', ax:'gold'}],
   slots:{
     wall:{n:'Стены', o:{w0:{n:'Тёплый белый', c:'#efe6d2'}, w1:{n:'Песочный', c:'#e2cfa6'}, w2:{n:'Оливковый', c:'#b9bf9a'}, w3:{n:'Серо-голубой', c:'#b8c6cf', p:60}, w4:{n:'Терракота', c:'#d39a7c', p:60}, w5:{n:'Графит', c:'#77736f', p:80}}},
     floor:{n:'Пол', o:{f0:{n:'Светлые доски', c:'#c9a273'}, f1:{n:'Тёмные доски', c:'#8a6240'}, f2:{n:'Каменная плитка', c:'#a9a59c', p:80}, f3:{n:'Татами', c:'#b9b27c', p:100}}},
@@ -2553,13 +2576,13 @@ const HOME = {
     decor:{n:'Мелочи', o:{d0:{n:'Ничего'}, d1:{n:'Растение'}, d2:{n:'Часы', p:40}, d3:{n:'Особая вещь'}}} },
   // у молельной свои коврики, а «особая вещь» и люстра в каждой комнате — за своё достижение
   faithRug:{p0:{n:'Зелёный коврик', c:'#3f7358'}, p1:{n:'Бордовый коврик', c:'#8a3a42'}, p2:{n:'Синий с узором', c:'#3d5f8a', p:60}, p3:{n:'Ковры во всю молельную', c:'#8a3a42', need:['lvl',5,'город 5-го уровня']}},
-  special:{ faith:{n:'Резная панель', need:['lvl',4,'уровень города 4']}, mind:{n:'Глобус', need:['books',5,'5 прочитанных книг']}, spirit:{n:'Щит на стене', need:['fears',10,'10 пройденных страхов']}, body:{n:'Медали', need:['train',50,'50 дней с тренировкой']} },
+  special:{ faith:{n:'Резная панель', need:['lvl',4,'уровень города 4']}, mind:{n:'Глобус', need:['books',5,'5 прочитанных книг']}, spirit:{n:'Щит на стене', need:['fears',10,'10 пройденных страхов']}, body:{n:'Медали', need:['train',50,'50 дней с тренировкой']}, guest:{n:'Самовар', need:['own',50,'50 своих дел сделано']} },
   def:{wall:'w0', floor:'f0', rug:'r1', light:'l0', decor:'d1'} };
 let homeSlot = '', homeTry = null;
-const homeOpen = id => id === 'faith' ? !!S.build.mosque.roof : !!S.build.open[id];
+const homeOpen = id => id === 'faith' ? !!S.build.mosque.roof : id === 'guest' ? !!annexSt().roof : !!S.build.open[id];
 const homeOpts = (room, slot) => slot === 'rug' && room === 'faith' ? HOME.faithRug : slot === 'decor' ? {...HOME.slots.decor.o, d3:{...HOME.special[room]}} : HOME.slots[slot].o;
 const homePick = (room, slot) => { const o = homeOpts(room, slot), v = S.home.pick[room] && S.home.pick[room][slot]; return o[v] ? v : slot === 'rug' && room === 'faith' ? 'p0' : room === 'spirit' && slot === 'floor' ? 'f2' : HOME.def[slot]; };
-function homeStat(k){ return k === 'ruz' ? (S.town.ruz || 0) : k === 'lvl' ? cityLvl() : k === 'books' ? S.books.filter(b=>b.s === 2).length : k === 'fears' ? S.fears.filter(f=>f.done).length : k === 'train' ? Object.values(S.days).filter(d=>d.c && d.c.train).length : 0; }
+function homeStat(k){ return k === 'ruz' ? (S.town.ruz || 0) : k === 'lvl' ? cityLvl() : k === 'books' ? S.books.filter(b=>b.s === 2).length : k === 'fears' ? S.fears.filter(f=>f.done).length : k === 'train' ? Object.values(S.days).filter(d=>d.c && d.c.train).length : k === 'own' ? Object.values(S.days).reduce((a,d)=>a + (d.own||[]).filter(o=>o.d).length, 0) : 0; }
 // можно ли поставить вариант: бесплатный, купленный или открытый достижением
 function homeCan(room, slot, v){ const o = homeOpts(room, slot)[v]; if (!o) return {no:1}; if (o.need) return homeStat(o.need[0]) >= o.need[1] ? {ok:1} : {lock:`Откроется за достижение: ${o.need[2]} (сейчас ${homeStat(o.need[0])})`};
   if (o.p && !S.home.own[slot + ':' + v]) return {buy:o.p}; return {ok:1}; }
@@ -2648,6 +2671,18 @@ function homeSVG(room){
       hot(WR(1.8,1.2,5,2.75), 'chal', 'Стена вызовов года'); h += dot(1.95,0,2.25); }
     decor(5.3,1.6, 3.9, () => { const p = XY(0,3.9,2); h += `<path d="M${n1(p[0]-13)} ${n1(p[1]-13)}l13 -7l13 7v18q-2 14 -15 20q-12 -8 -11 -20z" fill="var(--spirit)" stroke="#5c6168" stroke-width="2"/><path d="M${n1(p[0])} ${n1(p[1]-14)}v36M${n1(p[0]-11)} ${n1(p[1]-1)}h23" stroke="#fff8ea" stroke-width="2"/>`; });
     lamp = lampAt(3.4,2.4);
+  } else if (room === 'guest'){
+    h += win(3.9, 5.4) + rugAt(1.7,1.4,4.6,3.9);
+    { const c = '#5a6f8a', cl = mix(c,'#fff',78);   // диван у левой стены
+      put(.7+2.6, box(.15,1.1,1.25,4.1,0,.42,c) + box(.15,1.1,.5,4.1,.42,1.3,sh(c,88)) + box(.15,1.1,1.25,1.4,.42,.85,c) + box(.15,3.8,1.25,4.1,.42,.85,c) + box(.5,1.45,1.2,2.6,.42,.6,cl) + box(.5,2.65,1.2,3.75,.42,.6,cl) + box(.55,1.6,.75,2.2,.6,1.05,'#e0b257') + box(.55,3.1,.75,3.6,.6,1,'#a4553a'));
+      hot(hbox(.15,1.1,1.25,4.1,1.3), 'own', 'Диван — мои дела на сегодня'); D2.push([.7+2.6+.01, 9e9, dot(.85,2.6,.7)]); }
+    { const c = '#8a6240'; let t = box(2.2,2,3.7,3.1,.4,.48,c) + [[2.3,2.1],[3.6,2.1],[2.3,3],[3.6,3]].map(([x,y])=>line([P(x,y,0),P(x,y,.4)], sh(c,70), 2.4)).join('');   // чайный стол
+      t += K.cyl(2.7,2.45,.48,.7,.18,'#e0b257') + K.cyl(3.2,2.75,.48,.58,.09,'#fff8ea') + K.cyl(3.35,2.3,.48,.58,.09,'#fff8ea') + ell(...XY(2.95,2.8,.49), 7, 3.2, '#c9853a', 'opacity=".8"');
+      put(2.95+2.55, t); hot(hbox(2.2,2,3.7,3.1,.75), 'shop', 'Чайный стол — лавка мелочей'); D2.push([2.95+2.55+.01, 9e9, dot(2.95,2.55,.85)]); }
+    { const c = '#7a5238'; put(2.4+.25, box(1.5,0,3.3,.45,0,.95,c) + poly(FR(1.6,.1,3.2,.85,.45), sh(c,60)) + K.cyl(2,.22,.95,1.35,.13,'#3d5f8a') + K.cyl(2.85,.22,.95,1.15,.1,'#b5683e')); }   // комод с вазами
+    [[1.7,1.55,2.35,2.25,'#5d9ac0'],[2.55,1.7,3.05,2.2,'#c9853a'],[3.25,1.5,3.75,2.3,'#4f8a5a']].forEach(([x0,z0,x1,z1,cc])=>{ h += poly(WR(x0,z0,x1,z1), '#fff8ea', 'stroke="#6b4a2c" stroke-width="2" stroke-linejoin="round"') + poly(WR(x0+.08,z0+.1,x1-.08,z1-.1), cc, 'opacity=".75"'); });   // фотографии на стене
+    decor(5.3,4.3, 4.2, () => { put(5.2+4.3, K.cyl(5.2,4.3,0,.55,.3,'#8a6240') + K.cyl(5.2,4.3,.55,1.05,.26,'#c9853a') + K.cyl(5.2,4.3,1.05,1.25,.12,'#e0b257') + ell(...XY(5.2,4.3,1.27), 5, 2.4, '#3a2d22')); });   // самовар
+    lamp = lampAt(3,2.6);
   } else {
     h += win(4.2, 5.5) + rugAt(1.8,2.3,3.4,4.3);
     { const st = '#8d949c'; let s = [[.3,1],[.3,3.2],[1.2,1],[1.2,3.2]].map(([x,y])=>line([P(x,y,0),P(x,y,1.75)], st, 3)).join('') + line([P(.3,1,1.7),P(.3,3.2,1.7)], st, 2) + line([P(1.2,1,1.25),P(1.2,3.2,1.25)], st, 2);   // стойка со штангой
@@ -2662,7 +2697,7 @@ function homeSVG(room){
     decor(5.4,.6, 4.2, () => { [0,1,2].forEach(i=>{ const p = XY(0,3.9+i*.3,2.4); h += `<path d="M${n1(p[0]-3)} ${n1(p[1]-10)}l3 9l3 -9" stroke="${['var(--body)','var(--mind)','var(--faith)'][i]}" stroke-width="2.4" fill="none"/>` + circ(p[0], p[1]+3, 4.4, ['#e0b257','#c9cdd3','#c9853a'][i], 'stroke="#6b4a2c" stroke-width=".8"'); }); });
     lamp = lampAt(3.2,2.6);
   }
-  { const RP = {rplant:{faith:[5.4,.9], mind:[2.2,4.5], spirit:[1.7,4.4], body:[2.4,.55]}, rcandle:{faith:[.5,4.4], mind:[5.5,4.5], spirit:[3.9,4.5], body:[.5,4.5]}};   // подарки и мелочи в комнате
+  { const RP = {rplant:{faith:[5.4,.9], mind:[2.2,4.5], spirit:[1.7,4.4], body:[2.4,.55], guest:[5.4,1.1]}, rcandle:{faith:[.5,4.4], mind:[5.5,4.5], spirit:[3.9,4.5], body:[.5,4.5], guest:[4.4,.6]}};   // подарки и мелочи в комнате
     S.gift.got.filter(g=>g.r === room).forEach(g=>{ if (g.t === 'rmat') h += poly(FL(2.5,4.3,3.7,4.9,.02), mix(acc,'#fff',45), `stroke="${acc}" stroke-width="1.2"`) + line([P(2.7,4.6,.02),P(3.5,4.6,.02)], acc, 1.4);
       else if (RP[g.t]){ const [x,y] = RP[g.t][room]; put(x+y, g.t === 'rplant' ? plant(x,y) : box(x-.16,y-.16,x+.16,y+.16,0,.5,'#3a332c') + poly(FR(x-.12,.12,x+.12,.44,y+.16), '#ffd58a') + ell(...XY(x,y,.3), 26, 14, 'url(#hglow)')); } }); }
   D2.sort((a,b)=>a[0]-b[0] || a[1]-b[1]); h += lamp[1] + D2.map(d=>d[2]).join('') + lamp[0];
@@ -2674,7 +2709,7 @@ function vHome(){
   const R = HOME.rooms.find(r=>r.id === room), open = homeOpen(room);
   let h = `<div class="top"><h1>Дом</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup">⚙️</a></div>`;
   h += `<div class="tabs">${HOME.rooms.map(r=>`<button class="${r.id===room?'on':''}" data-act="hroom" data-r="${r.id}">${homeOpen(r.id) ? '' : ic('lock')}${r.n}</button>`).join('')}</div>`;
-  if (!open) return h + `<div class="card lock"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">${R.n} ещё не построена</h2><div class="muted small" style="margin-bottom:12px">${room === 'faith' ? 'Молельная — это мечеть на твоём участке. Она строится за монеты на участке: фундамент, стены и купол.' : `Комната появится, когда у дома будет крыша, а силы «${AX[R.ax].n}» наберётся ${ECON.room.open} очков.`}</div><a class="btn pri" href="#plot">Перейти на участок</a></div>`;
+  if (!open) return h + `<div class="card lock"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">${R.n} ещё не построена</h2><div class="muted small" style="margin-bottom:12px">${room === 'faith' ? 'Молельная — это мечеть на твоём участке. Она строится за монеты на участке: фундамент, стены и купол.' : room === 'guest' ? 'Гостиная — в гостевом доме на соседнем участке. Купи участок и построй дом: «Участок» → «Участок побольше».' : `Комната появится, когда у дома будет крыша, а силы «${AX[R.ax].n}» наберётся ${ECON.room.open} очков.`}</div><a class="btn pri" href="#plot">Перейти на участок</a></div>`;
   h += `<div class="homegrid"><div><div class="card axis-${R.ax}" style="padding:8px"><div class="home">${homeSVG(room)}</div>
     <div class="tiny muted" style="margin:6px 6px 2px">Золотые точки — быстрые кнопки: нажми на вещь, и откроется нужный раздел. ${PHASE_N[curPhase()]} за окном — как в городе.</div></div>`;
   // что поменять: слоты и варианты
@@ -2700,6 +2735,10 @@ function vHome(){
     h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px"><button class="btn ${done?'':'pri'}" data-act="hgo" data-t="fear">${ic('flame')}${done ? 'Шаг сегодня сделан ✓' : 'Сделал шаг вопреки страху'}</button>${q('chal','ladder','Лестница страхов')}</div></div>
       <div class="card"><div class="rhead"><b style="font-size:17px">Стена вызовов года</b><span class="rst">${S.bigCh.filter(b=>b.done).length} из ${S.bigCh.length}</span></div>${S.bigCh.map((b,i)=>`<div class="row" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span class="grow">${esc(b.t)}${b.done && b.date ? ` <span class="muted tiny">· ${fmtD(parse(b.date))}</span>` : ''}</span><button class="chip btn ${b.done?'on':''}" data-act="bigch" data-i="${i}">${b.done ? 'откован ✓' : 'впереди'}</button></div>`).join('')}
       <div class="tiny muted" style="margin-top:8px">Подковы на стене — пройденные страхи: ${fd}.</div></div>`; }
+  else if (room === 'guest'){ const n = homeStat('own');
+    h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px">${q('own','list','Мои дела')}${q('shop','plus','Лавка мелочей')}</div></div>
+      <div class="card"><div class="rhead"><b style="font-size:17px">Гостиная</b></div><div class="plist" style="margin-top:6px"><div class="g"><span>Своих дел сделано за всё время</span><b>${n}</b></div></div>
+      <div class="tiny muted" style="margin-top:8px">${n >= 50 ? 'Самовар открыт — выбери его в «Мелочах».' : `Самовар откроется за 50 сделанных своих дел (сейчас ${n}).`}</div></div>`; }
   else { const N = nowVals();
     h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px">${q('str','dumb','Силовая')}${q('cardio','heart','Кардио')}${q('run','run','Пробежка')}</div></div>
       <div class="card"><div class="rhead"><b style="font-size:17px">Доска рекордов</b><span class="rst"><button class="chip btn" data-act="hgo" data-t="meas">замеры</button></span></div><div class="plist" style="margin-top:6px">${GOALS.map(([k,t,g])=>`<div class="g"><span>${t}</span><b>${N[k] == null ? '—' : N[k]}</b></div>`).join('')}</div></div>`; }
@@ -2781,6 +2820,8 @@ document.addEventListener('click', async e => {
     case 'hgo': { const t = el.dataset.t, go = (h2, f) => { if (f) f(); location.hash = h2; }, tm = id => { if (tPreset(id) && !S.timers.run[id]){ tToggle(id); toast('Таймер пошёл'); } toolTab = 'timer'; location.hash = '#tools'; };
       if (t === 'tasbih' || t === 'qibla') return go('#tools', () => { toolTab = t; });
       if (t === 'suras') return go('#path', () => { pathTab = 'suras'; }); if (t === 'chal') return go('#path', () => { pathTab = 'fears'; }); if (t === 'meas') return go('#path', () => { pathTab = 'measures'; });
+      if (t === 'own') return go('#today', () => { viewDate = today(); setTimeout(()=>{ const c = $('#ownCard'); if (c) c.scrollIntoView({block:'center', behavior:'smooth'}); }, 120); });
+      if (t === 'shop') return go('#town', () => { setTimeout(()=>{ const c = $('#trinkCard'); if (c) c.scrollIntoView({block:'start', behavior:'smooth'}); }, 160); });
       if (t === 'diary') return go('#diary'); if (t === 'read' || t === 'str' || t === 'cardio' || t === 'run') return tm(t);
       if (t === 'books'){ const c = $('#hbooks'); if (c) c.scrollIntoView({block:'start', behavior:'smooth'}); return; }
       if (t === 'fear'){ const d = ensureDay(key(today())); if (d.c.fear === 1) return toast('Шаг сегодня уже отмечен'); d.c.fear = 1; save(); toast('Шаг вопреки страху отмечен'); break; }
@@ -2804,6 +2845,9 @@ document.addEventListener('click', async e => {
     case 'pmat': { const m = el.dataset.m, q = +el.dataset.q, o = ECON.mat[m]; if (!o || !q) return; if (!buy(Math.round(q*matP(m)), `${o.n}: ${q} ${o.u}`)) return; S.build.inv[m] = (S.build.inv[m]||0) + q; save(); toast(`${o.n} +${q} на складе`); break; }
     case 'pclear': { const B = S.build; if (B.clear || ECON.clear.tools.some(t=>!B.tools[t])) return; if (!buy(ECON.clear.work, 'Расчистка участка')) return; B.clear = key(today()); save(); toast('Участок расчищен — можно размечать дом'); break; }
     case 'pbuild': doBuild(el.dataset.r, el.dataset.s); break;
+    case 'pland': { const B = S.build; if (B.land || !B.house.roof) return; if (!buy(ECON.land, 'Соседний участок')) return; B.land = key(today()); B.annex = B.annex || {}; plotSel = 'annex'; save(); toast('Соседний участок — твой ✓'); break; }
+    case 'pannex': { const B = S.build, A = B.annex || (B.annex = {}), st = el.dataset.s, i = STG.indexOf(st); if (!B.land || A[st] || i < 0 || (i > 0 && !A[STG[i-1]])) return;
+      if (!buy(ECON.annex[st], `Гостевой дом: ${ECON.stage[st].n.toLowerCase()}`)) return; A[st] = key(today()); save(); toast(st === 'roof' ? 'Гостевой дом готов — гостиная открыта ✓' : `${ECON.stage[st].n} гостевого дома — готово ✓`); break; }
     case 'ropen': { const r = ROOMS.find(x=>x.id===el.dataset.r), B = S.build; if (!r || B.open[r.id] || !B.house.roof || power()[r.id] < ECON.room.open) return; B.open[r.id] = key(today()); plotSel = r.id; save(); toast(`${r.n} открыта ✓`); break; }
     case 'rfurn': { const r = ROOMS.find(x=>x.id===el.dataset.r), B = S.build; if (!r || !B.open[r.id] || B.furn[r.id] || power()[r.id] < ECON.room.furn) return; if (!buy(ECON.room.furnP, `Обстановка: ${r.n.toLowerCase()}`)) return; B.furn[r.id] = key(today()); save(); toast(`${r.n}: ${r.furn} ✓`); break; }
     case 'pyard': { const k2 = el.dataset.k, o = ECON.yard[k2], B = S.build; if (!o || B.yard[k2] || !B.clear || (o.roof && !B.house.roof)) return; if (!buy(o.p, `Двор: ${o.n.toLowerCase()}`)) return; B.yard[k2] = key(today()); save(); toast(`${o.n} — готово ✓`); break; }
