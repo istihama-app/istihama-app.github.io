@@ -139,6 +139,10 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .sched tr.p td{background:var(--faith-s)}
 .entry-list button{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:9px 4px}
 .entry-list button.on{font-weight:700}
+#ev{position:fixed;inset:0;z-index:46} .evbg{position:absolute;inset:0;background:rgba(0,0,0,.4)} body.evon{overflow:hidden}
+.evsheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + var(--sab, 0px));box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:evup .25s ease-out}
+@keyframes evup{from{transform:translateY(40px);opacity:0}} @media (prefers-reduced-motion:reduce){.evsheet{animation:none}}
+.evblk{background:var(--card);border-radius:var(--r,16px);padding:12px 14px;margin:10px 0} .evbig{display:flex;align-items:baseline;gap:10px} .evbig b{font-size:30px;line-height:1} .evbig.ok b{color:var(--good)} .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
 #toast{position:fixed;left:50%;bottom:calc(84px + var(--sab));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;transition:.25s;pointer-events:none}
@@ -626,7 +630,7 @@ function renderNav(){
   $('#bnav').innerHTML = NAV_B.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view || (v.id==='town' && (view==='plot' || view==='tree')) || (v.id==='more' && NAV_MORE.includes(view)) ?'on':''}"><span class="i">${v.i}</span>${v.n}</a>`).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); }
+function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); evSync(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
@@ -743,7 +747,7 @@ function vToday(){
   h += `<div class="card hero"><div class="rings">${ringsSVG(day)}<div class="legend">
     <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${ITEMS.filter(i=>itemVal(day,i.id) < 1).length} из ${ITEMS.length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
-    <div class="herofoot"><span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
+    <div class="herofoot"><span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${isT ? `<button class="chip btn ${day && day.ev ? 'on' : (curPhase() === 'evening' || curPhase() === 'night') ? 'gchip' : ''}" data-act="evopen">${day && day.ev ? '✓ Итог дня' : 'Итог дня'}</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
   h += `<details class="card dfold" ${day && day.focus ? 'open' : ''}><summary>${ic('target')}<b>Главный поступок дня</b><span class="muted tiny">необязательно</span></summary>${inp(`days|${k}|focus`,'Что сегодня самое важное? Одна строка')}</details>`;
   AXO.forEach(a=>{
     const its = ITEMS.filter(i=>i.ax===a);
@@ -766,9 +770,43 @@ function vToday(){
   if (mp) h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Фокус месяца · ${MN[viewDate.getMonth()]}</h2><div class="muted small" style="margin:-6px 0 8px">${st.n} — «${st.t}»</div>${AXO.map((a,i)=>`<div class="row" style="margin:6px 0;align-items:flex-start;flex-wrap:nowrap"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div><b>${AX[a].n}.</b> ${esc(mp[i])}</div></div>`).join('')}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg> Правило дня</h2><div>${RULES[(viewDate.getDate()+viewDate.getMonth())%RULES.length]}</div></div>`;
   if (isT) h += giftCard();
-  h += `<a class="btn pri" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
+  if (isT) h += `<button class="btn pri" style="display:block;width:100%;text-align:center;padding:13px;margin-bottom:10px" data-act="evopen">${day && day.ev ? '✓ Итог дня подведён — открыть' : 'Подвести итог дня'}</button>`;
+  h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
   return h;
 }
+
+/* ================== ВЕЧЕРНИЙ ИТОГ ================== */
+// Итог дня за полминуты: что сделано и держится ли серия, одна строка в дневник, что прибавилось в городе.
+// Строка до записи живёт только в памяти (evLine) и шифруется тем же паролем, что и дневник; в днях хранятся лишь флаги ev (итог подведён) и evl (строка записана).
+let evOpen = false, evLine = '', evPass = '';
+function evHTML(){
+  const t = today(), k = key(t), day = getDay(k), sc = dayScore(day), kept = dayKept(day), md = minDone(day), X = coins(), sk = streak(), m = minSet();
+  const left = ITEMS.filter(i => i.id !== 'namaz' && !itemVal(day,i.id)), np = Math.round(itemVal(day,'namaz')*5), need = m.filter(id => !minOk(day,id));
+  const st = sc >= .75 ? 'Хороший день' : sc >= .5 ? 'День засчитан' : md ? 'Минимум — день засчитан' : 'День пока не засчитан';
+  const buys = S.build.log.filter(l => l.d === k && +l.c > 0), done = ITEMS.filter(i=>itemVal(day,i.id) >= 1).length;
+  let h = `<div class="evbg" data-act="evclose"></div><div class="evsheet" role="dialog" aria-label="Итог дня">
+    <div class="row" style="flex-wrap:nowrap;align-items:center;gap:8px"><h2 class="grow" style="margin:0">Итог дня</h2><span class="muted small">${fmtD(t)}</span><button class="navbtn" data-act="evclose" aria-label="Закрыть">✕</button></div>`;
+  h += `<div class="evblk"><div class="evbig ${kept?'ok':''}"><b>${pct(sc)}%</b><span>${st}</span></div>
+    <div class="small" style="margin-top:6px">Сделано ${done} из ${ITEMS.length}. ${kept ? `Серия: <b>${sk}</b> дн.` : m.length && need.length ? `До минимума осталось: ${need.map(id=>MIN_S[id].toLowerCase()).join(', ')}.` : 'Засчитывается от 50% или с минимумом.'}</div>`;
+  if (left.length || np < 5) h += `<div class="muted tiny" style="margin:10px 0 6px">Что ещё успел? Нажми — отметится.</div><div class="chips">${np < 5 ? `<span class="chip">Намазы ${np}/5</span>` : ''}${left.map(i=>`<button class="chip btn" data-act="tog" data-id="${i.id}">${MIN_S[i.id]}${m.includes(i.id) ? ' · мин.' : ''}</button>`).join('')}</div>`;
+  h += `</div><div class="evblk"><b>Одна строка о дне</b><div class="muted tiny" style="margin:2px 0 8px">Главное за день: мысль, разговор, чему рад, что не вышло. Уйдёт в дневник под пароль.</div>`;
+  if (!cryptoOK() || !S.crypto) h += `<div class="small muted">Дневник ещё не создан. <a href="#diary" data-act="evclose">Создать в «Дневнике»</a> — тогда строка дня будет храниться там под паролем.</div>`;
+  else h += `${day && day.evl ? `<div class="small" style="margin-bottom:8px">✓ Строка дня уже в дневнике. Можно дописать ещё.</div>` : ''}<textarea class="in" rows="2" id="evline" maxlength="300" placeholder="Одной строкой…">${esc(evLine)}</textarea>${KEY ? '' : `<input class="in" type="password" id="evpass" placeholder="Пароль дневника" autocomplete="current-password" style="margin-top:8px" value="${esc(evPass)}">`}<button class="btn" style="margin-top:8px" data-act="evsave">${ic('lock')}Записать в дневник</button>`;
+  h += `<div style="margin-top:10px"><a class="small" href="#diary" data-act="diaryday" data-k="${k}">Мухасаба полностью — в дневнике →</a></div></div>`;
+  h += `<div class="evblk"><b>Город сегодня</b><div class="small" style="margin-top:4px">Заработано за день: <b>+${nf(X.today)}</b>${CO}${X.taxToday ? `, из них налог ${nf(X.taxToday)}` : ''}. В казне ${nf(X.bal)}${CO}.</div>
+    ${buys.length ? `<div class="small" style="margin-top:6px">Построено сегодня:</div><ul class="evbuys">${buys.map(l=>`<li>${esc(l.t)} <span class="muted">· ${nf(+l.c)}</span></li>`).join('')}</ul>` : `<div class="muted tiny" style="margin-top:4px">Сегодня ничего не строил — монеты копятся.</div>`}
+    <a class="btn" style="margin-top:8px;display:inline-flex;text-decoration:none" href="#town" data-act="evclose">${ic('town')}Посмотреть город</a></div>`;
+  return h + `<button class="btn pri" style="width:100%;padding:13px" data-act="evdone">${day && day.ev ? 'Закрыть' : 'Итог подведён'}</button></div>`; }
+function evSync(){ let w = document.getElementById('ev'); if (view !== 'today') evOpen = false;
+  if (!evOpen){ if (w) w.remove(); document.body.classList.remove('evon'); evPass = ''; return; }
+  if (!w){ w = document.createElement('div'); w.id = 'ev'; document.body.appendChild(w); }
+  const y = w.querySelector('.evsheet') ? w.querySelector('.evsheet').scrollTop : 0; w.innerHTML = evHTML(); const s2 = w.querySelector('.evsheet'); if (s2) s2.scrollTop = y; document.body.classList.add('evon'); }
+async function evSave(){ const ta = $('#evline'), line = (ta ? ta.value : evLine).trim(); if (!line) return toast('Напиши хотя бы пару слов'); let kk = KEY;
+  if (!kk){ const p = ($('#evpass') || {}).value || ''; if (!p) return toast('Нужен пароль дневника');
+    try { kk = await derive(p, S.crypto.salt, S.crypto.iter); if (await decObj(kk, S.crypto.check) !== 'ok') throw 0; } catch(err){ return toast('Неверный пароль'); } }
+  const dk = key(today()); let e = {}; try { if (S.diary[dk]) e = await decObj(kk, S.diary[dk]); } catch(err){ return toast('Не удалось открыть запись дня'); }
+  e.line = e.line ? e.line + '\n' + line : line; S.diary[dk] = await encObj(kk, e); ensureDay(dk).evl = 1; evLine = ''; evPass = ''; if (diaryCache && diaryCache.k === dk) diaryCache = null;
+  save(true); toast('Записано в дневник, зашифровано'); render(); }
 
 /* ================== НЕДЕЛЯ ================== */
 function vWeek(){
@@ -1005,6 +1043,7 @@ function vDiary(){
   if (!diaryCache || diaryCache.k !== diaryDate){ h += `<div class="card muted">Открываю запись…</div>`; afterFns.push(loadEntry); }
   else { const e = diaryCache.e;
     h += `<div class="card axis-spirit axcard"><h2>${fmtD(d)} ${d.getFullYear()}, ${DFULL[d.getDay()]}</h2>
+      ${e.line !== undefined ? `<h3>Итог дня одной строкой</h3><textarea class="in" rows="2" data-diary="line">${esc(e.line||'')}</textarea>` : ''}
       <h3>Мухасаба</h3>
       <div class="f" style="margin-top:10px">Где я сегодня отступил или промолчал из страха?</div><div class="chips copts">${MUHQ.q1.map(o=>`<button class="chip btn ${chipSet(e.q1).includes(o)?'on':''}" data-act="dctx" data-q="q1" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q1" placeholder="Своими словами — необязательно">${esc(e.q1||'')}</textarea>
       <div class="f" style="margin-top:10px">Что я сделал вопреки страху, пусть мелочь?</div><div class="chips copts">${MUHQ.q2.map(o=>`<button class="chip btn ${chipSet(e.q2).includes(o)?'on':''}" data-act="dctx" data-q="q2" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q2" placeholder="Своими словами — необязательно">${esc(e.q2||'')}</textarea>
@@ -1020,7 +1059,7 @@ async function loadEntry(){ const k = diaryDate; let e = {};
   diaryCache = {k, e, dirty:false}; if (view==='diary') render(); }
 let dTimer = null;
 async function saveEntry(silent){
-  if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !['q1','q2','q3','free'].some(x=>(e[x]||'').trim());
+  if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !['q1','q2','q3','free','line'].some(x=>(e[x]||'').trim());
   if (empty){ delete S.diary[diaryCache.k]; } else { S.diary[diaryCache.k] = await encObj(KEY, e);
     if ((e.q1||e.q2||e.q3||'').trim()) { const d = ensureDay(diaryCache.k); d.c.muhasaba = 1; } }
   save(true); diaryCache.dirty = false; if (view==='diary' && !document.querySelector(`[data-act=dopen][data-k="${diaryCache.k}"]`) !== !S.diary[diaryCache.k]) { render(); if (!silent) toast('Запись сохранена'); return; } const st = $('#dstatus'); if (st) st.textContent = 'Сохранено, зашифровано'; if (!silent) toast('Запись сохранена');
@@ -2880,6 +2919,10 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, k = key(viewDate);
   switch(a){
+    case 'evopen': viewDate = today(); evOpen = true; break;
+    case 'evclose': evOpen = false; if (el.tagName === 'A') return; break;
+    case 'evdone': { const d = ensureDay(key(today())), kept = dayKept(d); d.ev = 1; save(); evOpen = false; toast(kept ? 'Итог подведён. Доброй ночи' : 'Итог подведён. Завтра — новый день'); break; }
+    case 'evsave': await evSave(); return;
     case 'dprev': viewDate = addD(viewDate,-1); break;
     case 'dnext': viewDate = addD(viewDate,1); break;
     case 'dtoday': viewDate = today(); break;
@@ -3025,6 +3068,7 @@ async function flushDiary(){ if (diaryCache?.dirty) await saveEntry(true); }
 document.addEventListener('input', e => {
   lastAct = Date.now();
   const t = e.target;
+  if (t.id === 'evline') evLine = t.value; if (t.id === 'evpass') evPass = t.value;
   if (t.dataset.bind){ let v = t.value; if (t.dataset.type==='num') v = v===''? '' : +v; setPath(t.dataset.bind, v); save(); }
   if (t.dataset.diary && diaryCache){ diaryCache.e[t.dataset.diary] = t.value; diaryCache.dirty = true; const st = $('#dstatus'); if (st) st.textContent = 'Есть несохранённые изменения…'; clearTimeout(dTimer); dTimer = setTimeout(()=>saveEntry(true), 1500); }
 });
