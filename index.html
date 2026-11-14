@@ -571,9 +571,11 @@ const minOk = (day,id) => id === 'namaz' ? itemVal(day,id) >= 1 : itemVal(day,id
 function minDone(day){ const m = minSet(); return !!day && m.length > 0 && m.every(id => minOk(day,id)); }
 const mtag = id => minSet().includes(id) ? '<span class="mtag" title="Пункт минимального дня: сделаны все такие — день засчитан">минимум</span>' : '';
 const dayKept = day => dayScore(day) >= .5 || minDone(day);
+// правило «не пропускать дважды»: один пропуск между засчитанными днями серию не рвёт (но и не прибавляет), два подряд — обнуляют.
+// Сегодня, пока не засчитано, — не пропуск, а «день идёт».
 function streak(){
   let d = today(); if (!dayKept(getDay(key(d)))) d = addD(d,-1);
-  let n = 0; while (d >= startDate() && dayKept(getDay(key(d)))) { n++; d = addD(d,-1); }
+  let n = 0, gap = 0; while (d >= startDate()){ if (dayKept(getDay(key(d)))){ n++; gap = 0; } else if (++gap >= 2) break; d = addD(d,-1); }
   return n;
 }
 
@@ -730,7 +732,8 @@ function vToday(){
   const k = key(viewDate), day = getDay(k), t = today(), isT = k === key(t);
   const sc = dayScore(day), st = STAGES[stageIdx(viewDate)], mp = MONTHPLAN[k.slice(0,7)];
   const y = getDay(key(addD(t,-1)));
-  const warn = isT && addD(t,-1) >= startDate() && dayScore(y) < .3 && !minDone(y) ? `<div class="banner">Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума${minSet().length ? `: ${minSet().map(id=>MIN_S[id].toLowerCase()).join(', ')}` : ''}.</div>` : '';
+  const mins = minSet().length ? `: ${minSet().map(id=>MIN_S[id].toLowerCase()).join(', ')}` : '', sk = streak(), y2 = getDay(key(addD(t,-2)));
+  const warn = isT && addD(t,-1) >= startDate() && !dayKept(y) && !dayKept(day) ? `<div class="banner">${sk && addD(t,-2) >= startDate() && dayKept(y2) ? `Вчера пропуск, но серия ${sk} дн. ещё жива. Второй пропуск подряд её обнулит — сегодня хватит минимума${mins}.` : `Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума${mins}.`}</div>` : '';
   const name = S.settings.name ? `, ${esc(S.settings.name)}` : '';
   const before = viewDate < startDate() ? `<div class="banner">План стартует ${fmtD(startDate())}. Отмечать можно уже сейчас.</div>` : '';
   let h = topbar(isT ? `Ассаляму алейкум${name}` : 'День');
@@ -740,7 +743,7 @@ function vToday(){
   h += `<div class="card hero"><div class="rings">${ringsSVG(day)}<div class="legend">
     <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${ITEMS.filter(i=>itemVal(day,i.id) < 1).length} из ${ITEMS.length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
-    <div class="herofoot"><span class="chip">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
+    <div class="herofoot"><span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
   h += `<details class="card dfold" ${day && day.focus ? 'open' : ''}><summary>${ic('target')}<b>Главный поступок дня</b><span class="muted tiny">необязательно</span></summary>${inp(`days|${k}|focus`,'Что сегодня самое важное? Одна строка')}</details>`;
   AXO.forEach(a=>{
     const its = ITEMS.filter(i=>i.ax===a);
@@ -816,7 +819,7 @@ function collect(a,b){
     pr:days.reduce((x,d)=>x+(d?.p||[]).reduce((y,z)=>y+(z?1:0),0),0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
     pages:days.reduce((x,d)=>x+(+d?.n?.pages||0),0), quran:days.reduce((x,d)=>x+(+d?.n?.quran||0),0), fear:days.filter(d=>d?.c?.fear).length,
     sleep:(()=>{const v=days.map(d=>+d?.n?.sleep).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})()};
-  let best = 0, cur = 0; days.forEach(d=>{ if (dayKept(d)){cur++;best=Math.max(best,cur);} else cur=0; }); r.best = best;
+  let best = 0, cur = 0, gap = 0; days.forEach(d=>{ if (dayKept(d)){ cur++; gap = 0; best = Math.max(best,cur); } else if (++gap >= 2) cur = 0; }); r.best = best;   // то же правило «не пропускать дважды»
   return r;
 }
 function barChart(vals, labels, h=120){
@@ -1064,7 +1067,7 @@ function vSetup(){
     <div class="row" style="margin-top:12px;flex-wrap:nowrap"><span class="small" style="flex:1">Жизнь в городе<br><span class="tiny muted">Человечки, машины и автобус на карте. Выключи, если телефон греется или карта идёт рывками.</span></span><button class="chip btn ${S.settings.life!==false?'on':''}" data-act="life">${S.settings.life!==false?'вкл':'выкл'}</button></div><div></div></div>`;
   h += `<div class="card"><h2>${ic('flame')} Минимальный день</h2><div class="small">До трёх пунктов, которые держат день в плохие дни. Сделал все — день засчитан и серия не рвётся, даже если остальное не успел. Монет минимум сам по себе не даёт.</div>
     <div class="chips" style="margin-top:10px">${ITEMS.map(i=>`<button class="chip btn ${minSet().includes(i.id)?'on':''}" data-act="minpick" data-id="${i.id}">${MIN_T[i.id]}</button>`).join('')}</div>
-    <div class="tiny muted" style="margin-top:6px">Выбрано ${minSet().length} из 3. Намазы считаются, когда отмечены все пять; остальное — любая отметка, и «½» тоже. Ничего не выбрано — минимума нет, день засчитывается только от 50%.</div></div>`;
+    <div class="tiny muted" style="margin-top:6px">Выбрано ${minSet().length} из 3. Намазы считаются, когда отмечены все пять; остальное — любая отметка, и «½» тоже. Ничего не выбрано — минимума нет, день засчитывается только от 50%.</div><div class="tiny muted" style="margin-top:6px"><b>Серия не боится одного пропуска:</b> один пропущенный день между засчитанными прощается (в счёт не идёт, но и не обнуляет), два подряд — обнуляют.</div></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Копия и перенос на другой телефон</h2><div class="small">Все данные лежат только в этом браузере. Если очистить браузер или сменить телефон, данные пропадут. Раз в неделю сохраняй копию в файл: в Telegram «Избранное», на флешку или в облако. Дневник в копии остаётся зашифрованным.</div>
     <div class="row" style="margin-top:12px"><button class="btn pri" data-act="export"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Скачать копию</button><button class="btn" data-act="copyexp"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Скопировать копию</button><button class="btn" data-act="import"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Загрузить из файла</button></div>
     <div class="muted tiny" style="margin-top:8px">Перенос на другой телефон: здесь нажми «Скачать копию» и отправь файл себе (например, в Telegram «Избранное»), на новом телефоне открой приложение и нажми «Загрузить из файла». Загрузка заменяет все данные на этом устройстве.</div>
