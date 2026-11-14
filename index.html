@@ -280,6 +280,7 @@ body.tfull #tsel{position:fixed;left:8px;right:64px;bottom:calc(8px + var(--sab)
 .hero .legend .hl small{font-size:12.5px;font-weight:500;color:var(--muted);display:block;margin-top:1px} .herofoot{margin-top:12px;padding-top:10px}
 .flycoin{position:fixed;z-index:80;width:18px;height:18px;margin:0;pointer-events:none}
 .giftcard{background:linear-gradient(150deg,color-mix(in srgb,var(--gold) 16%,var(--card)),var(--card) 60%);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.owni .item{flex:1;min-width:0} .owndel{flex:none;width:36px;height:36px;font-size:20px;line-height:1}
 .gchip{border-color:var(--gold);color:var(--ink)} .gchip .ic{color:var(--gold)}
 .herofoot{gap:6px} .herofoot .chip{padding:4px 10px;font-size:12.5px;min-height:30px}
 .gtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} .gtile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px;text-align:left;min-height:92px;transition:transform .12s}
@@ -614,6 +615,54 @@ function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon
 function render(){ if (view !== 'town' && townFull) townFullSet(false); renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup}[view]; $('#main').innerHTML = f(); after(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
+/* ================== ПОГОДА ================== */
+// Погода в городе. settings.weather: 'auto' — сама по дате и времени года (меняется каждые 4 часа), 'off' — всегда ясно, или вручную.
+// Всё от сида (дата + отрезок дня), без Math.random. Капли и снежинки — функция времени, рисуются поверх карты (Wx.draw).
+const Wx = (() => {
+  const N = {clear:'ясно', clouds:'облачно', rain:'дождь', snow:'снег', fog:'туман'};
+  const P = {summer:[['clear',.55],['clouds',.25],['rain',.15],['fog',.05]], spring:[['clear',.35],['clouds',.3],['rain',.25],['fog',.1]],
+             autumn:[['clear',.3],['clouds',.3],['rain',.27],['fog',.13]], winter:[['clear',.3],['clouds',.28],['snow',.32],['fog',.1]]};
+  const fr = x => x - Math.floor(x), hh = i => fr(Math.sin(i*12.9898 + 78.233)*43758.5453);
+  let test = null;   // для тестов: {k} подменяет погоду, {t} — время анимации
+  function at(d){ d = d || new Date(); const R = rng(hstr('wx' + key(d))), list = P[curSeason()] || P.summer;
+    let x = R(), k = 'clear'; for (const [n,p] of list){ if (x < p){ k = n; break; } x -= p; }
+    const blk = Math.floor(d.getHours()/4); for (let i=0;i<blk;i++) R(); const v = R();
+    if ((k === 'rain' || k === 'snow') && v < .35) return {k:'clouds', day:k};   // осадки идут не весь день
+    if (k === 'fog' && blk >= 3) return {k:'clouds', day:k};                       // туман — по утрам
+    return {k, day:k, i:.55 + v*.45}; }
+  function now(){ if (test && test.k) return {k:test.k, i:test.i || 1};
+    const m = S.settings.weather || 'auto'; if (m === 'off') return {k:'clear'}; if (N[m]) return {k: m === 'rain' && curSeason() === 'winter' ? 'snow' : m, i:1};
+    const w = at(); if (w.k === 'rain' && curSeason() === 'winter') w.k = 'snow'; return w; }
+  const moving = () => { const k = now().k; return k === 'rain' || k === 'snow'; };
+  function draw(ctx, W, H, d, ph, still){ const w = now(), night = ph === 'night' || ph === 'evening', t = test && test.t != null ? test.t : (still ? 0 : performance.now()/1000);
+    if (w.k === 'clear') return;
+    const tint = {clouds:night?'rgba(20,24,36,.16)':'rgba(120,128,140,.16)', rain:night?'rgba(16,20,34,.30)':'rgba(70,84,104,.26)', snow:night?'rgba(30,36,56,.18)':'rgba(230,236,244,.18)', fog:night?'rgba(70,76,90,.30)':'rgba(236,236,232,.38)'}[w.k];
+    ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H);
+    if (w.k === 'fog'){ const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, night?'rgba(90,96,112,.0)':'rgba(245,245,240,0)'); g.addColorStop(1, night?'rgba(90,96,112,.35)':'rgba(245,245,240,.5)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); return; }
+    if (w.k === 'clouds') return;
+    const n = Math.round(W*H/(d*d)/(w.k === 'rain' ? 2600 : 3400)*(w.i || 1));
+    if (w.k === 'rain'){ ctx.strokeStyle = night ? 'rgba(170,190,220,.55)' : 'rgba(225,235,248,.75)'; ctx.lineWidth = 1.1*d; ctx.lineCap = 'round'; ctx.beginPath();
+      const L = 15*d, vx = -110*d, vy = 620*d;
+      for (let i=0;i<n;i++){ const x = fr(hh(i) + t*vx/W*(.9 + hh(i+7)*.2))*W, y = fr(hh(i+3) + t*vy/H*(.85 + hh(i+11)*.3))*H; ctx.moveTo(x, y); ctx.lineTo(x + L*vx/vy, y + L); }
+      ctx.stroke(); return; }
+    ctx.fillStyle = night ? 'rgba(220,228,245,.85)' : 'rgba(255,255,255,.95)';
+    for (let i=0;i<n;i++){ const sp = .6 + hh(i+5)*.8, y = fr(hh(i+3) + t*45*d*sp/H)*H, x = fr(hh(i) + Math.sin(t*.8 + i)*.004 + t*-8*d/W)*W, r = (1.2 + hh(i+9)*1.6)*d;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); } }
+  return {N, at, now, moving, draw, get test(){ return test; }, set test(v){ test = v; }};
+})();
+
+/* ================== МОИ ДЕЛА ================== */
+// Свои дела на день: любые, вписывает сам. Отмеченное — +ECON.own монет, в день засчитывается не больше ECON.ownMax.
+const OWN_MAX_LIST = 12;
+function ownCard(k, day){
+  const L = (day && day.own) || [], done = L.filter(o=>o.d).length, y = getDay(key(addD(parse(k),-1))), left = ((y && y.own) || []).filter(o=>!o.d && !L.some(x=>x.t === o.t));
+  let h = `<div class="card" id="ownCard" style="--a:var(--gold);--as:color-mix(in srgb,var(--gold) 16%,var(--card))"><div class="rhead"><h2 style="margin:0"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> Мои дела</h2><span class="rst">${done ? `+${Math.min(done, ECON.ownMax)*ECON.own}${CO}` : `до ${ECON.ownMax} × ${ECON.own}${CO}`}</span></div>`;
+  h += L.map((o,i)=>`<div class="row owni" style="flex-wrap:nowrap;gap:6px"><button class="item grow" data-act="own" data-i="${i}"><span class="mark ${o.d?'full':''}">${o.d?'✓':''}</span><span class="lbl">${esc(o.t)}</span></button><button class="navbtn owndel" data-act="owndel" data-i="${i}" aria-label="Убрать дело">×</button></div>`).join('');
+  if (L.length < OWN_MAX_LIST) h += `<form data-form="ownadd" class="row" style="flex-wrap:nowrap;gap:8px;margin-top:${L.length?10:4}px"><input class="in grow" name="t" maxlength="80" placeholder="Своё дело на сегодня" autocomplete="off" enterkeyhint="done"><button class="btn pri">Добавить</button></form>`;
+  if (left.length) h += `<div class="chips" style="margin-top:8px"><button class="chip btn" data-act="ownyest">Перенести со вчера: ${left.length}</button></div>`;
+  h += `<div class="tiny muted" style="margin-top:8px">Любые дела: позвонить, разобрать стол, дописать отчёт. Сделал — отметь, ${ECON.own}${CO} за дело, в день до ${ECON.ownMax}. Дела Веры сюда не пиши — в игре они ничего не дают.</div></div>`;
+  return h; }
+
 /* ================== МЕЛКИЕ РАДОСТИ ================== */
 // Подарок дня: каждый день одна бесплатная мелочь на выбор из трёх — для города, участка или комнаты. Копится не больше чем за 3 дня.
 // Те же мелочи всегда можно купить за монеты (p). Всё полученное лежит в S.gift.got по порядку и встаёт на заранее намеченные места.
@@ -695,6 +744,7 @@ function vToday(){
     if (a === 'body') h += `<div class="sep"></div><div class="muted small" style="margin-bottom:6px">Тренировка сегодня</div><div class="chips">${TRAIN.map(t=>`<button class="chip btn ${day?.tr===t?'on':''}" data-act="tr" data-t="${esc(t)}">${t}</button>`).join('')}</div>`;
     h += axTools(a, isT) + `</div>`;
   });
+  h += ownCard(k, day);
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-hash"/></svg> Цифры дня</h2><div class="nums">
     ${numStep(k,'quran','Коран, минут')}${numStep(k,'pages','Страниц книги')}${numStep(k,'steps','Шаги, тыс.')}${numStep(k,'sleep','Сон, часов')}${numStep(k,'weight','Вес утром, кг')}</div>
     <div class="muted tiny" style="margin-top:8px">Нажми на пункт один раз — ✓. Второй раз — «½», засчитан минимум. Третий — снять отметку. Числа: «+» и «−», первое нажатие подставляет прошлое значение. Кнопки <svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> запускают таймер: пункт отметится сам, когда отсчёт дойдёт до нуля.</div></div>`;
@@ -997,6 +1047,8 @@ function vSetup(){
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${SEASON_N[curSeason()].toLowerCase()}. «Авто» берёт дату с устройства.</div>
     <div class="muted small" style="margin:12px 0 6px">Время суток в городе</div><div class="chips">${[['auto','Авто — по часам'],['morning','Утро'],['day','День'],['evening','Вечер'],['night','Ночь']].map(([v,n])=>`<button class="chip btn ${(PHASE_N[S.settings.tod]?S.settings.tod:'auto')===v?'on':''}" data-act="tod" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${PHASE_N[curPhase()].toLowerCase()}. Рассвет и закат — примерно как в Грозном.</div>
+    <div class="muted small" style="margin:12px 0 6px">Погода в городе</div><div class="chips">${[['auto','Авто — сама'],['off','Всегда ясно'],['rain','Дождь'],['snow','Снег'],['fog','Туман'],['clouds','Облачно']].map(([v,n])=>`<button class="chip btn ${(S.settings.weather||'auto')===v?'on':''}" data-act="wx" data-v="${v}">${n}</button>`).join('')}</div>
+    <div class="muted tiny" style="margin-top:6px">Сейчас: ${Wx.N[Wx.now().k]}. «Авто» — погода меняется сама по дням и времени года: летом чаще ясно, осенью дожди, зимой снег. Без интернета.</div>
     <div class="row" style="margin-top:12px;flex-wrap:nowrap"><span class="small" style="flex:1">Жизнь в городе<br><span class="tiny muted">Человечки, машины и автобус на карте. Выключи, если телефон греется или карта идёт рывками.</span></span><button class="chip btn ${S.settings.life!==false?'on':''}" data-act="life">${S.settings.life!==false?'вкл':'выкл'}</button></div><div></div></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Копия и перенос на другой телефон</h2><div class="small">Все данные лежат только в этом браузере. Если очистить браузер или сменить телефон, данные пропадут. Раз в неделю сохраняй копию в файл: в Telegram «Избранное», на флешку или в облако. Дневник в копии остаётся зашифрованным.</div>
     <div class="row" style="margin-top:12px"><button class="btn pri" data-act="export"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Скачать копию</button><button class="btn" data-act="copyexp"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Скопировать копию</button><button class="btn" data-act="import"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Загрузить из файла</button></div>
@@ -1368,6 +1420,7 @@ function vTree(){
 const ECON = {
   item:10,                 // за полностью выполненный пункт дня (половина — 5); пункты Веры не считаются
   timer:5, timerMax:2,     // задача, доведённая таймером до нуля: разные таймеры, не больше 2 в день
+  own:5, ownMax:5,         // «Мои дела»: своё дело на день — 5 монет, в день засчитывается не больше 5 дел
   week:30,                 // неделя без пропусков: каждый день отмечена хотя бы половина «монетных» пунктов
   fear:40,                 // пройденный страх
   mat:{ beton:{n:'Бетон', u:'м³', p:80}, armat:{n:'Арматура', u:'прут', p:12},
@@ -1417,15 +1470,16 @@ const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 function coins(){
   const tk = key(today()), its = ITEMS.filter(i=>i.ax!=='faith'), bn = townBonus(), kx = ax => 1 + (bn[ax] + bn.all)/100;   // здания города прибавляют проценты
   const sumD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id),0) : 0, coinD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id)*kx(i.ax),0)*ECON.item : 0;
-  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0};
-  for (const k in S.days){ if (k > tk) continue; const c = coinD(S.days[k]); r.items += c; r.bonus += c - sumD(S.days[k])*ECON.item; if (k===tk) r.today += c; }
+  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0, own:0, nOwn:0};
+  for (const k in S.days){ if (k > tk) continue; const c = coinD(S.days[k]); r.items += c; r.bonus += c - sumD(S.days[k])*ECON.item; if (k===tk) r.today += c;
+    const no = Math.min(ECON.ownMax, (S.days[k].own||[]).filter(o=>o && o.d).length); r.nOwn += no; r.own += no*ECON.own; if (k===tk) r.today += no*ECON.own; }
   for (const k in S.timers.log){ if (k > tk) continue;
     const ids = new Set((S.timers.log[k]||[]).filter(l=>{ const it = tItem(tPreset(l.id)); return !it || it.ax!=='faith'; }).map(l=>l.id));
     const n = Math.min(ids.size, ECON.timerMax); r.nTimers += n; r.timers += n*ECON.timer; if (k===tk) r.today += n*ECON.timer; }
   for (let m = monday(startDate()), i = 0; addD(m,6) < today() && i < 600; m = addD(m,7), i++){
     let ok = true; for (let j=0;j<7&&ok;j++) ok = sumD(getDay(key(addD(m,j))))/its.length >= .5; if (ok) r.nWeeks++; }
   r.weeks = r.nWeeks*(ECON.week + bn.week); r.nFears = S.fears.filter(f=>f.done).length; r.fears = r.nFears*ECON.fear;
-  r.earned = r.items + r.timers + r.weeks + r.fears; r.spent = S.build.log.reduce((a,l)=>a+(+l.c||0),0); r.bal = r.earned - r.spent;
+  r.earned = r.items + r.timers + r.weeks + r.fears + r.own; r.spent = S.build.log.reduce((a,l)=>a+(+l.c||0),0); r.bal = r.earned - r.spent;
   return r; }
 // Очки силы: сумма баллов оси по дням (полностью выполненная сила за день = 1 очко).
 function power(){ const tk = key(today()), p = {faith:0, mind:0, spirit:0, body:0};
@@ -1948,6 +2002,7 @@ function coinsCard(C){
       <div class="plist"><div class="g"><span>Пункт дня (Разум, Дух, Тело) · ${ECON.item}</span><b>${nf(C.items)}</b></div>
       <div class="g"><span>Таймер доведён до конца · +${ECON.timer} <span class="muted tiny">до ${ECON.timerMax} в день</span></span><b>${nf(C.timers)}</b></div>
       ${C.bonus > .5 ? `<div class="g"><span class="muted">из них прибавка от зданий города</span><b>${nf(C.bonus)}</b></div>` : ''}
+      <div class="g"><span>Мои дела · +${ECON.own} <span class="muted tiny">до ${ECON.ownMax} в день</span></span><b>${nf(C.own)}</b></div>
       <div class="g"><span>Неделя без пропусков · +${ECON.week + townBonus().week}</span><b>${nf(C.weeks)}</b></div>
       <div class="g"><span>Пройденный страх · +${ECON.fear}</span><b>${nf(C.fears)}</b></div>
       <div class="g"><span>Потрачено на стройку и город</span><b>${C.spent?'−'+nf(C.spent):'0'}</b></div></div>
@@ -2227,7 +2282,7 @@ function vTown(){
   h += `<div class="card" style="padding:8px"><div class="townwrap${townFull?' full':''}" id="townwrap"><canvas id="tmap" role="img" aria-label="Карта города. Двигается пальцем, приближается двумя пальцами."></canvas>
       <button class="navbtn tfbtn" data-act="tfull" aria-label="${townFull?'Свернуть карту':'Карта на весь экран'}" title="${townFull?'Свернуть карту':'Карта на весь экран'}">${townFull?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>':'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}</button><div class="tmbtn"><button class="navbtn" data-act="tzoom" data-d="1" aria-label="Крупнее">+</button><button class="navbtn" data-act="tzoom" data-d="-1" aria-label="Мельче">−</button></div></div>
     <div class="row" style="margin-top:8px;gap:8px"><button class="chip btn" data-act="tfly" data-t="plot">${ic('plot')}К моему участку</button><button class="chip btn" data-act="tfly" data-t="mosque">${ic('mosque')}К мечети</button><a class="chip btn on" style="text-decoration:none;margin-left:auto" href="#plot">Войти на участок</a></div>
-    <div class="tiny muted" style="margin-top:6px">Нажми на любую постройку — откроется её карточка. Кнопка в углу карты разворачивает её на весь экран. ${SEASON_N[curSeason()]}, ${PHASE_N[curPhase()].toLowerCase()}.</div></div>`;
+    <div class="tiny muted" style="margin-top:6px">Нажми на любую постройку — откроется её карточка. Кнопка в углу карты разворачивает её на весь экран. ${SEASON_N[curSeason()]}, ${PHASE_N[curPhase()].toLowerCase()}, ${Wx.N[Wx.now().k]}.</div></div>`;
   // карточка выбранного объекта
   if (townSel === 'mosque'){
     h += `<div class="card axis-faith selc" id="tsel"><div class="rhead"><span class="rdot"></span><b style="font-size:17px">${MOSQUE_N[L-1]}</b><span class="rst">уровень ${L} из 7</span></div><div class="tiny muted" style="margin:2px 0 8px">Главное здание города. Жители расширяют её сами, когда город растёт. ${L < 7 ? `Следующий вид: ${MOSQUE_N[L].toLowerCase()}.` : ''}</div>
@@ -2348,6 +2403,7 @@ const TownMap = (()=>{
         const e = Math.sin(Math.PI*k), sc = 1 + e*.06, sb = M.base.width/TV.W, sx = Math.max(0, (bx/z + x0)*sb), sy = Math.max(0, (by/z + y0)*sb);
         ctx.drawImage(M.base, sx, sy, Math.min(M.base.width - sx, bw/z*sb), Math.min(M.base.height - sy, bh/z*sb), bx - bw*(sc-1)/2, by - e*8*d - bh*(sc-1), bw*sc, bh*sc); } }
     if (lifeOn()) Life.draw(ctx, (x,y,zz) => [(TV.OX + (x-y)*TV.A - x0)*z, (TV.OY + (x+y)*TV.Bv - (zz||0)*TV.Zs - y0)*z], z, M.ph);
+    Wx.draw(ctx, cv.width, cv.height, d, M.ph, still());
     const a = selRect(townSel); if (a){ const q = (x,y) => [(TV.OX + (x-y)*TV.A - x0)*z, (TV.OY + (x+y)*TV.Bv - y0)*z], pts = [q(a[0]-.6,a[1]-.6), q(a[2]+.6,a[1]-.6), q(a[2]+.6,a[3]+.6), q(a[0]-.6,a[3]+.6)];
       ctx.beginPath(); pts.forEach((p,i)=>i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.setLineDash([6*d,4*d]); ctx.lineWidth = 2.2*d; ctx.strokeStyle = '#e0b257'; ctx.lineJoin = 'round'; ctx.stroke(); ctx.setLineDash([]); } }
   const ask = () => { if (!raf) raf = requestAnimationFrame(tick); };
@@ -2356,12 +2412,13 @@ const TownMap = (()=>{
     else if (!drag && !pinch && (Math.abs(vel[0]) + Math.abs(vel[1]) > .004)){ const dt = Math.min(40, t - (tick.t || t)), c = M.cam, [lx,ly] = lim(c); c.x += vel[0]*dt; c.y += vel[1]*dt; const f = Math.pow(.94, dt/16); vel = [vel[0]*f, vel[1]*f];   // инерция
       if (c.x < lx[0] || c.x > lx[1] || c.y < ly[0] || c.y > ly[1]){ vel = [0,0]; settle(); } else more = true; }
     if (M.pop) more = true;
-    const live = lifeOn(), busy = more || drag || pinch;
+    const live = lifeOn() || wxOn(), busy = more || drag || pinch;
     if (!busy && live && t - (tick.d || 0) < 32){ tick.t = t; ask(); return; }   // жизнь города — не чаще 30 кадров в секунду
     tick.t = t; tick.d = t; draw(); if (more || live) ask(); else tick.t = 0;
     if (busy) tick.mv = 1; else if (tick.mv){ tick.mv = 0; sharpen(); } }
   // жизнь идёт, только если она включена, карта на экране, вкладка видна и человек не просил меньше движения
   const lifeOn = () => S.settings.life !== false && !still() && M.ready && !!M.cv && M.cv.isConnected && !document.hidden;
+  const wxOn = () => Wx.moving() && !still() && M.ready && !!M.cv && M.cv.isConnected && !document.hidden;   // дождь и снег идут, даже если «жизнь» выключена
   document.addEventListener('visibilitychange', () => { if (!document.hidden && M.cv && M.cv.isConnected) ask(); });
   function to(b, ms){ b = clamp({...b}); if (still() || !ms){ M.cam = b; anim = null; vel = [0,0]; draw(); sharpen(); return; } anim = {a:{...shown()}, b, t0:performance.now(), ms}; vel = [0,0]; ask(); }
   const settle = () => { const b = clamp({...M.cam}); if (Math.abs(b.x-M.cam.x) + Math.abs(b.y-M.cam.y) + Math.abs(b.z-M.cam.z) > .001) to(b, 260); };
@@ -2728,6 +2785,9 @@ document.addEventListener('click', async e => {
       if (t === 'books'){ const c = $('#hbooks'); if (c) c.scrollIntoView({block:'start', behavior:'smooth'}); return; }
       if (t === 'fear'){ const d = ensureDay(key(today())); if (d.c.fear === 1) return toast('Шаг сегодня уже отмечен'); d.c.fear = 1; save(); toast('Шаг вопреки страху отмечен'); break; }
       return; }
+    case 'own': { const d = ensureDay(k), o = (d.own||[])[+el.dataset.i]; if (!o) return; o.d = o.d ? 0 : 1; save(); if (o.d){ const n = d.own.filter(x=>x.d).length; if (n <= ECON.ownMax){ const r0 = el.getBoundingClientRect(); flyFrom = [r0.left + 22, r0.top + 20]; afterFns.push(flyCoin); } else toast(`Засчитано уже ${ECON.ownMax} дел — сверх них монеты не идут`); } break; }
+    case 'owndel': { const d = ensureDay(k); if (!d.own) return; d.own.splice(+el.dataset.i, 1); save(); break; }
+    case 'ownyest': { const d = ensureDay(k), y = getDay(key(addD(parse(k),-1))); d.own ||= []; ((y && y.own) || []).filter(o=>!o.d && !d.own.some(x=>x.t === o.t)).forEach(o=>{ if (d.own.length < OWN_MAX_LIST) d.own.push({t:o.t, d:0}); }); save(); break; }
     case 'rz': case 'wrz': { const dk = a === 'rz' ? k : el.dataset.k; if (parse(dk).getDay() !== 5 || parse(dk) > today()) return toast(parse(dk) > today() ? 'Эта пятница ещё впереди' : 'Рузба — только по пятницам'); const d = ensureDay(dk);
       if (!d.rz){ d.rz = 1; toast('Рузба отмечена'); } else if (d.rz === 1) d.rz = 'x'; else delete d.rz; save(); break; }
     case 'tup': { TownMap.pop(el.dataset.g); const g = el.dataset.g, o = ECON.town[g], st = o && bState(g); if (!st || !st.next) return; if (!buy(st.cost, `Город: ${o.n.toLowerCase()}, уровень ${st.next}`)) return;
@@ -2736,6 +2796,7 @@ document.addEventListener('click', async e => {
     case 'tzoom': TownMap.zoomBy(+el.dataset.d > 0 ? 1.6 : 1/1.6); return;
     case 'tfly': TownMap.fly(el.dataset.t); return;
     case 'tod': S.settings.tod = el.dataset.v; save(); break;
+    case 'wx': S.settings.weather = el.dataset.v; save(); break;
     case 'life': S.settings.life = S.settings.life === false; save(); break;
     case 'pshop': shopTab = el.dataset.t; break;
     case 'season': S.settings.season = el.dataset.v; save(); break;
@@ -2805,6 +2866,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'ownadd'){ const t = String(fd.get('t')||'').trim().slice(0,80); if (!t) return; const d = ensureDay(key(viewDate)); d.own ||= []; if (d.own.length >= OWN_MAX_LIST) return toast('Дел на день уже много'); d.own.push({t, d:0}); save(); render(); setTimeout(()=>{ const i = $('#ownCard input'); if (i) i.focus(); }, 30); return; }
     if (f.dataset.form === 'dset'){ if (fd.get('p1') !== fd.get('p2')) return toast('Пароли не совпадают');
       const salt = b64(crypto.getRandomValues(new Uint8Array(16))), iter = 250000, k = await derive(fd.get('p1'), salt, iter);
       S.crypto = {salt, iter, check: await encObj(k, 'ok')}; KEY = k; save(true); toast('Дневник создан'); }
