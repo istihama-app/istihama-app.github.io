@@ -146,6 +146,8 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 @keyframes evup{from{transform:translateY(40px);opacity:0}} @media (prefers-reduced-motion:reduce){.evsheet{animation:none}}
 .evblk{background:var(--card);border-radius:var(--r,16px);padding:12px 14px;margin:10px 0} .evbig{display:flex;align-items:baseline;gap:10px} .evbig b{font-size:30px;line-height:1} .evbig.ok b{color:var(--good)} .bkcard{border-left:3px solid var(--spirit)} .evsheet .bkcard{margin:10px 0;box-shadow:none}
 .yban{display:block;text-decoration:none;color:inherit;font-weight:600} .ybig{display:flex;align-items:baseline;gap:10px;margin-top:6px} .ybig b{font-size:40px;line-height:1;color:var(--good)} .ylinks{display:grid;grid-template-columns:1fr 1fr;gap:8px} .ylinks .btn{text-align:center;text-decoration:none}
+.pbig{display:flex;align-items:baseline;gap:10px;margin-top:4px} .pbig b{font-size:32px;line-height:1} .pneeds{display:grid;grid-template-columns:1fr;gap:5px} .pn{display:grid;grid-template-columns:118px 1fr 40px;gap:8px;align-items:center;font-size:13.5px} .pn b{text-align:right;font-size:13px} .pn .bar i{background:var(--good)} .pn.low .bar i{background:var(--gold)} .pn.low span{font-weight:600}
+@media (min-width:600px){.pneeds{grid-template-columns:1fr 1fr;column-gap:18px}}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -806,6 +808,54 @@ function bkDue(){ if (Object.values(S.days).filter(d => d && (Object.keys(d.c||{
 function bkCard(){ const w = bkDue(); if (!w) return '';
   return `<div class="card bkcard"><b>${ic('save')}Копия данных: последняя — ${w}</b><div class="tiny muted" style="margin:4px 0 10px">Весь твой год лежит только в этом телефоне. Потеряется телефон или очистится браузер — без копии пропадёт всё. Скачай файл или скопируй и отправь себе в «Избранное».</div>
     <div class="row" style="gap:8px"><button class="btn pri" data-act="export">${ic('down')}Скачать</button><button class="btn" data-act="copyexp">${ic('copy')}Скопировать</button><button class="btn" data-act="bklater">Позже</button></div></div>`; }
+
+/* ================== ЖИТЕЛИ И НУЖДЫ ================== */
+// Население растёт само день за днём к «цели»: места в домах × (0,5 + 0,5 × настроение). Настроение — средняя обеспеченность нужд,
+// которые уже открыты на этом уровне города. Здания города дают услуги на N жителей за каждый свой уровень, клетки квартала — тоже.
+// Хранится только S.town.pop = {v, d, h:[[дата, жителей]…]}; считается раз в день (popSync), пропущенные дни догоняются.
+// Дела Веры здесь ни при чём (правило 7): жители зависят только от построек.
+const POP = {
+  base:[30, 60, 120, 200, 320, 480, 700],   // «старый город» — дома, которые не рисуются отдельно, по уровню города
+  home:{house:6, house2:12, house5:40, house9:90, tower:180}, nb:6, own:5, annex:3,
+  needs:[
+    {id:'water',  n:'Вода',          s:{spring:60, wtower:250}},
+    {id:'food',   n:'Магазины',      s:{shop:40, bakery:80, bazaar:120}, g:{shop:60}},
+    {id:'work',   n:'Работа',        k:.45, jobs:1, L:2},
+    {id:'study',  n:'Учёба',         s:{school:80, library:40, medrese:50}},
+    {id:'health', n:'Здоровье',      s:{clinic:100, hospital:250}},
+    {id:'rest',   n:'Отдых',         s:{square:60, park:100, garden:150, stadium:80, culture:100, quay:60, museum:50}, g:{park:40, trees:10}},
+    {id:'safe',   n:'Безопасность',  base:150, s:{fire:220}},
+    {id:'move',   n:'Транспорт', base:60, s:{road:150, stop:100, station:200, bridge:80, cable:60}},
+    {id:'power',  n:'Свет',          base:200, s:{power:350}} ],
+  jobs:{town:6, shop:8, office:40, work:25} };
+function popCap(){ const L = cityLvl(), G = gGrid(), B = S.build; let c = POP.base[L-1] + nbStages().filter(x => x >= 3).length*POP.nb + (B.house && B.house.roof ? POP.own : 0) + (annexSt().roof ? POP.annex : 0);
+  for (const k in G) c += POP.home[G[k]] || 0; return c; }
+function popJobs(){ const G = gGrid(); let j = 0; for (const id in ECON.town) j += bLvl(id)*POP.jobs.town; for (const k in G) j += POP.jobs[G[k]] || 0; return j; }
+const popNeedOn = n => { const L = cityLvl(); return n.base || (n.L ? L >= n.L : Object.keys(n.s).some(id => ECON.town[id] && ECON.town[id].L <= L)); };
+function popSupply(n){ if (n.jobs) return popJobs(); const G = gGrid(); let v = n.base || 0; for (const id in n.s) v += bLvl(id)*n.s[id]; if (n.g) for (const k in G) v += n.g[G[k]] || 0; return v; }
+function popNeeds(v){ return POP.needs.filter(popNeedOn).map(n => { const sup = popSupply(n), dem = Math.max(1, v*(n.k || 1)); return {...n, sup, dem:Math.round(dem), cov:Math.min(1, sup/dem)}; }); }
+function popHappy(v){ const N = popNeeds(v); return N.length ? N.reduce((a,n)=>a + n.cov, 0)/N.length : 1; }
+const popTarget = v => Math.round(popCap()*(.5 + .5*popHappy(v)));
+function popStep(v){ const cap = popCap(), t = Math.min(cap, popTarget(v)); if (t > v) v = Math.min(t, v + Math.max(1, Math.ceil((t - v)*.2))); else if (t < v) v = Math.max(t, v - Math.max(1, Math.ceil((v - t)*.1))); return Math.min(v, cap); }
+function popSync(){ const T = S.town, tk = key(today()); if (!T) return;
+  if (!T.pop || typeof T.pop.v !== 'number'){ let v = Math.round(popCap()*.6); for (let i=0;i<40;i++) v = popStep(v); T.pop = {v, d:tk, h:[[tk, v]]}; save(); return; }
+  if (T.pop.d >= tk) return; let d = parse(T.pop.d), v = T.pop.v, n = 0;
+  while (key(d) < tk && n < 400){ d = addD(d, 1); n++; v = popStep(v); T.pop.h.push([key(d), v]); }
+  T.pop.h = T.pop.h.slice(-30); T.pop.v = v; T.pop.d = tk; save(); }
+const popNow = () => { const p = S.town && S.town.pop; return p ? Math.min(p.v, popCap()) : 0; };
+const popTax = () => { const v = popNow(); return v ? Math.floor(v*popHappy(v)/30) : 0; };   // довольные жители поднимают потолок налога
+function popCard(){ popSync(); const v = popNow(), cap = popCap(), N = popNeeds(v), hp = popHappy(v), t = Math.min(cap, popTarget(v)), H = S.town.pop.h, prev = H.length > 1 ? H[H.length-2][1] : v, dl = v - prev;
+  const mood = hp >= .85 ? 'довольны' : hp >= .65 ? 'спокойны' : hp >= .45 ? 'ворчат' : 'недовольны', low = N.filter(n => n.cov < .85).sort((a,b)=>a.cov - b.cov).slice(0,2);
+  const helpers = n => n.jobs ? [] : Object.keys(n.s).filter(id => bState(id).next).slice(0,3);
+  const gTxt = {food:'в квартале — лавка', work:'в квартале — мастерская или деловой центр', rest:'в квартале — сквер или деревья'};
+  let h = `<div class="card popcard"><div class="rhead"><b style="font-size:17px">Жители</b><span class="rst">${dl ? `${dl > 0 ? '+' : '−'}${nf(Math.abs(dl))} за день` : 'без перемен'}</span></div>
+    <div class="pbig"><b>${nf(v)}</b><span>жителей · мест в домах ${nf(cap)}</span></div>
+    <div class="row" style="gap:8px;align-items:center;margin:6px 0 10px"><span class="small">Настроение: <b>${pct(hp)}%</b> — ${mood}</span><div class="bar grow"><i style="width:${pct(hp)}%;background:${hp >= .85 ? 'var(--good)' : hp >= .55 ? 'var(--gold)' : 'var(--body)'}"></i></div></div>
+    <div class="pneeds">${N.map(n=>`<div class="pn ${n.cov < .85 ? 'low' : ''}"><span>${n.n}</span><div class="bar"><i style="width:${pct(n.cov)}%"></i></div><b>${pct(n.cov)}%</b></div>`).join('')}</div>`;
+  if (low.length) h += `<div class="plow">${low.map(n=>`<div class="small" style="margin-top:8px"><b>${n.n}: ${pct(n.cov)}%.</b> ${n.jobs ? `Мест работы ${nf(n.sup)} на ${nf(n.dem)} взрослых.` : `Хватает на ${nf(n.sup)} жителей из ${nf(v)}.`}${helpers(n).length || gTxt[n.id] ? ' Помогут:' : ''}</div>
+      <div class="chips" style="margin-top:4px">${helpers(n).map(id=>`<button class="chip btn" data-act="tpick" data-g="${id}">${ECON.town[id].n}${bLvl(id) ? ` → ур. ${bLvl(id)+1}` : ''}</button>`).join('')}${gTxt[n.id] && cityLvl() >= 2 ? `<span class="chip">${gTxt[n.id]}</span>` : ''}</div>`).join('')}</div>`;
+  h += `<div class="tiny muted" style="margin-top:10px">${v >= cap*.97 && hp >= .7 ? 'Дома заполнены — новым семьям негде жить. Стройте дома в квартале.' : t > v ? `Город растёт: каждый день въезжают новые семьи (ждут ещё ~${nf(t - v)}).` : t < v ? 'Жителям чего-то не хватает — часть семей понемногу уезжает.' : 'Сколько мест, столько и жителей — город в равновесии.'} Жители меняются раз в день: построенное сегодня скажется завтра. Довольные жители поднимают потолок налога: сейчас +${popTax()}.</div></div>`;
+  return h; }
 
 /* ================== ПОСТРОЕНО СЕГОДНЯ ================== */
 // По журналу покупок с полем w: здания, клетки квартала, свой и соседний участок. Снесённое и перенесённое не подсвечивается.
@@ -1613,7 +1663,7 @@ const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 function coins(){
   const tk = key(today()), its = ITEMS.filter(i=>i.ax!=='faith'), bn = townBonus(), kx = ax => 1 + (bn[ax] + bn.all)/100;   // здания города прибавляют проценты
   const sumD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id),0) : 0, coinD = d => d ? its.reduce((a,i)=>a+itemVal(d,i.id)*kx(i.ax),0)*ECON.item : 0;
-  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0, own:0, nOwn:0, tax:0, taxToday:0}, tf = S.town && S.town.taxFrom, dv = tf ? devN() + distCap() : 0;
+  const r = {items:0, timers:0, nTimers:0, nWeeks:0, nFears:0, today:0, bonus:0, own:0, nOwn:0, tax:0, taxToday:0}, tf = S.town && S.town.taxFrom, dv = tf ? devN() + distCap() + popTax() : 0;
   for (const k in S.days){ if (k > tk) continue; const c = coinD(S.days[k]); r.items += c; r.bonus += c - sumD(S.days[k])*ECON.item; if (k===tk) r.today += c;
     if (tf && k >= tf && dv){ const tx = Math.min(dv, Math.round(c*ECON.taxK)); r.tax += tx; if (k===tk){ r.today += tx; r.taxToday = tx; } }
     const no = Math.min(ECON.ownMax, (S.days[k].own||[]).filter(o=>o && o.d).length); r.nOwn += no; r.own += no*ECON.own; if (k===tk) r.today += no*ECON.own; }
@@ -2166,7 +2216,7 @@ function coinsCard(C){
       <div class="g"><span>Таймер доведён до конца · +${ECON.timer} <span class="muted tiny">до ${ECON.timerMax} в день</span></span><b>${nf(C.timers)}</b></div>
       ${C.bonus > .5 ? `<div class="g"><span class="muted">из них прибавка от зданий города</span><b>${nf(C.bonus)}</b></div>` : ''}
       <div class="g"><span>Мои дела · +${ECON.own} <span class="muted tiny">до ${ECON.ownMax} в день</span></span><b>${nf(C.own)}</b></div>
-      <div class="g"><span>Налоги города <span class="muted tiny">${pct(ECON.taxK)}% от дел дня, до ${devN() + distCap()} в день</span></span><b>${nf(C.tax)}</b></div>
+      <div class="g"><span>Налоги города <span class="muted tiny">${pct(ECON.taxK)}% от дел дня, до ${devN() + distCap() + popTax()} в день</span></span><b>${nf(C.tax)}</b></div>
       <div class="g"><span>Неделя без пропусков · +${ECON.week + townBonus().week}</span><b>${nf(C.weeks)}</b></div>
       <div class="g"><span>Пройденный страх · +${ECON.fear}</span><b>${nf(C.fears)}</b></div>
       <div class="g"><span>Потрачено на стройку и город</span><b>${C.spent?'−'+nf(C.spent):'0'}</b></div></div>
@@ -2199,8 +2249,8 @@ Object.defineProperty(TOWN, 'at', { get(){ const p = (S.town && S.town.pos) || {
 function townSwap(a, b){ const T = S.town; T.pos = T.pos || {}; const sa = slotOf(a), sb = slotOf(b); T.pos[a] = sb; T.pos[b] = sa; for (const id of [a,b]) if (T.pos[id] === id) delete T.pos[id]; }
 /* ---- новый квартал: сетка клеток к югу от нижней улицы (y = 57…58.4) ---- */
 const GRID = {x0:-32, y0:59.5, c:8, nx:11, ny:5};
-const DIST = { road:{n:'Дорога', p:15}, house:{n:'Жилой дом', p:80, cap:2}, house2:{n:'Дом в два этажа', p:120, cap:4}, house5:{n:'Многоэтажка', p:250, cap:6, L:5}, house9:{n:'Высотка', p:450, cap:9, L:6}, tower:{n:'Небоскрёб', p:800, cap:14, L:7, max:3}, office:{n:'Деловой центр', p:300, cap:7, L:5, max:4}, shop:{n:'Лавка', p:120, cap:3}, park:{n:'Сквер', p:50, cap:1}, trees:{n:'Деревья', p:15, cap:0} };
-const DTOOLS = [['road','Дорога'],['house','Дом'],['office','Деловой центр'],['shop','Лавка'],['park','Сквер'],['trees','Деревья'],['move','Перенести'],['del','Снести']];
+const DIST = { road:{n:'Дорога', p:15}, house:{n:'Жилой дом', p:80, cap:2}, house2:{n:'Дом в два этажа', p:120, cap:4}, house5:{n:'Многоэтажка', p:250, cap:6, L:5}, house9:{n:'Высотка', p:450, cap:9, L:6}, tower:{n:'Небоскрёб', p:800, cap:14, L:7, max:3}, office:{n:'Деловой центр', p:300, cap:7, L:5, max:4}, work:{n:'Мастерская', p:100, cap:2}, shop:{n:'Лавка', p:120, cap:3}, park:{n:'Сквер', p:50, cap:1}, trees:{n:'Деревья', p:15, cap:0} };
+const DTOOLS = [['road','Дорога'],['house','Дом'],['office','Деловой центр'],['shop','Лавка'],['work','Мастерская'],['park','Сквер'],['trees','Деревья'],['move','Перенести'],['del','Снести']];
 const UP = ['house','house2','house5','house9','tower'];   // ступени жилого дома: каждое нажатие «Домом» поднимает на ступень
 const gOpen = t => !DIST[t].L || cityLvl() >= DIST[t].L, gLvlTxt = t => `${DIST[t].n} — с уровня города ${DIST[t].L}, «${CITY.names[DIST[t].L-1].toLowerCase()}»`;
 const gMax = t => DIST[t].max && Object.values(gGrid()).filter(x=>x === t).length >= DIST[t].max;
@@ -2381,6 +2431,7 @@ function townSVG(ph){
       else if (t === 'house2') put(x+y, simple(x,y,2.4,1.8,2.7,WC[sd%WC.length],RC[(sd>>3)%RC.length],'gable',{win:3,winR:2,door:0,two:true}));
       else if (t === 'shop') put(x+y, simple(x,y,2.6,1.9,1.8,'#e6c9a0','#a4553a','flat',{win:3,winR:1,door:0}));
       else if (TALL[t]) put(x+y, tall(x, y, t, sd, WC[sd%WC.length]));
+      else if (t === 'work'){ put(x+y, simple(x,y,2.7,2,1.9,'#c9c2b4','#6b6f78','flat',{win:3,winR:1}) + K.frame(x,y,0).box(1.2,1.8,-1.2,-.5,1.9,3.4, mix(C.conc,'#fff',80), C.conc, mix(C.conc,'#000',72))); }
       else if (t === 'park'){ h += ell(...XY(x+.4,y+.4), 6, 3.4, mix(C.water,'#fff',70)); tree(x-2.2,y-1.6,1.5,sd); tree(x+2.1,y+2,1.6,sd+1); put(x+1.8+y-2.2, K.bush(x+1.8,y-2.2,.45,sd)); }
       else if (t === 'trees'){ tree(x-1.8,y-1.7,1.6,sd); tree(x+1.7,y-.5,1.8,sd+1); tree(x-.2,y+2,1.5,sd+2); } } }
   // --- подложки участков и свой участок в миниатюре ---
@@ -2532,7 +2583,7 @@ function vTown(){
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
   h += `<div class="card axis-faith citycard"><div class="rhead"><span class="clv">${L}</span><div class="grow"><b style="font-size:18px">${CITY.names[L-1]}</b><div class="tiny muted">уровень города ${L} из 7 · ${MOSQUE_N[L-1].toLowerCase()}</div></div><button class="chip btn" data-act="twn" data-t="mosque">мечеть</button></div>
     ${L < 7 ? `<div class="bar" style="margin:10px 0 5px"><i style="width:${pct(Math.max(0,Math.min(1,(D-prevN)/(nextN-prevN))))}%"></i></div><div class="tiny muted">До уровня ${L+1} — «${CITY.names[L].toLowerCase()}»: построй или улучши ещё ${Math.max(1,nextN-D)} ур. зданий. Город растёт от застройки, мечеть жители расширяют вместе с ним.</div>` : `<div class="tiny muted" style="margin-top:8px">Высший уровень. Город вырос.</div>`}</div>`;
-  const G = gGrid(), gn = t => Object.values(G).filter(x=>x === t).length, TH = {road:'Дорога — 15 монет за клетку. Первая клетка — у нижней улицы, дальше — рядом с другой дорогой.', house:`Жилой дом — 80 монет, ставится рядом с дорогой. Нажми на свой дом ещё раз — надстроишь: два этажа 120, многоэтажка 250 (уровень города 5), высотка 450 (уровень 6), небоскрёб 800 (уровень 7, не больше 3).`, office:'Деловой центр — 300 монет, рядом с дорогой, не больше 4. Стеклянная башня с офисами: +7 к потолку налога.', shop:'Лавка — 120 монет, рядом с дорогой.', park:'Сквер — 50 монет, рядом с дорогой: деревья и пруд.', trees:'Деревья — 15 монет, можно где угодно в квартале.', move:townPick ? 'Теперь нажми на пустую клетку — туда и перенесём. Нажми на то же место — отмена.' : 'Нажми на дом, лавку, сквер или деревья, которые хочешь перенести.', del:'Снос возвращает половину цены. Дорогу, у которой что-то стоит, снести нельзя.'};
+  const G = gGrid(), gn = t => Object.values(G).filter(x=>x === t).length, TH = {road:'Дорога — 15 монет за клетку. Первая клетка — у нижней улицы, дальше — рядом с другой дорогой.', house:`Жилой дом — 80 монет, ставится рядом с дорогой. Нажми на свой дом ещё раз — надстроишь: два этажа 120, многоэтажка 250 (уровень города 5), высотка 450 (уровень 6), небоскрёб 800 (уровень 7, не больше 3).`, office:'Деловой центр — 300 монет, рядом с дорогой, не больше 4. Стеклянная башня с офисами: +7 к потолку налога.', shop:'Лавка — 120 монет, рядом с дорогой: магазин для 60 жителей и 8 мест работы.', work:'Мастерская — 100 монет, рядом с дорогой: 25 мест работы для жителей.', park:'Сквер — 50 монет, рядом с дорогой: деревья и пруд.', trees:'Деревья — 15 монет, можно где угодно в квартале.', move:townPick ? 'Теперь нажми на пустую клетку — туда и перенесём. Нажми на то же место — отмена.' : 'Нажми на дом, лавку, сквер или деревья, которые хочешь перенести.', del:'Снос возвращает половину цены. Дорогу, у которой что-то стоит, снести нельзя.'};
   if (townBuild) h += `<div class="banner tmove"><b>Стройка квартала.</b> ${TH[townTool]}</div>`;
   if (townMove) h += `<div class="banner tmove">Переставляем: <b>${ECON.town[townMove].n.toLowerCase()}</b>. Нажми на карте другое здание — они поменяются местами. Пустое место будущего здания тоже подходит.<div class="row" style="margin-top:8px"><button class="btn" data-act="tmcancel">Отмена</button></div></div>`;
   h += `<div class="card" style="padding:8px"><div class="townwrap${townFull?' full':''}" id="townwrap"><canvas id="tmap" role="img" aria-label="Карта города. Двигается пальцем, приближается двумя пальцами."></canvas>
@@ -2549,6 +2600,7 @@ function vTown(){
   else if (townSel === 'nb') h += `<div class="card selc" id="tsel"><div class="rhead"><b style="font-size:17px">Соседи</b><span class="rst">${T.nb} из ${NB_STEPS} шагов</span></div><div class="bar" style="margin:8px 0;--a:var(--gold)"><i style="width:${pct(T.nb/NB_STEPS)}%"></i></div>
       <div class="small">Хороших недель: <b>${gw}</b>. Соседи расчищают участки и строятся сами, когда неделя в среднем закрыта на 60% и больше. Построенное не рушится.</div></div>`;
   else if (ECON.town[townSel]) h += `<div class="card selc" id="tsel" style="padding-top:6px;padding-bottom:6px">${bCard(townSel, X, 1).replace('class="tgoal', 'style="border-top:0" class="tgoal')}${TOWN.move.includes(townSel) ? `<div class="row" style="gap:8px;margin:2px 0 6px"><button class="chip btn" data-act="tmove" data-g="${townSel}">${ic('town')}Переставить</button>${S.town.pos && S.town.pos[townSel] ? `<button class="chip btn" data-act="tmback" data-g="${townSel}">Вернуть на своё место</button>` : ''}</div>` : ''}</div>`;
+  h += popCard();
   h += `<div class="kpis pk"><div class="kpi"><div class="v">${ids.filter(i=>bLvl(i)).length}<span class="muted" style="font-size:.6em"> из ${ids.length}</span></div><div class="l">Зданий построено</div></div><div class="kpi"><div class="v">${lvSum}<span class="muted" style="font-size:.6em"> из ${lvAll}</span></div><div class="l">Уровней зданий</div></div><div class="kpi"><div class="v">${nb.filter(s=>s===3).length}<span class="muted" style="font-size:.6em"> из 9</span></div><div class="l">Соседей построились</div></div></div>`;
   const now = ids.filter(i=>bState(i).next).sort((a,b)=>bState(a).cost - bState(b).cost), later = ids.filter(i=>!bState(i).next && !bState(i).max), done = ids.filter(i=>bState(i).max);
   h += `<div class="towngrid"><div><div class="card"><div class="rhead"><b style="font-size:17px">Можно строить сейчас</b><span class="rst">${now.length}</span></div>${now.length ? now.map(i=>bCard(i, X)).join('') : `<div class="small muted" style="margin-top:6px">Всё доступное построено. Новые здания откроет следующий уровень города.</div>`}</div></div><div>`;
@@ -3114,6 +3166,7 @@ document.addEventListener('click', async e => {
     case 'tfull': townFullSet(!townFull); render(); setTimeout(()=>window.dispatchEvent(new Event('resize')), 30); return;
     case 'tzoom': TownMap.zoomBy(+el.dataset.d > 0 ? 1.6 : 1/1.6); return;
     case 'tfly': TownMap.fly(el.dataset.t); return;
+    case 'tpick': { const g = el.dataset.g; townSel = g; TownMap.fly(g); render(); setTimeout(()=>{ const c = $('#tsel'); if (c) c.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 50); return; }
     case 'tod': S.settings.tod = el.dataset.v; save(); break;
     case 'wx': S.settings.weather = el.dataset.v; save(); break;
     case 'life': S.settings.life = S.settings.life === false; save(); break;
