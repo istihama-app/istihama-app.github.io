@@ -3,7 +3,7 @@
   "short_name": "Истихама",
   "description": "Личный трекер года: Вера, Разум, Дух, Тело. Данные хранятся только на устройстве.",
   "lang": "ru",
-  "start_url": "./index.html#today",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
