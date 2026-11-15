@@ -148,6 +148,9 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .yban{display:block;text-decoration:none;color:inherit;font-weight:600} .ybig{display:flex;align-items:baseline;gap:10px;margin-top:6px} .ybig b{font-size:40px;line-height:1;color:var(--good)} .ylinks{display:grid;grid-template-columns:1fr 1fr;gap:8px} .ylinks .btn{text-align:center;text-decoration:none}
 .pbig{display:flex;align-items:baseline;gap:10px;margin-top:4px} .pbig b{font-size:32px;line-height:1} .pneeds{display:grid;grid-template-columns:1fr;gap:5px} .pn{display:grid;grid-template-columns:118px 1fr 40px;gap:8px;align-items:center;font-size:13.5px} .pn b{text-align:right;font-size:13px} .pn .bar i{background:var(--good)} .pn.low .bar i{background:var(--gold)} .pn.low span{font-weight:600}
 @media (min-width:600px){.pneeds{grid-template-columns:1fr 1fr;column-gap:18px}}
+.newscard .nhead{font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;line-height:1.25;margin-top:6px} .nlist{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.45} .nlist li{margin:2px 0}
+.reqcard{border-left:3px solid var(--gold)} .reqcard.done{border-left-color:var(--good)}
+#bnav .i{position:relative} .ndot{position:absolute;top:-2px;right:-6px;width:9px;height:9px;border-radius:50%;background:#e0553f;box-shadow:0 0 0 2px var(--card)} .ndot.side{position:static;display:inline-block;margin-left:6px;vertical-align:2px}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -646,13 +649,13 @@ document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !(e.ta
 
 function renderNav(){
   $('#side').innerHTML = `<div class="brand">Истихама</div><div class="brand-s">постоянство на пути</div>` +
-    NAV_S.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view?'on':''}"><span>${v.i}</span>${v.n}</a>`).join('') +
+    NAV_S.map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view?'on':''}"><span>${v.i}</span>${v.n}${v.id === 'town' && newsUnread() ? ' <i class="ndot side"></i>' : ''}</a>`).join('') +
     `<div class="foot">Все данные хранятся только на этом устройстве.</div>`;
   const cg = grpOf(view); if (cg) grpLast[cg.id] = view;
-  $('#bnav').innerHTML = GROUPS.map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}</span>${g.n}</a>`; }).join('');
+  $('#bnav').innerHTML = GROUPS.map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}${g.id === 'town' && newsUnread() ? '<i class="ndot" aria-label="свежие вести"></i>' : ''}</span>${g.n}</a>`; }).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1><a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear}[view]; let html = f(); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); }
+function render(){ if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); } if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear}[view]; let html = f(); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
@@ -834,7 +837,7 @@ function popJobs(){ const G = gGrid(); let j = 0; for (const id in ECON.town) j 
 const popNeedOn = n => { const L = cityLvl(); return n.base || (n.L ? L >= n.L : Object.keys(n.s).some(id => ECON.town[id] && ECON.town[id].L <= L)); };
 function popSupply(n){ if (n.jobs) return popJobs(); const G = gGrid(); let v = n.base || 0; for (const id in n.s) v += bLvl(id)*n.s[id]; if (n.g) for (const k in G) v += n.g[G[k]] || 0; return v; }
 function popNeeds(v){ return POP.needs.filter(popNeedOn).map(n => { const sup = popSupply(n), dem = Math.max(1, v*(n.k || 1)); return {...n, sup, dem:Math.round(dem), cov:Math.min(1, sup/dem)}; }); }
-function popHappy(v){ const N = popNeeds(v); return N.length ? N.reduce((a,n)=>a + n.cov, 0)/N.length : 1; }
+function popHappy(v){ const N = popNeeds(v), b = thxOn() ? .05 : 0; return Math.min(1, (N.length ? N.reduce((a,n)=>a + n.cov, 0)/N.length : 1) + b); }
 const popTarget = v => Math.round(popCap()*(.5 + .5*popHappy(v)));
 function popStep(v){ const cap = popCap(), t = Math.min(cap, popTarget(v)); if (t > v) v = Math.min(t, v + Math.max(1, Math.ceil((t - v)*.2))); else if (t < v) v = Math.max(t, v - Math.max(1, Math.ceil((v - t)*.1))); return Math.min(v, cap); }
 function popSync(){ const T = S.town, tk = key(today()); if (!T) return;
@@ -856,6 +859,66 @@ function popCard(){ popSync(); const v = popNow(), cap = popCap(), N = popNeeds(
       <div class="chips" style="margin-top:4px">${helpers(n).map(id=>`<button class="chip btn" data-act="tpick" data-g="${id}">${ECON.town[id].n}${bLvl(id) ? ` → ур. ${bLvl(id)+1}` : ''}</button>`).join('')}${gTxt[n.id] && cityLvl() >= 2 ? `<span class="chip">${gTxt[n.id]}</span>` : ''}</div>`).join('')}</div>`;
   h += `<div class="tiny muted" style="margin-top:10px">${v >= cap*.97 && hp >= .7 ? 'Дома заполнены — новым семьям негде жить. Стройте дома в квартале.' : t > v ? `Город растёт: каждый день въезжают новые семьи (ждут ещё ~${nf(t - v)}).` : t < v ? 'Жителям чего-то не хватает — часть семей понемногу уезжает.' : 'Сколько мест, столько и жителей — город в равновесии.'} Жители меняются раз в день: построенное сегодня скажется завтра. Довольные жители поднимают потолок налога: сейчас +${popTax()}.</div></div>`;
   return h; }
+
+/* ================== ПРОСЬБЫ ЖИТЕЛЕЙ ================== */
+// Одна просьба за раз: выдаётся в новый день, когда прошлой нет (выполнена, отклонена или истекла). Срок — 3 дня.
+// Что просят — от состояния города и сида дня (детерминированно). Награда — не монеты (монеты только за дела):
+// благодарность жителей (+5% к настроению на 7 дней) и «почёт» города. S.town.req = {d, k, a, base, until, done, skip}, S.town.thx = дата конца благодарности, S.town.honor.
+const gCount = t => Object.values(gGrid()).filter(x => Array.isArray(t) ? t.includes(x) : x === t).length;
+const gHomeCap = () => Object.values(gGrid()).reduce((a,t)=>a + (POP.home[t] || 0), 0);
+const REQ = {
+  up:    {past:a => `улучшено здание «${ECON.town[a].n}»`, t:a => `Улучши: ${ECON.town[a].n.toLowerCase()}`, why:a => { const n = POP.needs.find(n => n.s && n.s[a]); return n ? `жителям не хватает: ${n.n.toLowerCase()}` : 'город растёт, и этого стало мало'; }, val:a => bLvl(a), need:1, go:a => ({act:'tpick', g:a})},
+  trees: {past:() => 'в квартале посадили деревья', t:() => 'Посади деревья в квартале — 2 клетки', why:() => 'летом во дворах жарко, хочется тени', val:() => gCount('trees'), need:2, go:() => ({act:'gbuild'})},
+  home:  {past:() => 'в квартале прибавилось жилья', t:() => 'Построй или надстрой дом в квартале', why:() => 'к родственникам приезжают семьи, им негде жить', val:() => gHomeCap(), need:6, go:() => ({act:'gbuild'})},
+  shop:  {past:() => 'у домов открылась лавка', t:() => 'Открой лавку в квартале', why:() => 'до магазина далеко ходить', val:() => gCount('shop'), need:1, go:() => ({act:'gbuild'})},
+  work:  {past:() => 'появились новые места работы', t:() => 'Построй мастерскую в квартале', why:() => 'молодым негде работать', val:() => gCount(['work','office']), need:1, go:() => ({act:'gbuild'})},
+  park:  {past:() => 'у домов разбили сквер', t:() => 'Разбей сквер у домов', why:() => 'детям негде гулять', val:() => gCount('park'), need:1, go:() => ({act:'gbuild'})},
+  road:  {past:() => 'дороги квартала стали длиннее', t:() => 'Продли дороги квартала — ещё 2 клетки', why:() => 'к новым домам трудно подъехать', val:() => gCount('road'), need:2, go:() => ({act:'gbuild'})} };
+function reqPick(dk){ const L = cityLvl(), v = popNow(), N = popNeeds(v), R = rng(hstr('req' + dk + (S.settings.start||''))), opts = [];
+  N.filter(n => n.cov < .9 && n.s).forEach(n => Object.keys(n.s).filter(id => bState(id).next).slice(0,1).forEach(id => opts.push(['up', id], ['up', id])));
+  if (L >= 2){ if (gCount('road')) opts.push(['trees'], ['home'], ['park']); opts.push(['road']);
+    const f = N.find(n=>n.id==='food'), w = N.find(n=>n.id==='work'); if (gCount('road') && f && f.cov < 1) opts.push(['shop']); if (gCount('road') && w && w.cov < 1) opts.push(['work']); }
+  if (!opts.length){ const c = Object.keys(ECON.town).filter(id => bState(id).next).sort((a,b)=>bState(a).cost - bState(b).cost)[0]; if (c) opts.push(['up', c]); }
+  if (!opts.length) return null; const [k, a] = opts[Math.floor(R()*opts.length)]; return {k, a:a || '', base:REQ[k].val(a)}; }
+function reqSync(){ const T = S.town, tk = key(today()); if (!T || cityLvl() < 1) return null; popSync(); let r = T.req, ch = false;
+  if (r && !r.done && !r.skip){ if (REQ[r.k].val(r.a) - r.base >= REQ[r.k].need){ r.done = tk; T.thx = key(addD(today(), 7)); T.honor = (T.honor||0) + 1; ch = true; reqJust = r; }
+    else if (r.until < tk){ r.skip = 'late'; ch = true; } }
+  if ((!r || r.done || r.skip) && (!r || r.d < tk)){ const p = reqPick(tk); if (p){ if (r && r.done) T.reqDone = {k:r.k, a:r.a, done:r.done}; T.req = {d:tk, ...p, until:key(addD(today(), 2)), done:'', skip:''}; ch = true; } }
+  if (ch) save(); return T.req || null; }
+let reqJust = null;   // только что выполненная — показать благодарность один раз
+const thxOn = () => !!(S.town && S.town.thx && S.town.thx >= key(today()));
+function reqCard(){ const r = reqSync(); if (reqJust){ const j = reqJust; reqJust = null; setTimeout(()=>toast('Жители благодарят! Настроение +5% на неделю'), 60); }
+  if (!r) return ''; const Q = REQ[r.k], cur = Math.max(0, Math.min(Q.need, Q.val(r.a) - r.base)), tk = key(today()), left = Math.round((parse(r.until) - today())/864e5), g = Q.go(r.a);
+  if (r.done) return r.done === tk ? `<div class="card reqcard done"><b>✓ Просьба выполнена</b><div class="small" style="margin-top:4px">«${Q.t(r.a)}». Жители благодарят: настроение +5% до ${fmtD(parse(S.town.thx))}. Почёт города: ${S.town.honor}.</div><div class="tiny muted" style="margin-top:4px">Новая просьба — завтра.</div></div>` : '';
+  if (r.skip) return '';
+  return `<div class="card reqcard"><div class="rhead"><b style="font-size:16px">Просьба жителей</b><span class="rst">${left > 0 ? `ещё ${left + 1} ${plural(left + 1,'день','дня','дней')}` : 'последний день'}</span></div>
+    <div style="margin-top:4px"><b>${Q.t(r.a)}</b></div><div class="tiny muted">Почему: ${Q.why(r.a)}.</div>
+    ${Q.need > 1 ? `<div class="bar" style="margin:8px 0 2px"><i style="width:${pct(cur/Q.need)}%;background:var(--gold)"></i></div><div class="tiny muted">${r.k === 'home' ? `${cur} из ${Q.need} мест` : `${cur} из ${Q.need}`}</div>` : ''}
+    <div class="row" style="gap:8px;margin-top:8px">${g.act === 'tpick' ? `<button class="btn pri" data-act="tpick" data-g="${g.g}">Показать здание</button>` : cityLvl() >= 2 ? `<button class="btn pri" data-act="gbuild">Строить квартал</button>` : ''}<button class="btn" data-act="reqskip">Не сейчас</button></div>
+    <div class="tiny muted" style="margin-top:6px">Выполнишь — жители поблагодарят: настроение +5% на неделю. Монет за просьбы нет — монеты только за дела.</div></div>`; }
+
+/* ================== ГАЗЕТА ДНЯ ================== */
+// «Вести» — несколько строк о городе за прошедшие сутки: жители, вчерашние стройки, просьбы, жалобы, погода, приметы сезона.
+// Всё от данных и сида дня. Прочитана — когда открыт «Город» (S.town.news = дата); до этого на кнопке «Город» горит точка.
+const NEWS_S = {
+  winter:[['Дети лепят снеговика у школы','school'],['На базаре продают горячие чуреки','bazaar'],['Дворники с утра расчищают тротуары',''],['В пекарне очередь за горячим хлебом','bakery'],['Ночью был мороз, лужи затянуло льдом','']],
+  spring:[['В сквере зацвели абрикосы','square'],['На огородах начали копать грядки',''],['Река поднялась от талого снега',''],['Во дворах сушат ковры после зимы',''],['Школьники сажают деревья у дороги','school']],
+  summer:[['На базаре первые черешня и абрикосы','bazaar'],['Вечером весь город вышел гулять в парк','park'],['На стадионе играют в футбол до темноты','stadium'],['В родник выстроилась очередь — жара','spring'],['Старики играют в нарды у остановки','stop']],
+  autumn:[['На базаре горы тыкв и айвы','bazaar'],['Дворники сгребают листья в сквере','square'],['Начался учебный год, у школы шумно','school'],['Соседи заготавливают дрова на зиму',''],['В пекарне пекут хлеб с тыквой','bakery']] };
+const newsUnread = () => !!(S.town && cityLvl() >= 1 && (S.town.news || '') < key(today()));
+function newsItems(){ const T = S.town, tk = key(today()), yk = key(addD(today(), -1)), H = (T.pop && T.pop.h) || [], v = popNow(), N = popNeeds(v), out = [], R = rng(hstr('news' + tk));
+  const dl = H.length > 1 ? H[H.length-1][1] - H[H.length-2][1] : 0, worst = [...N].sort((a,b)=>a.cov - b.cov)[0], fam = n => Math.max(1, Math.round(n/3.5));
+  out.push(dl > 0 ? `В город въехали ${fam(dl)} ${plural(fam(dl),'семья','семьи','семей')} — теперь здесь живут ${nf(v)} человек` : dl < 0 ? `Город покинули ${nf(-dl)} жителей${worst && worst.cov < .85 ? `: не хватает — ${worst.n.toLowerCase()}` : ''}` : `Спокойный день: в городе ${nf(v)} жителей, все на месте`);
+  const built = S.build.log.filter(l => l.d === yk && +l.c > 0).map(l => l.t.replace(/^(Город|Квартал): /, '')); if (built.length) out.push(`Вчера построено: ${[...new Set(built)].slice(0,3).join(', ')}${built.length > 3 ? ' и другое' : ''}`);
+  const r = [T.req, T.reqDone].find(x => x && x.done === yk); if (r) out.push(`Жители благодарят: ${REQ[r.k].past(r.a)}`);
+  if (worst && worst.cov < .7) out.push(`Жители жалуются: ${worst.n.toLowerCase()} — хватает только на ${pct(worst.cov)}%`);
+  else if (popHappy(v) >= .9) out.push('Жители довольны городом — на улицах спокойно и чисто');
+  const w = Wx.at(today()); out.push(`Погода: сегодня ${Wx.N[w.day || w.k]}`);
+  const sp = (NEWS_S[curSeason()] || []).filter(([,b]) => !b || bLvl(b)); if (sp.length) out.push(sp[Math.floor(R()*sp.length)][0]);
+  return out; }
+function newsCard(){ popSync(); const L = cityLvl(), it = newsItems(), t = today();
+  return `<div class="card newscard"><div class="rhead"><b style="font-size:16px">Вести · ${CITY.names[L-1]}</b><span class="rst">${fmtD(t)}</span></div>
+    <div class="nhead">${esc(it[0])}</div><ul class="nlist">${it.slice(1).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`; }
 
 /* ================== ПОСТРОЕНО СЕГОДНЯ ================== */
 // По журналу покупок с полем w: здания, клетки квартала, свой и соседний участок. Снесённое и перенесённое не подсвечивается.
@@ -2600,7 +2663,7 @@ function vTown(){
   else if (townSel === 'nb') h += `<div class="card selc" id="tsel"><div class="rhead"><b style="font-size:17px">Соседи</b><span class="rst">${T.nb} из ${NB_STEPS} шагов</span></div><div class="bar" style="margin:8px 0;--a:var(--gold)"><i style="width:${pct(T.nb/NB_STEPS)}%"></i></div>
       <div class="small">Хороших недель: <b>${gw}</b>. Соседи расчищают участки и строятся сами, когда неделя в среднем закрыта на 60% и больше. Построенное не рушится.</div></div>`;
   else if (ECON.town[townSel]) h += `<div class="card selc" id="tsel" style="padding-top:6px;padding-bottom:6px">${bCard(townSel, X, 1).replace('class="tgoal', 'style="border-top:0" class="tgoal')}${TOWN.move.includes(townSel) ? `<div class="row" style="gap:8px;margin:2px 0 6px"><button class="chip btn" data-act="tmove" data-g="${townSel}">${ic('town')}Переставить</button>${S.town.pos && S.town.pos[townSel] ? `<button class="chip btn" data-act="tmback" data-g="${townSel}">Вернуть на своё место</button>` : ''}</div>` : ''}</div>`;
-  h += popCard();
+  h += newsCard() + reqCard() + popCard();
   h += `<div class="kpis pk"><div class="kpi"><div class="v">${ids.filter(i=>bLvl(i)).length}<span class="muted" style="font-size:.6em"> из ${ids.length}</span></div><div class="l">Зданий построено</div></div><div class="kpi"><div class="v">${lvSum}<span class="muted" style="font-size:.6em"> из ${lvAll}</span></div><div class="l">Уровней зданий</div></div><div class="kpi"><div class="v">${nb.filter(s=>s===3).length}<span class="muted" style="font-size:.6em"> из 9</span></div><div class="l">Соседей построились</div></div></div>`;
   const now = ids.filter(i=>bState(i).next).sort((a,b)=>bState(a).cost - bState(b).cost), later = ids.filter(i=>!bState(i).next && !bState(i).max), done = ids.filter(i=>bState(i).max);
   h += `<div class="towngrid"><div><div class="card"><div class="rhead"><b style="font-size:17px">Можно строить сейчас</b><span class="rst">${now.length}</span></div>${now.length ? now.map(i=>bCard(i, X)).join('') : `<div class="small muted" style="margin-top:6px">Всё доступное построено. Новые здания откроет следующий уровень города.</div>`}</div></div><div>`;
@@ -3166,6 +3229,7 @@ document.addEventListener('click', async e => {
     case 'tfull': townFullSet(!townFull); render(); setTimeout(()=>window.dispatchEvent(new Event('resize')), 30); return;
     case 'tzoom': TownMap.zoomBy(+el.dataset.d > 0 ? 1.6 : 1/1.6); return;
     case 'tfly': TownMap.fly(el.dataset.t); return;
+    case 'reqskip': { const r = S.town.req; if (r && !r.done){ r.skip = 'no'; save(); toast('Хорошо. Новая просьба — завтра'); } break; }
     case 'tpick': { const g = el.dataset.g; townSel = g; TownMap.fly(g); render(); setTimeout(()=>{ const c = $('#tsel'); if (c) c.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 50); return; }
     case 'tod': S.settings.tod = el.dataset.v; save(); break;
     case 'wx': S.settings.weather = el.dataset.v; save(); break;
