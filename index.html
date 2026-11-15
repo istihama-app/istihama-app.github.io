@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#15140f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -258,6 +258,7 @@ body.tfull{overflow:hidden} body.tfull nav.bottom{display:none}
 .townwrap.full .tfbtn{top:calc(10px + var(--sat))} .townwrap.full .tmbtn{bottom:calc(12px + var(--sab))}
 body.tfull #tsel{position:fixed;left:8px;right:64px;bottom:calc(8px + var(--sab));z-index:46;max-height:46vh;overflow:auto;margin:0;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 @media (min-width:900px){.townwrap{height:min(66vh,620px)}}
+html,body{touch-action:pan-x pan-y} /* страница не приближается пальцами и двойным касанием; карта города — своим жестом */
 #tmap{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none} #tmap.drag{cursor:grabbing}
 .tmbtn{position:absolute;right:8px;bottom:8px;display:grid;gap:6px} .tmbtn .navbtn{width:40px;height:40px;background:color-mix(in srgb,var(--card) 88%,transparent)}
 .lvd{display:inline-flex;gap:4px;flex:none} .lvd i{width:9px;height:9px;border-radius:50%;background:var(--soft);border:1.5px solid var(--line)} .lvd i.on{background:var(--gold);border-color:var(--gold)}
@@ -637,6 +638,9 @@ const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><us
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
 async function route(){ const h = location.hash.replace('#',''); const nv = VIEWS.find(v=>v.id===h) ? h : 'today'; if (view === 'diary' && nv !== 'diary') { clearTimeout(dTimer); await flushDiary(); KEY = null; diaryCache = null; } if (nv !== 'tools') stopCompass(); view = nv; render(); window.scrollTo(0,0); const m = $('#main'); m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); }
 window.addEventListener('hashchange', route);
+// iPhone не слушает user-scalable=no: гасим жест приближения страницы сами. Карта города (#tmap) приближается своими касаниями — их не трогаем.
+['gesturestart','gesturechange','gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !(e.target.closest && e.target.closest('#tmap'))) e.preventDefault(); }, {passive:false});
 
 function renderNav(){
   $('#side').innerHTML = `<div class="brand">Истихама</div><div class="brand-s">постоянство на пути</div>` +
