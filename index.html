@@ -375,6 +375,30 @@ nav.bottom a .i{font-size:19px;line-height:1;height:23px;margin-bottom:3px} nav.
 @keyframes pg{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 #main.enter{animation:pg .24s ease-out}
 @media (prefers-reduced-motion:reduce){#main.enter{animation:none} .btn,.chip,.icon-btn,.navbtn,.mark,.bar i,.ringarc,.tabs button,.pr button,.cellbtn,input.in,textarea.in{transition:none}}
+/* ---- темы (v33): мягкие светлые палитры и их тёмные пары. html[data-theme] и html[data-dark=auto|on|off] ставит applyTheme() ---- */
+:root[data-theme=sand]{--bg:#f4f0e6;--card:#fffdf8;--line:#e8e1d2;--soft:#f1ecdf;--muted:#787163;--ink:#1d1b17;--tint:#ecdcb8;--pri:#3a2f22;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#3a2f22 8%,transparent),0 8px 24px color-mix(in srgb,#3a2f22 10%,transparent)}
+:root[data-theme=sand][data-dark=on]{--bg:#11100c;--card:#1b1a15;--line:#2d2a23;--soft:#25231d;--muted:#a19b8e;--ink:#eeeae0;--tint:#3b3020;--pri:#e8c88a;--onpri:#11100c;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=sand][data-dark=auto]{--bg:#11100c;--card:#1b1a15;--line:#2d2a23;--soft:#25231d;--muted:#a19b8e;--ink:#eeeae0;--tint:#3b3020;--pri:#e8c88a;--onpri:#11100c;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-theme=sky]{--bg:#edf2f8;--card:#fbfdff;--line:#d9e3ee;--soft:#e5edf6;--muted:#67768a;--ink:#16202c;--tint:#cfe0f4;--pri:#2f5379;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#2f5379 8%,transparent),0 8px 24px color-mix(in srgb,#2f5379 10%,transparent)}
+:root[data-theme=sky][data-dark=on]{--bg:#0f141a;--card:#18202a;--line:#273242;--soft:#1f2833;--muted:#94a3b6;--ink:#eeeae0;--tint:#1d3048;--pri:#9cc2ec;--onpri:#0f141a;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=sky][data-dark=auto]{--bg:#0f141a;--card:#18202a;--line:#273242;--soft:#1f2833;--muted:#94a3b6;--ink:#eeeae0;--tint:#1d3048;--pri:#9cc2ec;--onpri:#0f141a;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-theme=sage]{--bg:#eef2ea;--card:#fcfdf9;--line:#dbe3d3;--soft:#e6ecdf;--muted:#6b7863;--ink:#1a2318;--tint:#d6e4c8;--pri:#3f5c39;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#3f5c39 8%,transparent),0 8px 24px color-mix(in srgb,#3f5c39 10%,transparent)}
+:root[data-theme=sage][data-dark=on]{--bg:#10140f;--card:#19201a;--line:#2a3328;--soft:#212a20;--muted:#9aa892;--ink:#eeeae0;--tint:#24341f;--pri:#a9cf98;--onpri:#10140f;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=sage][data-dark=auto]{--bg:#10140f;--card:#19201a;--line:#2a3328;--soft:#212a20;--muted:#9aa892;--ink:#eeeae0;--tint:#24341f;--pri:#a9cf98;--onpri:#10140f;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-theme=lavender]{--bg:#f2eff8;--card:#fdfcff;--line:#e3dcee;--soft:#ebe6f3;--muted:#75708a;--ink:#211d2c;--tint:#e1d6f2;--pri:#534775;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#534775 8%,transparent),0 8px 24px color-mix(in srgb,#534775 10%,transparent)}
+:root[data-theme=lavender][data-dark=on]{--bg:#121019;--card:#1c1925;--line:#2e2a3b;--soft:#25212f;--muted:#a49cb6;--ink:#eeeae0;--tint:#302746;--pri:#c3b2ea;--onpri:#121019;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=lavender][data-dark=auto]{--bg:#121019;--card:#1c1925;--line:#2e2a3b;--soft:#25212f;--muted:#a49cb6;--ink:#eeeae0;--tint:#302746;--pri:#c3b2ea;--onpri:#121019;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-theme=peach]{--bg:#f8efe9;--card:#fffbf8;--line:#eedcd1;--soft:#f3e6dd;--muted:#856f64;--ink:#2a1c15;--tint:#f5d8c6;--pri:#7d4a33;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#7d4a33 8%,transparent),0 8px 24px color-mix(in srgb,#7d4a33 10%,transparent)}
+:root[data-theme=peach][data-dark=on]{--bg:#15100d;--card:#211915;--line:#352823;--soft:#2b201b;--muted:#b39e93;--ink:#eeeae0;--tint:#42271b;--pri:#f0b796;--onpri:#15100d;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=peach][data-dark=auto]{--bg:#15100d;--card:#211915;--line:#352823;--soft:#2b201b;--muted:#b39e93;--ink:#eeeae0;--tint:#42271b;--pri:#f0b796;--onpri:#15100d;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-theme=sea]{--bg:#ebf4f3;--card:#fafefd;--line:#d3e6e3;--soft:#e1efed;--muted:#5f7d79;--ink:#132623;--tint:#c9e6e1;--pri:#1f5a55;--onpri:#fff;--sh:0 1px 2px color-mix(in srgb,#1f5a55 8%,transparent),0 8px 24px color-mix(in srgb,#1f5a55 10%,transparent)}
+:root[data-theme=sea][data-dark=on]{--bg:#0d1514;--card:#16211f;--line:#263634;--soft:#1d2b29;--muted:#8fa9a5;--ink:#eeeae0;--tint:#173a36;--pri:#8fd5cc;--onpri:#0d1514;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)} @media (prefers-color-scheme:dark){:root[data-theme=sea][data-dark=auto]{--bg:#0d1514;--card:#16211f;--line:#263634;--soft:#1d2b29;--muted:#8fa9a5;--ink:#eeeae0;--tint:#173a36;--pri:#8fd5cc;--onpri:#0d1514;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px rgba(0,0,0,.34)}}
+:root[data-dark=off]{--faith:#1f7a5a;--mind:#3557a8;--spirit:#b0601f;--body:#b23838;--faith-s:#e3f1ea;--mind-s:#e6ecf8;--spirit-s:#f7ebdf;--body-s:#f8e4e4;--good:#1f7a5a;--bad:#b23838;--gold:#b8892a;--bead1:#d39b5c;--bead2:#7b4a1f;--cur1:#41b38a;--cur2:#145c42}
+:root[data-dark=on]{--faith:#5cc69b;--mind:#86a6ee;--spirit:#ec9f62;--body:#ee8585;--faith-s:#1a2c24;--mind-s:#1c2436;--spirit-s:#30251b;--body-s:#321f1f;--good:#5cc69b;--bad:#ee8585;--gold:#e0b257;--bead1:#e0ad72;--bead2:#6b3f19;--cur1:#7fe0b9;--cur2:#1f7a5a;color-scheme:dark}
+body{background:radial-gradient(1100px 520px at 50% -160px, color-mix(in srgb,var(--tint,#ecdcb8) 70%,transparent), transparent 72%) fixed, var(--bg)}
+.card{border:1px solid color-mix(in srgb,var(--line) 75%,transparent)}
+.btn.pri,a.btn.pri{background:var(--pri,var(--ink));border-color:var(--pri,var(--ink));color:var(--onpri,var(--card))}
+.chip.on,.chip.btn.on{background:var(--pri,var(--ink));border-color:var(--pri,var(--ink));color:var(--onpri,var(--card))}
+nav.bottom a.on{background:color-mix(in srgb,var(--tint,var(--soft)) 55%,var(--card));color:var(--ink)}
+.tabs button.on,.gtabs a.on{color:var(--pri,var(--ink))}
+.top h1{color:color-mix(in srgb,var(--pri,var(--ink)) 35%,var(--ink))}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .thbtn{border:2px solid var(--line);border-radius:14px;padding:8px;background:var(--card);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--ink)} .thbtn.on{border-color:var(--pri,var(--ink))}
+.thsw{display:flex;width:100%;height:30px;border-radius:9px;overflow:hidden;border:1px solid rgba(0,0,0,.06)} .thsw i{flex:1}
 </style>
 </head>
 <body>
@@ -1315,6 +1339,8 @@ function vPlan(){
 function vSetup(){
   let h = topbar('Настройки');
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg> Основное</h2><div class="nums"><label class="f">Как к тебе обращаться${inp('settings|name','Имя')}</label><label class="f">Старт плана${inp('settings|start','','date')}</label></div>
+    <div class="muted small" style="margin:12px 0 6px">Оформление</div><div class="themes">${Object.entries(THEMES).map(([k,[n,a,b,c]])=>`<button class="thbtn ${(S.settings.theme||'sand')===k?'on':''}" data-act="theme" data-t="${k}"><span class="thsw"><i style="background:${a}"></i><i style="background:${b}"></i><i style="background:${c}"></i></span>${n}</button>`).join('')}</div>
+    <div class="muted small" style="margin:12px 0 6px">Тёмная тема</div><div class="chips">${[['auto','Как на телефоне'],['off','Всегда светлая'],['on','Всегда тёмная']].map(([v,n])=>`<button class="chip btn ${(S.settings.dark||'auto')===v?'on':''}" data-act="darkm" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted small" style="margin:12px 0 6px">Мой режим дня сейчас</div><div class="chips"><button class="chip btn ${S.settings.mode==='work'?'on':''}" data-act="mode" data-m="work">Работаю 9–18</button><button class="chip btn ${S.settings.mode==='free'?'on':''}" data-act="mode" data-m="free">Свободный график</button></div>
     <div class="muted small" style="margin:12px 0 6px">Время года на участке и в городе</div><div class="chips">${[['auto','Авто — по календарю'],['winter','Зима'],['spring','Весна'],['summer','Лето'],['autumn','Осень']].map(([v,n])=>`<button class="chip btn ${(SEASON_N[S.settings.season]?S.settings.season:'auto')===v?'on':''}" data-act="season" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${SEASON_N[curSeason()].toLowerCase()}. «Авто» берёт дату с устройства.</div>
@@ -1582,7 +1608,7 @@ function taper(p0,c,p1,w0,w1,fill){
     L.push(`${f1(p[0]+nx*w)},${f1(p[1]+ny*w)}`); R.push(`${f1(p[0]-nx*w)},${f1(p[1]-ny*w)}`); }
   return `<path d="M${L.join('L')}L${R.reverse().join('L')}Z" fill="${fill}"/><circle cx="${f1(p1[0])}" cy="${f1(p1[1])}" r="${f1(w1/2)}" fill="${fill}"/>`; }
 function treeSVG(T){
-  const dark = matchMedia('(prefers-color-scheme: dark)').matches, sn = curSeason();
+  const dark = isDark(), sn = curSeason();
   const P = dark ? {sky:{winter:['#1b2430','#151a21'],spring:['#17271f','#171d18'],summer:['#16222e','#1d1d18'],autumn:['#2a2118','#1d1914']}[sn], soil:['#4a3524','#241a12'], bark:'#a17c57', grass:'#4f7d3a', good:'#56c27f', ok:'#8fc36b', weak:'#a99f68', stone:'#5d4a3a', root:'#c9a27a'}
                  : {sky:{winter:['#dbe6ef','#f5f7f8'],spring:['#d9efe0','#f7f4e6'],summer:['#c9e3f4','#f8f2df'],autumn:['#f1dcc0','#f7f0e3']}[sn], soil:['#8a6440','#4f3622'], bark:'#6b4a2f', grass:'#78a955', good:'#2e8b4f', ok:'#78b957', weak:'#cdbf78', stone:'#a58566', root:'#e2c39b'};
   const W = 400, H = 560, gy = 392, cx = 200, seed = hstr(S.settings.start || '2026-11-16'), sel = p => treePart===p ? 'sel' : '';
@@ -1743,7 +1769,10 @@ const CO = '<i class="coin" aria-label="монет"></i>';
 const nf = n => Math.round(n).toLocaleString('ru-RU');
 const matP = m => ECON.mat[m].p * (S.build.tools.barrow && ECON.mat[m].bulk ? .9 : 1) * (1 - townBonus().mat/100);
 const curSeason = () => SEASON_N[S.settings.season] ? S.settings.season : season(today());
-const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+const isDark = () => { const m = S && S.settings && S.settings.dark; return m === 'on' ? true : m === 'off' ? false : matchMedia('(prefers-color-scheme: dark)').matches; };
+const THEMES = {sand:['Песок','#f4f0e6','#ecdcb8','#3a2f22'], sky:['Небо','#edf2f8','#cfe0f4','#2f5379'], sage:['Шалфей','#eef2ea','#d6e4c8','#3f5c39'], lavender:['Лаванда','#f2eff8','#e1d6f2','#534775'], peach:['Персик','#f8efe9','#f5d8c6','#7d4a33'], sea:['Бирюза','#ebf4f3','#c9e6e1','#1f5a55']};
+function applyTheme(){ const r = document.documentElement, t = THEMES[S.settings.theme] ? S.settings.theme : 'sand'; r.dataset.theme = t; r.dataset.dark = ['on','off'].includes(S.settings.dark) ? S.settings.dark : 'auto';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = isDark() ? getComputedStyle(r).getPropertyValue('--bg').trim() || '#15140f' : THEMES[t][1]; }
 // Монеты считаются заново из отметок дней: сняли отметку — монета ушла, поставили снова — вернулась, двойного начисления нет.
 // Дела Веры монет не дают (решение владельца): ни пункты, ни таймеры Корана и уроков.
 function coins(){
@@ -3194,6 +3223,8 @@ document.addEventListener('click', async e => {
     case 'ptab': pathTab = el.dataset.t; break;
     case 'pltab': planTab = el.dataset.t; break;
     case 'mode': S.settings.mode = el.dataset.m; save(); break;
+    case 'theme': S.settings.theme = el.dataset.t; save(); applyTheme(); if (window.TownMap && TownMap.redraw) TownMap.redraw(); break;
+    case 'darkm': S.settings.dark = el.dataset.v; save(); applyTheme(); break;
     case 'axedit': axEdit = el.dataset.a || ''; break;
     case 'itdel': { const it = S.items.find(i => i.id === el.dataset.id && !i.to); if (!it) return; if (!await ask(`Убрать пункт «${esc(it.t)}»? С сегодняшнего дня его не будет. Прошлые дни и отметки сохранятся.`, 'Убрать')) return; it.to = key(today()); S.settings.minDay = (S.settings.minDay||[]).filter(x => x !== it.id); save(); toast('Пункт убран'); break; }
     case 'axfold': { const f = S.settings.fold = S.settings.fold || {}; f[el.dataset.a] = f[el.dataset.a] ? 0 : 1; save(); break; }
@@ -3352,13 +3383,14 @@ document.addEventListener('submit', async e => {
 });
 async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:S, photos:{before:PH.before, after:PH.after}}); }
 async function doExport(){
-  try { const blob = new Blob([await exportText()], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chetyre-sily-${key(today())}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  try { const blob = new Blob([await exportText()], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-${key(today())}.json`;   // имя файла — по названию приложения; внутри по-прежнему app:"chetyre-sily" для совместимости document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
     S.lastExport = Date.now(); save(); toast('Копия скачивается'); } catch(err){ toast('Скачивание не сработало — используй «Скопировать»'); }
 }
 setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then(()=>{ KEY = null; diaryCache = null; if (view==='diary') render(); }); } }, 30000);
 
 /* ================== СТАРТ ================== */
 (async function init(){
+  applyTheme(); try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); render(); }); } catch(e){}
   // приложение на экране «Домой» было установлено с адресом #today — теперь первым открывается город (один раз за запуск)
   if ((matchMedia('(display-mode: standalone)').matches || navigator.standalone) && location.hash === '#today' && !sessionStorage.getItem('opened')) history.replaceState(null, '', '#town');
   try { sessionStorage.setItem('opened', '1'); } catch(e){}
