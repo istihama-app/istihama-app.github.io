@@ -152,6 +152,14 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .reqcard{border-left:3px solid var(--gold)} .reqcard.done{border-left-color:var(--good)}
 #bnav .i{position:relative} .ndot{position:absolute;top:-2px;right:-6px;width:9px;height:9px;border-radius:50%;background:#e0553f;box-shadow:0 0 0 2px var(--card)} .ndot.side{position:static;display:inline-block;margin-left:6px;vertical-align:2px}
 .daystrip{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;padding:10px 14px} .daystrip .grow{display:flex;flex-direction:column;min-width:0} .daystrip .dsp{font-weight:700;font-size:17px;min-width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--soft)} .daystrip .dsp.ok{background:color-mix(in srgb, var(--good) 20%, var(--card));color:var(--good)} .daystrip .dgo{font-weight:600;color:var(--spirit);white-space:nowrap;font-size:14px}
+.prwrap{display:grid;place-items:center;margin:6px 0} .prclock{width:min(300px,86vw);height:auto}
+.prlist{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:6px} .prl{display:flex;justify-content:space-between;padding:6px 10px;border-radius:10px;background:var(--soft);font-size:14.5px} .prl.on{background:color-mix(in srgb,var(--faith) 18%,var(--card));font-weight:700} .prl.past{opacity:.6} .prl.ram{grid-column:1/-1;background:color-mix(in srgb,var(--faith) 10%,var(--card))}
+.pradj{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px} .pra{display:flex;align-items:center;gap:6px;font-size:14px} .pra span{flex:1} .pra .navbtn{width:32px;height:32px;min-height:0} .pra b{min-width:26px;text-align:center}
+.pr button{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1} .pr button .prt{font-size:10px;font-weight:500;opacity:.75;margin-top:2px}
+.ramcard{border-left:3px solid var(--faith);background:color-mix(in srgb,var(--faith) 7%,var(--card))} .ramcard.eid{border-left-color:var(--gold)} .ramrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;text-align:center} .ramrow div{display:flex;flex-direction:column;background:var(--card);border-radius:10px;padding:6px} .ramrow b{font-size:18px}
+.hcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px} .hdn{text-align:center;font-size:11px;color:var(--muted)} .hd{position:relative;display:flex;flex-direction:column;align-items:center;padding:5px 0;border-radius:9px;background:var(--soft)} .hd b{font-size:15px;line-height:1.1} .hd i{font-style:normal;font-size:9.5px;color:var(--muted)} .hd.now{outline:2px solid var(--pri,var(--ink))} .hd.ev{background:color-mix(in srgb,var(--gold) 30%,var(--card))} .hd.ram{background:color-mix(in srgb,var(--faith) 18%,var(--card))} .hd em{position:absolute;top:3px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--faith)}
+.hleg{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px} .hleg.ev{background:color-mix(in srgb,var(--gold) 30%,var(--card))} .hleg.ram{background:color-mix(in srgb,var(--faith) 18%,var(--card))} .hev{padding:7px 0;border-top:1px solid var(--line);align-items:center}
+.tbk{grid-template-columns:1fr 1fr !important;gap:6px} .tbk .kpi{padding:8px 10px} .tbk .kpi .v{font-size:18px}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -609,7 +617,7 @@ const firstStart = () => (S.years && S.years.length) ? parse(S.years[0].start) :
 // День знает свой ключ (_k, не сохраняется), поэтому старые дни считаются по тем пунктам, что были тогда.
 const ITEM0 = Object.fromEntries(['faith','mind','spirit','body'].map(a => [a, ITEMS.filter(i=>i.ax===a).length]));   // сколько пунктов было в разделе изначально — по ним монеты
 const itemsAll = () => (S && Array.isArray(S.items) && S.items.length ? S.items : ITEMS);
-const itemsOn = k => itemsAll().filter(i => (!i.from || i.from <= k) && (!i.to || k < i.to));
+const itemsOn = k => { const a = itemsAll().filter(i => (!i.from || i.from <= k) && (!i.to || k < i.to)); let ram = false; try { ram = !!(S && S.qibla && isRamadan(k)); } catch(e){} return ram ? a.concat(RAM_ITEMS) : a; };
 const ITEMS_ON = k => itemsOn(k || key(today()));
 const tagDay = (d, k) => { if (d && !d._k) Object.defineProperty(d, '_k', {value:k, enumerable:false, writable:true}); return d; };
 const dkey = d => (d && d._k) || key(today());
@@ -623,7 +631,7 @@ function weekNo(d){ return Math.floor((monday(d) - monday(startDate()))/ (7*864e
 // минимальный день: до трёх пунктов на выбор; сделаны все — день засчитан и серия не рвётся, даже если меньше 50%
 // намазы — все пять, остальное — любая отметка (и «½»). Монет минимум не добавляет: монеты, как и раньше, за сами пункты.
 const minName = id => MIN_S[id] || ((itemsAll().find(i=>i.id===id) || {}).t || '').slice(0,18);
-const MIN_S = {namaz:'Намазы', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Религия', deep:'Глуб. чтение', light:'Чтение', fear:'Страх', muhasaba:'Мухасаба', train:'Тренировка', food:'Белок', sleep:'Сон'};
+const MIN_S = {saum:'Пост', suhur:'Сухур', tarawih:'Таравих', juz:'Джуз', namaz:'Намазы', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Религия', deep:'Глуб. чтение', light:'Чтение', fear:'Страх', muhasaba:'Мухасаба', train:'Тренировка', food:'Белок', sleep:'Сон'};
 const MIN_T = {namaz:'Пять намазов', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Изучение религии', deep:'Глубокое чтение', light:'Чтение или аудио', fear:'Шаг вопреки страху', muhasaba:'Мухасаба', train:'Тренировка или шаги', food:'Белок и вода', sleep:'Лёг вовремя'};
 const minSet = () => (S.settings.minDay || []).filter(id => ITEMS_ON().some(i=>i.id === id)).slice(0,3);
 const minOk = (day,id) => id === 'namaz' ? itemVal(day,id) >= 1 : itemVal(day,id) > 0;
@@ -806,9 +814,9 @@ function vToday(){
   const name = S.settings.name ? `, ${esc(S.settings.name)}` : '';
   const before = viewDate < startDate() ? `<div class="banner">План стартует ${fmtD(startDate())}. Отмечать можно уже сейчас.</div>` : '';
   let h = topbar(isT ? `Ассаляму алейкум${name}` : 'День');
-  h += `<div class="datebar"><button class="navbtn" data-act="dprev">‹</button><div class="d"><b>${fmtD(viewDate)}</b><span class="muted small">${DFULL[viewDate.getDay()]}${isT?' · сегодня':''} · неделя ${Math.max(1,weekNo(viewDate))} из 52</span></div><button class="navbtn" data-act="dnext">›</button></div>`;
+  h += `<div class="datebar"><button class="navbtn" data-act="dprev">‹</button><div class="d"><b>${fmtD(viewDate)}</b><span class="muted small">${DFULL[viewDate.getDay()]}${isT?' · сегодня':''} · ${hijTxt(viewDate)}</span></div><button class="navbtn" data-act="dnext">›</button></div>`;
   if (!isT) h += `<div style="text-align:center;margin:-4px 0 10px"><button class="chip btn" data-act="dtoday">Вернуться к сегодня</button></div>`;
-  h += yearBanner(isT) + warn + before;
+  h += ramadanCard(isT) + yearBanner(isT) + warn + before;
   h += `<div class="card hero"><div class="rings">${ringsSVG(day)}<div class="legend">
     <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${itemsOn(k).filter(i=>itemVal(day,i.id) < 1).length} из ${itemsOn(k).length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
@@ -821,7 +829,7 @@ function vToday(){
     if (fold){ h += `</div>`; return; }
     its.forEach(i=>{
       if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz');
-        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}</button>`).join('')}</div></div></div>`;
+        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${(()=>{ const PT = prayTimes(viewDate); return PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}<small class="prt">${hm(PT[PR5[j]])}</small></button>`).join(''); })()}</div></div></div>`;
       } else { const v = itemVal(day,i.id);
         h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
     });
@@ -966,6 +974,141 @@ function newsItems(){ const T = S.town, tk = key(today()), yk = key(addD(today()
 function newsCard(){ popSync(); const L = cityLvl(), it = newsItems(), t = today();
   return `<div class="card newscard"><div class="rhead"><b style="font-size:16px">Вести · ${CITY.names[L-1]}</b><span class="rst">${fmtD(t)}</span></div>
     <div class="nhead">${esc(it[0])}</div><ul class="nlist">${it.slice(1).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`; }
+
+/* ================== НАМАЗ, КАЛЕНДАРЬ, РАМАДАН (v34) ================== */
+// Время намазов считается в телефоне по формуле положения солнца для места из «Киблы» (S.qibla: широта, долгота), показывается в часовом поясе телефона.
+// Метод (углы Фаджра и Иши), Аср (шафиитский / ханафитский) и поправки ±мин — в S.pray. Хиджра — Intl (Умм аль-Кура), иначе табличный расчёт; сдвиг ±дни — settings.hijriAdj.
+const PR_METHODS = {russia:{n:'ДУМ России · 16° / 15°', f:16, i:15}, mwl:{n:'Всемирная исламская лига · 18° / 17°', f:18, i:17}, egypt:{n:'Египет · 19,5° / 17,5°', f:19.5, i:17.5}, umm:{n:'Умм аль-Кура · 18,5° / Иша через 90 мин', f:18.5, im:90}, isna:{n:'ИСНА · 15° / 15°', f:15, i:15}};
+const PR_IDS = ['fajr','sunrise','dhuhr','asr','maghrib','isha'], PR_N = {fajr:'Фаджр', sunrise:'Восход', dhuhr:'Зухр', asr:'Аср', maghrib:'Магриб', isha:'Иша'}, PR5 = ['fajr','dhuhr','asr','maghrib','isha'];
+const prCfg = () => ({method:'russia', asr:1, imsak:10, remind:true, ...(S.pray || {}), adj:{...((S.pray && S.pray.adj) || {})}});
+const prCache = {};
+function prayTimes(date){ const c = prCfg(), lat = +S.qibla.lat, lon = +S.qibla.lon, k = key(date) + '|' + lat + '|' + lon + '|' + JSON.stringify(c); if (prCache[k]) return prCache[k];
+  const M = PR_METHODS[c.method] || PR_METHODS.russia, rad = Math.PI/180, sin = d => Math.sin(d*rad), cos = d => Math.cos(d*rad), tan = d => Math.tan(d*rad);
+  const fix = (a, b) => a - b*Math.floor(a/b), y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  const jd0 = (() => { let Y = y, Mo = m; if (Mo <= 2){ Y--; Mo += 12; } const A = Math.floor(Y/100), B = 2 - A + Math.floor(A/4); return Math.floor(365.25*(Y + 4716)) + Math.floor(30.6001*(Mo + 1)) + d + B - 1524.5; })();
+  const sun = t => { const D = jd0 - 2451545 + t/24, g = fix(357.529 + .98560028*D, 360), q = fix(280.459 + .98564736*D, 360), L = fix(q + 1.915*sin(g) + .020*sin(2*g), 360), e = 23.439 - .00000036*D;
+    const RA = fix(Math.atan2(cos(e)*sin(L), cos(L))/rad/15, 24); return {decl:Math.asin(sin(e)*sin(L))/rad, eqt:q/15 - RA}; };
+  const noon = t => { let n = 12 - sun(t).eqt; n = n - 24*Math.round((n - 12)/24); return n - lon/15; };   // UTC, ч
+  const angleT = (ang, t, ccw) => { const D = sun(t).decl, v = (-sin(ang) - sin(D)*sin(lat))/(cos(D)*cos(lat)); if (v < -1 || v > 1) return NaN; const T = Math.acos(v)/rad/15; return noon(t) + (ccw ? -T : T); };
+  const asrT = t => { const D = sun(t).decl, ang = -Math.atan(1/(c.asr + tan(Math.abs(lat - D))))/rad; return angleT(ang, t, false); };
+  const g0 = h => h - lon/15; let T = {fajr:g0(5), sunrise:g0(6), dhuhr:g0(12), asr:g0(13), maghrib:g0(18), isha:g0(18)};
+  for (let it = 0; it < 2; it++){ const f = h => isNaN(h) ? g0(12) : h; T = {fajr:angleT(M.f, f(T.fajr), true), sunrise:angleT(.833, f(T.sunrise), true), dhuhr:noon(f(T.dhuhr)), asr:asrT(f(T.asr)), maghrib:angleT(.833, f(T.maghrib), false), isha:M.im ? NaN : angleT(M.i, f(T.isha), false)}; }
+  if (M.im) T.isha = T.maghrib + M.im/60;
+  const night = T.sunrise + 24 - T.maghrib, pf = night*M.f/60, pi = night*(M.i || 18)/60;   // высокие широты: не больше доли ночи
+  if (isNaN(T.fajr) || T.sunrise - T.fajr > pf) T.fajr = T.sunrise - pf; if (!M.im && (isNaN(T.isha) || T.isha - T.maghrib > pi)) T.isha = T.maghrib + pi;
+  const base = Date.UTC(y, m - 1, d), r = {};
+  PR_IDS.forEach(id => { r[id] = new Date(base + Math.round(T[id]*60 + (+c.adj[id] || 0))*60000); });
+  r.imsak = new Date(r.fajr - (+c.imsak || 0)*60000);
+  return prCache[k] = r; }
+const hm = d => d && !isNaN(d) ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '—';
+function prNext(now){ now = now || new Date(); const t = prayTimes(today()); for (const id of PR5) if (t[id] > now) return {id, at:t[id]}; return {id:'fajr', at:prayTimes(addD(today(), 1)).fajr, tom:1}; }
+const leftT = ms => { const m = Math.max(0, Math.round(ms/60000)), h = Math.floor(m/60); return h ? `${h} ч ${m%60} мин` : `${m} мин`; };
+
+// ---- хиджра ----
+const HM = ['Мухаррам','Сафар','Раби аль-авваль','Раби ас-сани','Джумада аль-уля','Джумада ас-сания','Раджаб','Шаабан','Рамадан','Шавваль','Зуль-каада','Зуль-хиджа'];
+let hijFmt = null; try { hijFmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', {day:'numeric', month:'numeric', year:'numeric', timeZone:'UTC'}); if (!/islamic/.test(hijFmt.resolvedOptions().calendar)) hijFmt = null; } catch(e){ hijFmt = null; }
+const hijC = {};
+function hijri(date){ const adj = +((S && S.settings && S.settings.hijriAdj) || 0), dd = addD(date, adj), ck = key(dd); if (hijC[ck]) return hijC[ck]; const u = new Date(Date.UTC(dd.getFullYear(), dd.getMonth(), dd.getDate(), 12)); let r;
+  if (hijFmt){ const p = {}; hijFmt.formatToParts(u).forEach(x => p[x.type] = x.value); r = {d:+p.day, m:+p.month, y:parseInt(p.year, 10)}; }
+  if (!r || !r.d || !r.m){ const jd = Math.floor(u/864e5) + 2440588; let l = jd - 1948440 + 10632; const n = Math.floor((l - 1)/10631); l = l - 10631*n + 354;   // табличный (кувейтский) расчёт
+    const j = Math.floor((10985 - l)/5316)*Math.floor(50*l/17719) + Math.floor(l/5670)*Math.floor(43*l/15238); l = l - Math.floor((30 - j)/15)*Math.floor(17719*j/50) - Math.floor(j/16)*Math.floor(15238*j/43) + 29;
+    const m = Math.floor(24*l/709); r = {d:l - Math.floor(709*m/24), m, y:30*n + j - 30}; }
+  return hijC[ck] = r; }
+const hijTxt = date => { const h = hijri(date); return `${h.d} ${HM[h.m - 1].toLowerCase().replace(/^раби/, 'раби').replace(/^(\S)/, c => c)} ${h.y}`; };
+const isRamadan = k => hijri(parse(k)).m === 9;
+const HEV = [[1,1,'Новый год по хиджре'],[1,10,'Ашура — сунна держать пост'],[3,12,'Мавлид — рождение Пророка ﷺ'],[7,27,'Исра и Мирадж'],[9,1,'Начало Рамадана'],[9,27,'27-я ночь Рамадана'],[10,1,'Ураза-байрам'],[12,9,'День Арафа — сунна держать пост'],[12,10,'Курбан-байрам']];
+function hijEvents(n){ const out = [], t = today(); for (let i = 0; i < 400 && out.length < n; i++){ const d = addD(t, i), h = hijri(d); HEV.forEach(([m, dd, txt]) => { if (h.m === m && h.d === dd) out.push({d, txt, i}); }); } return out; }
+
+// ---- Рамадан: дополнительные пункты Веры только в дни Рамадана ----
+const RAM_ITEMS = [{id:'saum', ax:'faith', t:'Пост (ураза)'}, {id:'suhur', ax:'faith', t:'Сухур до рассвета'}, {id:'tarawih', ax:'faith', t:'Таравих-намаз'}, {id:'juz', ax:'faith', t:'Коран: джуз за день'}];
+function ramadanCard(isT){ if (!isT) return ''; const t = today(), h = hijri(t), now = new Date(), P = prayTimes(t);
+  if (h.m === 8 && h.d >= 22){ let n = 0; while (hijri(addD(t, n)).m !== 9 && n < 12) n++; return `<div class="card ramcard"><b>До Рамадана ${n} ${plural(n,'день','дня','дней')}</b><div class="tiny muted" style="margin-top:4px">Начало зависит от новолуния и объявления ДУМ — календарь можно сдвинуть на день в «Практика → Календарь».</div></div>`; }
+  if (h.m === 10 && h.d === 1) return `<div class="card ramcard eid"><b>Ураза-байрам мубарак!</b><div class="small" style="margin-top:4px">В праздник не постятся. Праздничный намаз — утром после восхода.</div></div>`;
+  if (h.m === 12 && h.d === 10) return `<div class="card ramcard eid"><b>Курбан-байрам мубарак!</b></div>`;
+  if (h.m === 12 && h.d === 9) return `<div class="card ramcard"><b>День Арафа</b><div class="small" style="margin-top:4px">Сунна — держать пост: он искупает грехи прошлого и следующего года.</div></div>`;
+  if (h.m !== 9) return '';
+  const fast = now >= P.imsak && now < P.maghrib, nx = now < P.imsak ? ['Сухур — до', P.imsak] : now < P.maghrib ? ['Ифтар — в', P.maghrib] : ['Сухур завтра до', prayTimes(addD(t, 1)).imsak];
+  return `<div class="card ramcard"><div class="rhead"><b style="font-size:17px">Рамадан · день ${h.d}</b><span class="rst">${fast ? 'пост идёт' : 'пост не держат'}</span></div>
+    <div class="ramrow"><div><span class="tiny muted">Сухур до (имсак)</span><b>${hm(P.imsak)}</b></div><div><span class="tiny muted">Фаджр</span><b>${hm(P.fajr)}</b></div><div><span class="tiny muted">Ифтар (магриб)</span><b>${hm(P.maghrib)}</b></div></div>
+    <div class="small" style="margin-top:8px">${nx[0]} <b>${hm(nx[1])}</b> — через ${leftT(nx[1] - now)}.</div>
+    ${h.d >= 20 ? `<div class="tiny" style="margin-top:6px">Последние десять ночей: ищи Ночь Предопределения, особенно в нечётные ночи${h.d % 2 === 0 ? ' — сегодня вечером начинается нечётная' : ''}. Закят аль-фитр — раздать до праздничного намаза.</div>` : ''}</div>`; }
+
+// ---- часы: циферблат на 24 часа с намазами; в Рамадан — дуга поста ----
+function prClock(){ const now = new Date(), t = today(), P = prayTimes(t), R = 112, C = 130, ang = d => ((d.getHours() + d.getMinutes()/60)/24)*360 - 90, pt = (a, r) => [C + r*Math.cos(a*Math.PI/180), C + r*Math.sin(a*Math.PI/180)];
+  const arc = (a0, a1, r) => { const [x0, y0] = pt(a0, r), [x1, y1] = pt(a1, r), big = ((a1 - a0 + 360) % 360) > 180 ? 1 : 0; return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${big} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
+  const nx = prNext(now), ram = hijri(t).m === 9;
+  let g = `<svg viewBox="-40 -12 340 284" class="prclock" role="img" aria-label="Часы с временем намазов"><circle cx="${C}" cy="${C}" r="${R + 14}" fill="var(--card)" stroke="var(--line)"/>
+    <path d="${arc(ang(P.maghrib), ang(P.sunrise), R)}" stroke="color-mix(in srgb,var(--mind) 35%,transparent)" stroke-width="16" fill="none"/>
+    <path d="${arc(ang(P.sunrise), ang(P.maghrib), R)}" stroke="color-mix(in srgb,var(--gold) 30%,transparent)" stroke-width="16" fill="none"/>`;
+  if (ram) g += `<path d="${arc(ang(P.imsak), ang(P.maghrib), R - 20)}" stroke="var(--faith)" stroke-width="6" stroke-linecap="round" fill="none" opacity=".8"/>`;
+  for (let hh = 0; hh < 24; hh++){ const a = hh/24*360 - 90, [x0, y0] = pt(a, R + 10), [x1, y1] = pt(a, R + (hh % 6 ? 6 : 2)); g += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="var(--muted)" stroke-width="${hh % 6 ? 1 : 2}"/>`; if (!(hh % 6)){ const [tx, ty] = pt(a, R - 30); g += `<text x="${tx.toFixed(1)}" y="${(ty + 4).toFixed(1)}" font-size="11" fill="var(--muted)" text-anchor="middle">${hh}</text>`; } }
+  PR_IDS.forEach(id => { const a = ang(P[id]), [x, y] = pt(a, R), [lx, ly] = pt(a, R - 22 - (id === 'sunrise' ? 0 : 0)), on = id === nx.id && !nx.tom;
+    g += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${on ? 8 : 6}" fill="${id === 'sunrise' ? 'var(--gold)' : 'var(--faith)'}" stroke="var(--card)" stroke-width="2"/>`;
+    const [tx, ty] = pt(a, R + 26); g += `<text x="${tx.toFixed(1)}" y="${(ty + 4).toFixed(1)}" font-size="10.5" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--ink)' : 'var(--muted)'}" text-anchor="middle">${PR_N[id]}</text>`; });
+  const [hx, hy] = pt(ang(now), R - 4); g += `<line x1="${C}" y1="${C}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="${C}" cy="${C}" r="5" fill="var(--ink)"/>`;
+  g += `<g paint-order="stroke" stroke="var(--card)" stroke-width="5" stroke-linejoin="round"><text x="${C}" y="${C - 34}" text-anchor="middle" font-size="12" fill="var(--muted)">сейчас ${hm(now)}</text><text x="${C}" y="${C + 34}" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">${PR_N[nx.id]} ${hm(nx.at)}</text><text x="${C}" y="${C + 52}" text-anchor="middle" font-size="12" fill="var(--muted)">через ${leftT(nx.at - now)}</text></g></svg>`;
+  return g; }
+
+// ---- вкладка «Намаз» ----
+function tPray(){ const t = today(), P = prayTimes(t), Pt = prayTimes(addD(t, 1)), c = prCfg(), now = new Date(), nx = prNext(now), ram = hijri(t).m === 9;
+  let h = `<div class="card prcard"><div class="rhead"><b style="font-size:17px">${esc(S.qibla.place)}</b><span class="rst">${hijTxt(t)}</span></div><div class="prwrap" id="prclock">${prClock()}</div>
+    <div class="prlist">${PR_IDS.map(id => `<div class="prl ${id === nx.id && !nx.tom ? 'on' : ''} ${P[id] < now && id !== nx.id ? 'past' : ''}"><span>${PR_N[id]}</span><b>${hm(P[id])}</b></div>`).join('')}${ram ? `<div class="prl ram"><span>Имсак (конец сухура)</span><b>${hm(P.imsak)}</b></div>` : ''}<div class="prl past"><span>Завтра Фаджр</span><b>${hm(Pt.fajr)}</b></div></div>
+    <div class="tiny muted" style="margin-top:8px">Время считается в телефоне по положению солнца для этого места, без интернета. Сверь с расписанием своей мечети или ДУМ ЧР и, если нужно, подгони поправками ниже.</div></div>`;
+  h += `<div class="card"><h2>${ic('alert')} Напоминания</h2>
+    <div class="row" style="flex-wrap:nowrap;gap:10px"><span class="small grow">Напоминать в приложении<br><span class="tiny muted">Звук и вибрация, когда наступает время намаза${ram ? ', сухура и ифтара' : ''}. Работает, пока приложение открыто.</span></span><button class="chip btn ${c.remind ? 'on' : ''}" data-act="prremind">${c.remind ? 'вкл' : 'выкл'}</button></div>
+    <div class="small" style="margin-top:12px">Чтобы телефон напоминал, даже когда приложение закрыто, добавь время намазов в календарь телефона: файл с событиями на 30 дней${ram ? ' (с сухуром и ифтаром)' : ''}, у каждого — напоминание.</div>
+    <button class="btn pri" style="margin-top:8px;width:100%" data-act="prics">${ic('cal')}Добавить в календарь телефона на 30 дней</button>
+    <div class="tiny muted" style="margin-top:6px">На iPhone после скачивания нажми «Добавить все». Через месяц добавь заново — время меняется по сезону.</div></div>`;
+  h += `<div class="card"><h2>${ic('gear')} Расчёт</h2><label class="f">Метод<select class="in" data-act-change="prmethod" id="prmethod">${Object.entries(PR_METHODS).map(([k, o]) => `<option value="${k}" ${c.method === k ? 'selected' : ''}>${o.n}</option>`).join('')}</select></label>
+    <div class="muted small" style="margin:10px 0 6px">Аср</div><div class="chips"><button class="chip btn ${c.asr === 1 ? 'on' : ''}" data-act="prasr" data-v="1">Шафиитский (тень = предмет)</button><button class="chip btn ${c.asr === 2 ? 'on' : ''}" data-act="prasr" data-v="2">Ханафитский (тень ×2)</button></div>
+    <div class="muted small" style="margin:12px 0 6px">Поправки, минут</div><div class="pradj">${PR_IDS.map(id => `<div class="pra"><span>${PR_N[id]}</span><button class="navbtn" data-act="pradj" data-id="${id}" data-d="-1">−</button><b>${(+c.adj[id] || 0) > 0 ? '+' : ''}${+c.adj[id] || 0}</b><button class="navbtn" data-act="pradj" data-id="${id}" data-d="1">+</button></div>`).join('')}</div>
+    <div class="row" style="gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap"><span class="small grow">Имсак — за сколько минут до Фаджра заканчивать сухур</span><button class="navbtn" data-act="primsak" data-d="-5">−</button><b>${c.imsak}</b><button class="navbtn" data-act="primsak" data-d="5">+</button></div>
+    <div class="tiny muted" style="margin-top:8px">Место берётся из вкладки «Кибла»: <b>${esc(S.qibla.place)}</b> (${(+S.qibla.lat).toFixed(2)}, ${(+S.qibla.lon).toFixed(2)}). <a href="#tools" data-act="ttab" data-t="qibla" style="color:var(--spirit);font-weight:600;text-decoration:none">Изменить место</a></div></div>`;
+  afterFns.push(prLive);
+  return h; }
+let prT = 0; function prLive(){ clearInterval(prT); prT = setInterval(() => { const b = $('#prclock'); if (!b || view !== 'tools' || toolTab !== 'namaz'){ clearInterval(prT); return; } b.innerHTML = prClock(); }, 30000); }
+
+// ---- вкладка «Календарь» ----
+let calOff = 0;
+function tCal(){ const t = today(), h0 = hijri(t);
+  let m = h0.m + calOff, y = h0.y; while (m < 1){ m += 12; y--; } while (m > 12){ m -= 12; y++; }
+  let d = addD(t, calOff*29.5 - h0.d + 15 | 0); for (let i = 0; i < 40 && !(hijri(d).m === m && hijri(d).d === 1); i++) d = addD(d, hijri(d).m === m || (hijri(d).y > y) || (hijri(d).y === y && hijri(d).m > m) ? -1 : 1);
+  const days = []; for (let i = 0; i < 31; i++){ const x = addD(d, i), hx = hijri(x); if (hx.m !== m) break; days.push([x, hx]); }
+  const lead = (days[0][0].getDay() + 6) % 7, ev = (mm, dd) => HEV.find(e => e[0] === mm && e[1] === dd);
+  let h = `<div class="card"><div class="datebar" style="margin:0 0 10px"><button class="navbtn" data-act="calm" data-d="-1">‹</button><div class="d"><b>${HM[m - 1]} ${y}</b><span class="muted small">${fmtD(days[0][0])} — ${fmtD(days[days.length - 1][0])} ${days[days.length - 1][0].getFullYear()}</span></div><button class="navbtn" data-act="calm" data-d="1">›</button></div>
+    <div class="hcal">${DN.map(x => `<span class="hdn">${x}</span>`).join('')}${'<span></span>'.repeat(lead)}${days.map(([x, hx]) => { const e = ev(hx.m, hx.d), wd = x.getDay(), white = hx.d >= 13 && hx.d <= 15, sun = (wd === 1 || wd === 4);
+      return `<span class="hd ${key(x) === key(t) ? 'now' : ''} ${e ? 'ev' : ''} ${hx.m === 9 ? 'ram' : ''}" title="${e ? esc(e[2]) : ''}"><b>${hx.d}</b><i>${x.getDate()}.${pad(x.getMonth() + 1)}</i>${white || sun ? '<em></em>' : ''}</span>`; }).join('')}</div>
+    <div class="tiny muted" style="margin-top:8px"><span class="hleg ev"></span> праздник или памятный день · <span class="hleg ram"></span> Рамадан · точка — сунна поста (пн, чт, «белые дни» 13–15)</div></div>`;
+  const E = hijEvents(8);
+  h += `<div class="card"><h2>${ic('cal')} Ближайшие даты</h2>${E.map(e => `<div class="row hev" style="flex-wrap:nowrap"><span class="grow small"><b>${e.txt}</b><br><span class="muted tiny">${fmtD(e.d)} ${e.d.getFullYear()} · ${hijTxt(e.d)}</span></span><span class="chip">${e.i ? `через ${e.i} ${plural(e.i,'день','дня','дней')}` : 'сегодня'}</span></div>`).join('')}</div>`;
+  h += `<div class="card"><h2>${ic('gear')} Сдвиг календаря</h2><div class="small">Календарь — Умм аль-Кура. Если ДУМ объявил начало месяца на день раньше или позже, сдвинь здесь — сдвинутся и Рамадан, и праздники.</div>
+    <div class="chips" style="margin-top:8px">${[-2, -1, 0, 1, 2].map(v => `<button class="chip btn ${(+(S.settings.hijriAdj || 0)) === v ? 'on' : ''}" data-act="hadj" data-v="${v}">${v > 0 ? '+' : ''}${v} ${v ? 'дн.' : '— как есть'}</button>`).join('')}</div></div>`;
+  return h; }
+
+// ---- напоминания: в приложении и файлом календаря ----
+const prDone = {};
+function prTick(){ if (!S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9, list = PR5.map(id => [id, P[id], `Время намаза: ${PR_N[id]}`]);
+  if (ram){ list.push(['iftar', P.maghrib, 'Время ифтара — разговляйся']); list.push(['iftar10', new Date(P.maghrib - 600000), 'Через 10 минут ифтар']); list.push(['imsak', P.imsak, 'Имсак — сухур заканчивается']); list.push(['imsak15', new Date(P.imsak - 900000), 'Через 15 минут конец сухура']); }
+  list.forEach(([id, at, txt]) => { const k = dk + id; if (prDone[k] || now < at || now - at > 120000) return; prDone[k] = 1; toast(txt); try { beep(); } catch(e){} vib([200, 100, 200]);
+    try { if (window.Notification && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r => r.showNotification('Истихама', {body:txt, icon:'icon-192.png', tag:k})); } catch(e){} }); }
+setInterval(prTick, 20000);
+function prIcs(){ const z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Istihama//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Намаз — Истихама'];
+  const ev = (at, title, dk, id, pre) => { L.push('BEGIN:VEVENT', `UID:${dk}-${id}@istihama`, `DTSTAMP:${z(new Date())}`, `DTSTART:${z(at)}`, 'DURATION:PT15M', `SUMMARY:${title}`, 'BEGIN:VALARM', `TRIGGER:-PT${pre || 0}M`, 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'END:VALARM', 'END:VEVENT'); };
+  for (let i = 0; i < 30; i++){ const d = addD(today(), i), P = prayTimes(d), dk = key(d), ram = hijri(d).m === 9; PR5.forEach(id => ev(P[id], PR_N[id], dk, id, 0)); if (ram){ ev(P.imsak, 'Конец сухура (имсак)', dk, 'imsak', 20); ev(P.maghrib, 'Ифтар', dk, 'iftar', 10); } }
+  L.push('END:VCALENDAR'); const blob = new Blob([L.join('\r\n')], {type:'text/calendar'}), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-namaz-${key(today())}.ics`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Файл календаря скачивается'); try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch(e){} }
+
+// ---- копилка чёток ----
+function tbBank(){ const T = S.tasbih, t = today(), tk = key(t), sum = f => Object.entries(T.day || {}).reduce((a, [k, v]) => a + (f(k) ? +v || 0 : 0), 0);
+  const ym = tk.slice(0, 7), yy = tk.slice(0, 4), wk = key(monday(t)), pm = key(new Date(t.getFullYear(), t.getMonth() - 1, 1)).slice(0, 7);
+  const v = {d:sum(k => k === tk), w:sum(k => k >= wk && k <= tk), m:sum(k => k.startsWith(ym)), pm:sum(k => k.startsWith(pm)), y:sum(k => k.startsWith(yy)), all:sum(() => true)};
+  const per = {}; Object.entries(T.dd || {}).forEach(([k, o]) => { if (k.startsWith(ym)) for (const n in o) per[n] = (per[n] || 0) + o[n]; });
+  const fill = Math.min(1, v.m/Math.max(3300, v.pm)), H = 96, lv = Math.round(H*fill);
+  return `<div class="card tbbank"><div class="rhead"><b style="font-size:17px">Копилка зикра</b><span class="rst">всего ${nf(v.all)}</span></div>
+    <div class="row" style="gap:14px;align-items:flex-end;flex-wrap:nowrap;margin-top:8px"><svg viewBox="0 0 80 120" width="70" height="104" aria-hidden="true"><path d="M18 14h44v8c8 4 12 12 12 22v58a10 10 0 0 1-10 10H16A10 10 0 0 1 6 102V44c0-10 4-18 12-22z" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/><clipPath id="jar"><path d="M18 22c-8 4-12 12-12 22v58a10 10 0 0 0 10 10h48a10 10 0 0 0 10-10V44c0-10-4-18-12-22z"/></clipPath><rect x="0" y="${112 - lv}" width="80" height="${lv}" fill="color-mix(in srgb,var(--faith) 45%,transparent)" clip-path="url(#jar)"/>${[...Array(v.m ? Math.max(1, Math.min(14, Math.round(fill*14))) : 0)].map((_, i) => `<circle cx="${16 + (i*13)%50}" cy="${106 - Math.floor(i/4)*12 - (i%2)*3}" r="4" fill="var(--faith)" opacity=".75"/>`).join('')}<rect x="14" y="8" width="52" height="8" rx="3" fill="var(--line)"/></svg>
+      <div class="grow"><div class="kpis tbk"><div class="kpi"><div class="v">${nf(v.d)}</div><div class="l">сегодня</div></div><div class="kpi"><div class="v">${nf(v.w)}</div><div class="l">за неделю</div></div><div class="kpi"><div class="v">${nf(v.m)}</div><div class="l">за ${MN[t.getMonth()].toLowerCase()}</div></div><div class="kpi"><div class="v">${nf(v.y)}</div><div class="l">за ${yy} год</div></div></div></div></div>
+    ${Object.keys(per).length ? `<div class="muted small" style="margin:10px 0 4px">В этом месяце</div>${Object.entries(per).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<div class="row small" style="flex-wrap:nowrap;padding:3px 0;border-top:1px solid var(--line)"><span class="grow">${esc(n)}</span><b>${nf(c)}</b></div>`).join('')}` : ''}
+    <div class="tiny muted" style="margin-top:8px">${v.pm ? `В прошлом месяце — ${nf(v.pm)}.` : ''} Это только счёт для себя: в игре зикр ничего не даёт.</div></div>`; }
 
 /* ================== ПОСТРОЕНО СЕГОДНЯ ================== */
 // По журналу покупок с полем w: здания, клетки квартала, свой и соседний участок. Снесённое и перенесённое не подсвечивается.
@@ -1368,11 +1511,11 @@ function vSetup(){
 }
 
 /* ================== ПРАКТИКА: ТАЙМЕР, ЧЁТКИ, КИБЛА ================== */
-let toolTab = 'timer';
+let toolTab = 'namaz';
 function vTools(){
   let h = topbar('Практика');
-  h += `<div class="tabs">${[['timer','<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> Таймер'],['tasbih','<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg> Чётки'],['qibla','<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Кибла']].map(([k,n])=>`<button class="${toolTab===k?'on':''}" data-act="ttab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({timer:tTimer, tasbih:tTasbih, qibla:tQibla}[toolTab] || tTimer)();
+  h += `<div class="tabs">${[['namaz', ic('mosque') + ' Намаз'],['cal', ic('cal') + ' Календарь'],['timer','<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> Таймер'],['tasbih','<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg> Чётки'],['qibla','<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Кибла']].map(([k,n])=>`<button class="${toolTab===k?'on':''}" data-act="ttab" data-t="${k}">${n}</button>`).join('')}</div>`;
+  return h + ({namaz:tPray, cal:tCal, timer:tTimer, tasbih:tTasbih, qibla:tQibla}[toolTab] || tPray)();
 }
 
 /* ---- сигнал ---- */
@@ -1462,6 +1605,7 @@ function tTasbih(){
     <div class="muted tiny" style="text-align:center;margin-top:10px">Когда круг закончится, телефон коротко завибрирует и счёт начнётся заново. На компьютере можно нажимать пробел.</div></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Свой азкар</h2><div class="nums"><label class="f">Что читаю<input class="in" id="tb_t" placeholder="Например: Субхана-Ллахи ва бихамдихи"></label><label class="f">Сколько раз<input class="in" id="tb_k" type="number" inputmode="numeric" min="1" value="100"></label></div>
     <button class="btn pri" style="margin-top:12px" data-act="tbadd">Добавить</button>${D.own?`<button class="btn danger" style="margin:12px 0 0 8px" data-act="tbdel">Удалить «${esc(D.t)}»</button>`:''}</div>`;
+  h += tbBank();
   afterFns.push(()=>drawBeads());
   return h;
 }
@@ -1482,14 +1626,14 @@ function drawBeads(){
 }
 function tbTap(){
   const T = S.tasbih, D = curD(), dk = key(today());
-  D.c++; beadSeq++; T.day[dk] = (T.day[dk]||0) + 1;
+  D.c++; beadSeq++; T.day[dk] = (T.day[dk]||0) + 1; T.dd = T.dd || {}; const dd = T.dd[dk] = T.dd[dk] || {}; dd[D.t] = (dd[D.t]||0) + 1;
   if (D.c >= D.n){ D.c = 0; D.l = (D.l||0) + 1; vib([70,60,70,60,220]); toast(`Круг ${D.l} ✓ ${D.n} раз`);
     const bx = $('#beads'); if (bx){ bx.classList.remove('lap'); void bx.offsetWidth; bx.classList.add('lap'); } }
   else vib(12);
   save(); drawBeads(); const c = $('#tbC'); if (c) c.textContent = D.c; const inf = $('#tbI'); if (inf) inf.textContent = tbInfo();
 }
 function tbUndo(){ const T = S.tasbih, D = curD(), dk = key(today()); if (!D.c) return toast('В этом круге ещё нет счёта');
-  D.c--; beadSeq--; if (T.day[dk]) T.day[dk]--; save(); drawBeads(); $('#tbC').textContent = D.c; $('#tbI').textContent = tbInfo(); }
+  D.c--; beadSeq--; if (T.day[dk]) T.day[dk]--; if (T.dd && T.dd[dk] && T.dd[dk][D.t]) T.dd[dk][D.t]--; save(); drawBeads(); $('#tbC').textContent = D.c; $('#tbI').textContent = tbInfo(); }
 
 /* ---- кибла: формула большого круга, без интернета ---- */
 let qOn = false, qHead = null, qGot = false, qAligned = false, qT = null;
@@ -3312,7 +3456,14 @@ document.addEventListener('click', async e => {
     case 'lookbuy': { const g = el.dataset.k, v = lookTry[g], o = LOOK[g] && LOOK[g].o[v]; if (!o) return; if (!buy(o.p, `Вид дома: ${o.n.toLowerCase()}`, 'p')) return; S.build.own[g+':'+v] = key(today()); S.build.look[g] = v; delete lookTry[g]; save(); toast(`${o.n} — теперь твоё ✓`); break; }
     case 'tpart': treePart = treePart === el.dataset.p ? 'about' : el.dataset.p; break;
     case 'bigch': { const b = S.bigCh[+el.dataset.i]; if (!b) return; b.done = !b.done; b.date = b.done ? key(today()) : ''; if (b.done) toast('Большой вызов пройден — на дереве новый плод'); save(); break; }
-    case 'ttab': toolTab = el.dataset.t; if (toolTab !== 'qibla') stopCompass(); break;
+    case 'ttab': toolTab = el.dataset.t; if (toolTab !== 'qibla') stopCompass(); if (el.tagName === 'A'){ render(); return; } break;
+    case 'prremind': S.pray = {...prCfg(), remind:!prCfg().remind}; save(); if (S.pray.remind) try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch(e){} break;
+    case 'prasr': S.pray = {...prCfg(), asr:+el.dataset.v}; save(); break;
+    case 'pradj': { const c = prCfg(); c.adj[el.dataset.id] = Math.max(-30, Math.min(30, (+c.adj[el.dataset.id] || 0) + (+el.dataset.d))); S.pray = c; save(); break; }
+    case 'primsak': { const c = prCfg(); c.imsak = Math.max(0, Math.min(30, (+c.imsak || 0) + (+el.dataset.d))); S.pray = c; save(); break; }
+    case 'prics': prIcs(); return;
+    case 'calm': calOff += +el.dataset.d; break;
+    case 'hadj': S.settings.hijriAdj = +el.dataset.v; for (const k in hijC) delete hijC[k]; save(); break;
     case 'gotool': toolTab = el.dataset.t; return;
     case 'tgo': tToggle(el.dataset.id); break;
     case 'treset': if (await ask('Сбросить таймер? Это время не засчитается.','Сбросить')) { delete S.timers.run[el.dataset.id]; save(true); } break;
@@ -3345,6 +3496,7 @@ document.addEventListener('click', async e => {
   render();
 });
 async function flushDiary(){ if (diaryCache?.dirty) await saveEntry(true); }
+document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'prmethod'){ S.pray = {...prCfg(), method:t.value}; save(); render(); } });
 document.addEventListener('input', e => {
   lastAct = Date.now();
   const t = e.target;
