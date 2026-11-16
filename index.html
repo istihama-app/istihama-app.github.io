@@ -171,6 +171,11 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .hrow .hbox{min-width:60%} .hbox.gold{background:color-mix(in srgb,var(--gold) 18%,var(--card))} .hbox.faith{background:color-mix(in srgb,var(--faith) 14%,var(--card))} .harr{text-align:center;color:var(--muted);font-size:11.5px;margin:4px 0}
 .qmini .qdeg{font-size:28px;font-weight:750;min-width:64px;text-align:center;color:var(--faith)} details.mpl{border-top:1px solid var(--line);padding:8px 0} details.mpl summary{cursor:pointer}
 .unlcard{border-left:3px solid var(--pri,var(--gold));background:color-mix(in srgb,var(--tint,#f3e6c8) 35%,var(--card))} .nextunl{padding:10px 14px} .hbox.locked{opacity:.5;pointer-events:none} .hbox.locked b::after{content:' — скоро';font-weight:400;font-size:11px;color:var(--muted)}
+main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:var(--fz,1)}
+.hifz{margin-top:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--faith) 9%,var(--card));border:1px solid color-mix(in srgb,var(--faith) 25%,var(--line))} .hrow2{display:flex;gap:6px;align-items:center;padding:3px 0} .hrow2 .chip{min-height:30px;padding:3px 10px;font-size:13px} .hsr{padding:7px 0;border-top:1px solid var(--line)}
+.gsug{margin:10px 0 6px;padding:8px 10px;border-radius:10px;background:var(--soft)} .gnums{display:grid;gap:6px} .gnum{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line)} .gnum .tiny{font-size:13px} .gnum b{min-width:52px;text-align:center;font-size:18px} .gnum .navbtn{width:38px;height:38px;min-height:0}
+.hero .rings{flex-wrap:wrap;justify-content:center;row-gap:10px} .hero .legend{min-width:0;flex:1 1 140px}
+.bnotes{margin-top:6px} .bnotes summary{cursor:pointer;color:var(--spirit)}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -889,6 +894,7 @@ function vToday(){
       <form data-form="itadd" data-a="${a}" class="row" style="gap:8px;margin-top:8px;flex-wrap:nowrap"><input class="in grow" name="t" maxlength="60" placeholder="Новый пункт в «${AX[a].n}»" required style="margin:0"><button class="btn pri">Добавить</button></form>
       <button class="btn" style="margin-top:8px;width:100%" data-act="axedit" data-a="">Готово</button></div>`; }
     else if (isT) h += `<button class="axeditbtn" data-act="axedit" data-a="${a}">Изменить пункты</button>`;
+    if (a === 'faith') h += hifzBox(isT);
     h += axTools(a, isT) + `</div>`;
   });
   h += ownCard(k, day);
@@ -1161,6 +1167,43 @@ function tbBank(){ const T = S.tasbih, t = today(), tk = key(t), sum = f => Obje
     ${Object.keys(per).length ? `<div class="muted small" style="margin:10px 0 4px">В этом месяце</div>${Object.entries(per).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<div class="row small" style="flex-wrap:nowrap;padding:3px 0;border-top:1px solid var(--line)"><span class="grow">${esc(n)}</span><b>${nf(c)}</b></div>`).join('')}` : ''}
     <div class="tiny muted" style="margin-top:8px">${v.pm ? `В прошлом месяце — ${nf(v.pm)}.` : ''} Это только счёт для себя: в игре зикр ничего не даёт.</div></div>`; }
 
+/* ================== ХИФЗ: ПОВТОРЕНИЕ ВЫУЧЕННЫХ СУР (v37) ================== */
+// У выученной суры (s >= 2) есть lr — дата последнего повторения и iv — интервал в днях. «Крепко» — интервал ×2,2 (до 90 дней), «с ошибками» — снова через день.
+// Пора повторить, когда lr + iv <= сегодня; первыми — самые просроченные. Это дело Веры: в игре ничего не даёт.
+function hifzDue(){ const t = today(); return S.suras.map((s, i) => ({s, i})).filter(x => x.s.s >= 2).map(x => ({...x, over: x.s.lr ? Math.round((t - addD(parse(x.s.lr), x.s.iv || 1))/864e5) : 0})).filter(x => x.over >= 0).sort((a, b) => b.over - a.over); }
+function hifzBox(isT){ if (!isT) return ''; const d = hifzDue(); if (!d.length) return '';
+  return `<div class="hifz"><div class="small" style="margin-bottom:6px"><b>Повторить наизусть сегодня</b> <span class="tiny muted">· ${d.length} ${plural(d.length,'сура','суры','сур')}</span></div>${d.slice(0, 3).map(({s, i}) => `<div class="hrow2"><span class="grow small">${esc(s.n)}</span><button class="chip btn" data-act="hrev" data-i="${i}" data-q="ok">Крепко</button><button class="chip btn" data-act="hrev" data-i="${i}" data-q="weak">С ошибками</button></div>`).join('')}${d.length > 3 ? `<a class="tiny" href="#path" data-act="ptab" data-t="suras" style="color:var(--spirit)">ещё ${d.length - 3} →</a>` : ''}</div>`; }
+function hifzCard(){ const L = S.suras.map((s, i) => ({s, i})).filter(x => x.s.s >= 2); if (!L.length) return `<div class="card"><h2>${ic('book')} Повторение</h2><div class="small muted">Когда отметишь суру «выучил», она попадёт в повторение: приложение будет подсказывать, что повторить сегодня, чтобы выученное не забывалось.</div></div>`;
+  const t = today();
+  return `<div class="card"><h2>${ic('book')} Повторение</h2><div class="tiny muted" style="margin:-6px 0 8px">Чем крепче держится сура, тем реже её нужно повторять: через 1, 2, 5, 11, 24… дней.</div>${L.map(({s, i}) => { const nx = s.lr ? addD(parse(s.lr), s.iv || 1) : t, dd = Math.round((nx - t)/864e5), str = Math.min(1, Math.log(1 + (s.iv || 1))/Math.log(91));
+    return `<div class="row hsr" style="flex-wrap:nowrap;gap:8px;align-items:center"><span class="grow small">${esc(s.n)}<br><span class="tiny muted">${dd <= 0 ? 'повторить сегодня' : `следующее — через ${dd} ${plural(dd,'день','дня','дней')}`}${s.rc ? ` · повторений: ${s.rc}` : ''}</span></span><div class="bar" style="width:70px"><i style="width:${pct(str)}%;background:var(--faith)"></i></div>${dd <= 0 ? `<button class="chip btn" data-act="hrev" data-i="${i}" data-q="ok">Крепко</button>` : ''}</div>`; }).join('')}</div>`; }
+
+/* ================== ДНЕВНИК ТРЕНИРОВОК (v37) ================== */
+// S.gym = {ex:[названия], log:{дата:[{e, w, r, s}]}}: упражнение, вес (кг, 0 — свой вес), повторы, подходы.
+// Подсказка «что сегодня»: в прошлый раз сделал 8+ повторов — добавь 2,5 кг (со своим весом — +1 повтор), иначе повтори тот же вес.
+const GYM0 = ['Присед','Жим лёжа','Становая тяга','Подтягивания','Отжимания','Жим стоя','Тяга в наклоне','Планка, сек'];
+let gymSel = '', gymDraft = null;
+const gymG = () => { S.gym = S.gym || {ex:GYM0.slice(), log:{}}; S.gym.ex ||= GYM0.slice(); S.gym.log ||= {}; return S.gym; };
+function gymLast(e){ const G = gymG(), tk = key(today()); const ks = Object.keys(G.log).filter(k => k < tk).sort().reverse(); for (const k of ks){ const r = (G.log[k] || []).filter(x => x.e === e); if (r.length) return {k, r:r[r.length - 1], all:r}; } return null; }
+function gymSuggest(e){ const L = gymLast(e); if (!L) return {w:e.includes('Подтяг') || e.includes('Отжим') || e.includes('Планка') ? 0 : 20, r:8, s:3, why:'Первый раз: начни с лёгкого веса и чистой техники.'};
+  const {w, r, s} = L.r; if (r >= 8 && w > 0) return {w:w + 2.5, r:Math.max(6, r - 2), s, why:`В прошлый раз ${String(w).replace('.', ',')} кг × ${r} — пора добавить 2,5 кг.`};
+  if (w === 0) return {w:0, r:r + 1, s, why:`В прошлый раз ${r} повторов — попробуй на один больше.`};
+  return {w, r:r + 1, s, why:`В прошлый раз ${String(w).replace('.', ',')} кг × ${r} — тот же вес, на повтор больше.`}; }
+function gymBest(e){ const G = gymG(), pts = Object.keys(G.log).sort().map(k => { const r = (G.log[k] || []).filter(x => x.e === e); if (!r.length) return null; const bw = r.every(x => !x.w); return {k, v:bw ? Math.max(...r.map(x => x.r)) : Math.max(...r.map(x => x.w)), bw}; }).filter(Boolean); return pts; }
+function spark(pts){ if (pts.length < 2) return ''; const v = pts.map(p => p.v), mn = Math.min(...v), mx = Math.max(...v), W = 120, H = 32, x = i => 4 + i*(W - 8)/(pts.length - 1), y = a => H - 4 - (mx === mn ? .5 : (a - mn)/(mx - mn))*(H - 8);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--body)" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(pts.length - 1).toFixed(1)}" cy="${y(v[v.length - 1]).toFixed(1)}" r="3" fill="var(--body)"/></svg>`; }
+function pGym(){ const G = gymG(), tk = key(today()), todayL = G.log[tk] || [];
+  if (!gymSel || !G.ex.includes(gymSel)) gymSel = G.ex[0] || ''; if (!gymDraft || gymDraft.e !== gymSel){ const sg = gymSuggest(gymSel); gymDraft = {e:gymSel, w:sg.w, r:sg.r, s:sg.s}; }
+  const sg = gymSuggest(gymSel), D = gymDraft, num = (f, step, unit) => `<div class="gnum"><span class="tiny muted">${unit}</span><div class="row" style="flex-wrap:nowrap;gap:6px;align-items:center"><button class="navbtn" data-act="gstep" data-f="${f}" data-d="${-step}">−</button><b>${String(D[f]).replace('.', ',')}</b><button class="navbtn" data-act="gstep" data-f="${f}" data-d="${step}">+</button></div></div>`;
+  let h = `<div class="card axis-body"><h2>${ic('dumb')} Тренировка сегодня</h2><div class="chips">${G.ex.map(e => `<button class="chip btn ${e === gymSel ? 'on' : ''}" data-act="gsel" data-e="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+    <div class="gsug small">${sg.why}</div><div class="gnums">${num('w', 2.5, 'вес, кг (0 — свой)')}${num('r', 1, 'повторов')}${num('s', 1, 'подходов')}</div>
+    <button class="btn pri" style="width:100%;margin-top:10px" data-act="gadd">Записать: ${esc(gymSel)}</button>
+    ${todayL.length ? `<div class="muted small" style="margin:12px 0 4px">Сегодня записано</div>${todayL.map((x, i) => `<div class="row small" style="flex-wrap:nowrap;padding:4px 0;border-top:1px solid var(--line)"><span class="grow">${esc(x.e)}</span><b>${x.w ? String(x.w).replace('.', ',') + ' кг × ' : ''}${x.r} × ${x.s}</b><button class="navbtn" style="width:30px;height:30px;min-height:0;margin-left:8px" data-act="gdel" data-i="${i}" aria-label="Удалить">✕</button></div>`).join('')}` : ''}</div>`;
+  const prog = G.ex.map(e => ({e, p:gymBest(e)})).filter(x => x.p.length);
+  h += `<div class="card"><h2>${ic('chart')} Прогресс</h2>${prog.length ? prog.map(({e, p}) => `<div class="row" style="flex-wrap:nowrap;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="grow small"><b>${esc(e)}</b><br><span class="tiny muted">${p[0].bw ? 'повторов' : 'кг'}: ${String(p[0].v).replace('.', ',')} → <b>${String(p[p.length - 1].v).replace('.', ',')}</b> · тренировок: ${p.length}</span></span>${spark(p.slice(-12))}</div>`).join('') : '<div class="small muted">Запиши первую тренировку — здесь появится рост силы по каждому упражнению.</div>'}</div>`;
+  h += `<div class="card"><h2>${ic('plus')} Своё упражнение</h2><div class="row" style="flex-wrap:nowrap;gap:8px"><input class="in grow" id="g_t" maxlength="30" placeholder="Например: выпады" style="margin:0"><button class="btn" data-act="gex">Добавить</button></div></div>`;
+  return h; }
+
 /* ================== ПОСТРОЕНО СЕГОДНЯ ================== */
 // По журналу покупок с полем w: здания, клетки квартала, свой и соседний участок. Снесённое и перенесённое не подсвечивается.
 function todayBuilt(){ const k = key(today()), seen = new Set(), out = [];
@@ -1193,6 +1236,7 @@ function vYear(){
     <div class="bar" style="margin-top:8px"><i style="width:${pct(kept/Math.max(1,total))}%;background:var(--good)"></i></div>
     <div class="muted small" style="margin-top:8px">${over ? (cur ? 'Год пройден. То, что ты делал каждый день, никуда не делось — оно в тебе и в городе.' : 'Этот год в архиве.') : `До финала ${Math.max(0, Math.round((Y.b - t)/864e5))} дн.`}</div></div>`;
   h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.n ? pct(c.pr/(c.n*5))+'%' : '0%','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
+  { const bk = S.books.filter(b => b.s === 2 && inY(b.done)); if (bk.length) h += `<div class="card"><h2>${ic('book')} Книги года — главные мысли</h2>${bk.map(b => `<div style="padding:6px 0;border-top:1px solid var(--line)"><b class="small">${esc(b.t)}</b>${b.idea ? `<div class="small">${esc(b.idea)}</div>` : ''}${b.notes ? `<div class="tiny muted" style="white-space:pre-wrap;margin-top:2px">${esc(b.notes.slice(0, 400))}${b.notes.length > 400 ? '…' : ''}</div>` : ''}</div>`).join('')}</div>`; }
   h += `<div class="card"><h2>Разделы за год</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}</div>`;
   if (cur){ const G = gGrid(), gh = Object.values(G).filter(x => UP.includes(x)).length;
     h += `<div class="card"><h2>${ic('town')} Город</h2><div class="small">Уровень: <b>${CITY.names[cityLvl()-1]}</b>. Уровней у зданий: ${devN()}.${gh ? ` В своём квартале домов: ${gh}.` : ''} Монет заработано за всё время: ${nf(coins().earned)}${CO}.</div><div class="muted tiny" style="margin-top:6px">Город, дом и участок переходят в следующий год целиком.</div></div>`;
@@ -1426,9 +1470,9 @@ function baField(side, f){
 }
 function vPath(){
   let h = topbar('Путь');
-  const tabs = [['ba','До / После'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['suras','Суры'],['capsule','Письмо в будущее']];
+  const tabs = [['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['suras','Суры'],['capsule','Письмо в будущее']];
   h += `<div class="tabs">${tabs.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({ba:pBA, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 function pBA(){
   const B = S.before, A = S.after, N = nowVals();
@@ -1481,11 +1525,12 @@ function pBooks(){
   [1,2,3,4,0].forEach(st=>{ const list = S.books.map((b,i)=>({b,i})).filter(x=>(x.b.st||0)===st); if (!list.length && st) return; if (!list.length) return;
     h += `<div class="card"><h2>${st?STAGES[st].n+' — «'+STAGES[st].t+'»':'Мои книги'}</h2>${list.map(({b,i})=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="dot" style="background:var(--${b.ax});margin-top:8px"></span><div class="grow">${esc(b.t)}${b.done?` <span class="muted tiny">· ${fmtD(parse(b.done))}</span>`:''}</div>
       <button class="chip btn ${b.s===2?'on':''}" data-act="bcyc" data-i="${i}">${ST[b.s]}</button>${!BOOKS0.some(x=>x[2]===b.t)?`<button class="btn danger" style="padding:3px 8px" data-act="bdel" data-i="${i}">✕</button>`:''}</div>
-      ${b.s?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="books|${i}|idea" placeholder="Главная мысль книги одной фразой" value="${esc(b.idea||'')}">`:''}</div>`).join('')}</div>`; });
+      ${b.s?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="books|${i}|idea" placeholder="Главная мысль книги одной фразой" value="${esc(b.idea||'')}"><details class="bnotes" ${b.notes ? '' : ''}><summary class="tiny">Заметки и цитаты${b.notes ? ' ✓' : ''}</summary>${txt(`books|${i}|notes`, 'Что запомнилось, цитаты со страницами, с чем не согласен…', 5)}</details>`:''}</div>`).join('')}</div>`; });
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Своя книга</h2><div class="row"><input class="in grow" id="b_t" placeholder="Автор — «Название»"><select class="in" id="b_ax" style="width:auto"><option value="mind">Разум</option><option value="faith">Вера</option><option value="spirit">Дух</option><option value="body">Тело</option></select></div><button class="btn pri" style="margin-top:8px" data-act="badd">Добавить</button></div>`;
   return h;
 }
-function pSuras(){
+function pSuras(){ return hifzCard() + pSuras0(); }
+function pSuras0(){
   const n = S.suras.filter(s=>s.s>=2).length;
   let h = `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg> Наизусть: ${n} из ${S.suras.length}</h2><div class="bar axis-faith" style="margin-bottom:10px"><i style="width:${pct(n/S.suras.length)}%"></i></div><div class="muted tiny">Нажимай на статус: учу → выучил → проверено у учителя.</div></div><div class="card">`;
   S.suras.forEach((s,i)=>{ h += `<div class="row" style="padding:9px 0;border-top:${i?'1px solid var(--line)':'0'};flex-wrap:nowrap"><span class="muted small" style="width:24px">${i+1}</span><span class="grow ${s.s>=2?'done':''}">${esc(s.n)}</span><button class="chip btn ${s.s===3?'on':''}" data-act="scyc" data-i="${i}">${SURA_ST[s.s]}</button></div>`; });
@@ -1582,6 +1627,7 @@ function vSetup(){
     ${isOwner() ? '' : `<div class="row" style="margin-top:12px;flex-wrap:nowrap;gap:10px"><span class="small grow">Открыть всё сразу<br><span class="tiny muted">Разделы открываются постепенно: через 3, 7 и 14 дней с отметками. Можно не ждать.</span></span><button class="chip btn ${S.settings.allOpen ? 'on' : ''}" data-act="allopen">${S.settings.allOpen ? 'вкл' : 'выкл'}</button></div>`}
     ${isOwner() ? '' : `<div class="row" style="margin-top:12px;flex-wrap:nowrap;gap:10px"><span class="small grow">План года<br><span class="tiny muted">Цели на год, фокус каждого месяца, свой распорядок и правила. Кнопка «План» появится вверху.</span></span><button class="chip btn ${S.settings.plan ? 'on' : ''}" data-act="planon">${S.settings.plan ? 'вкл' : 'выкл'}</button></div>`}
     <div class="muted small" style="margin:12px 0 6px">Оформление</div><div class="themes">${Object.entries(THEMES).map(([k,[n,a,b,c]])=>`<button class="thbtn ${(S.settings.theme||'sand')===k?'on':''}" data-act="theme" data-t="${k}"><span class="thsw"><i style="background:${a}"></i><i style="background:${b}"></i><i style="background:${c}"></i></span>${n}</button>`).join('')}</div>
+    <div class="muted small" style="margin:12px 0 6px">Размер текста</div><div class="chips">${[['0','Обычный'],['1','Крупнее'],['2','Самый крупный']].map(([v,n])=>`<button class="chip btn ${String(+S.settings.fs||0)===v?'on':''}" data-act="fsz" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted small" style="margin:12px 0 6px">Фон</div><div class="chips">${[['off','Светлый'],['on','Тёмный'],['auto','Как на телефоне']].map(([v,n])=>`<button class="chip btn ${(S.settings.dark||'off')===v?'on':''}" data-act="darkm" data-v="${v}">${n}</button>`).join('')}</div>
     ${isOwner() ? '' : '<div hidden>'}<div class="muted small" style="margin:12px 0 6px">Мой режим дня сейчас</div><div class="chips"><button class="chip btn ${S.settings.mode==='work'?'on':''}" data-act="mode" data-m="work">Работаю 9–18</button><button class="chip btn ${S.settings.mode==='free'?'on':''}" data-act="mode" data-m="free">Свободный график</button></div>${isOwner() ? '' : '</div>'}
     <div class="muted small" style="margin:12px 0 6px">Время года на участке и в городе</div><div class="chips">${[['auto','Авто — по календарю'],['winter','Зима'],['spring','Весна'],['summer','Лето'],['autumn','Осень']].map(([v,n])=>`<button class="chip btn ${(SEASON_N[S.settings.season]?S.settings.season:'auto')===v?'on':''}" data-act="season" data-v="${v}">${n}</button>`).join('')}</div>
@@ -1662,6 +1708,7 @@ function tChip(p){ const r = S.timers.run[p.id];
   return `<button class="chip btn tchip ${r?(r.st?'run':'pause'):''}" data-act="tgo" data-id="${esc(p.id)}">${r ? `${r.st?'<svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg>':'<svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>'} ${esc(p.t)} <b data-tl="${esc(p.id)}">${fmtT(tRem(r))}</b>` : `<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> ${esc(p.t)} · ${p.m} мин`}</button>`; }
 function axTools(ax, isT){
   let c = isT ? S.timers.list.filter(p=>tItem(p)?.ax===ax).map(tChip).join('') : '';
+  if (ax === 'body' && isT) c += `<a class="chip btn" href="#path" data-act="ptab" data-t="gym" style="text-decoration:none">${ic('dumb')} Журнал тренировок</a>`;
   if (ax === 'faith') c += `<a class="chip btn" href="#tools" data-act="gotool" data-t="tasbih" style="text-decoration:none"><svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg> Чётки</a><a class="chip btn" href="#tools" data-act="gotool" data-t="qibla" style="text-decoration:none"><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Кибла</a>`;
   return c ? `<div class="sep"></div><div class="chips">${c}</div>` : ''; }
 function tTimer(){
@@ -2014,7 +2061,7 @@ const matP = m => ECON.mat[m].p * (S.build.tools.barrow && ECON.mat[m].bulk ? .9
 const curSeason = () => SEASON_N[S.settings.season] ? S.settings.season : season(today());
 const isDark = () => { const m = (S && S.settings && S.settings.dark) || 'off'; return m === 'on' ? true : m === 'auto' ? matchMedia('(prefers-color-scheme: dark)').matches : false; };
 const THEMES = {sand:['Песок','#faf7f0','#f3e6c8','#9a6a34'], sky:['Небо','#f4f8fd','#d9e9fa','#2f72b8'], sage:['Шалфей','#f4f8f1','#ddebd0','#4b8044'], lavender:['Лаванда','#f8f6fc','#e8def7','#6b5bb0'], peach:['Персик','#fdf7f3','#fbe1d2','#c4643f'], sea:['Бирюза','#f2f9f8','#d3eeea','#23877d']};
-function applyTheme(){ const r = document.documentElement, t = THEMES[S.settings.theme] ? S.settings.theme : 'sand'; r.dataset.theme = t; r.dataset.dark = ['on','auto'].includes(S.settings.dark) ? S.settings.dark : 'off';
+function applyTheme(){ document.documentElement.style.setProperty('--fz', String([1, 1.12, 1.25][+S.settings.fs || 0] || 1)); const r = document.documentElement, t = THEMES[S.settings.theme] ? S.settings.theme : 'sand'; r.dataset.theme = t; r.dataset.dark = ['on','auto'].includes(S.settings.dark) ? S.settings.dark : 'off';
   const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = isDark() ? getComputedStyle(r).getPropertyValue('--bg').trim() || '#15140f' : THEMES[t][1]; }
 // Монеты считаются заново из отметок дней: сняли отметку — монета ушла, поставили снова — вернулась, двойного начисления нет.
 // Дела Веры монет не дают (решение владельца): ни пункты, ни таймеры Корана и уроков.
@@ -3481,10 +3528,11 @@ document.addEventListener('click', async e => {
     case 'stt': statT = el.dataset.t; statO = 0; break;
     case 'sprev': statO--; break;
     case 'snext': statO++; break;
-    case 'ptab': pathTab = el.dataset.t; break;
+    case 'ptab': pathTab = el.dataset.t; if (el.tagName === 'A') return; break;
     case 'pltab': planTab = el.dataset.t; break;
     case 'mode': S.settings.mode = el.dataset.m; save(); break;
     case 'theme': S.settings.theme = el.dataset.t; save(); applyTheme(); if (window.TownMap && TownMap.redraw) TownMap.redraw(); break;
+    case 'fsz': S.settings.fs = +el.dataset.v; save(); applyTheme(); break;
     case 'darkm': S.settings.dark = el.dataset.v; save(); applyTheme(); break;
     case 'howseen': if (!S.settings.howSeen){ S.settings.howSeen = 1; save(); } return;
     case 'allopen': S.settings.allOpen = S.settings.allOpen ? 0 : 1; save(); break;
@@ -3497,7 +3545,13 @@ document.addEventListener('click', async e => {
     case 'bcyc': { const b = S.books[+el.dataset.i]; b.s = (b.s+1)%3; b.done = b.s===2 ? key(today()) : ''; save(); break; }
     case 'bdel': if (await ask('Удалить книгу из списка?','Удалить')) { S.books.splice(+el.dataset.i,1); save(); } break;
     case 'badd': { const t = $('#b_t').value.trim(); if (!t) return toast('Впиши название'); S.books.push({st:0, ax:$('#b_ax').value, t, s:0, idea:'', done:''}); save(); toast('Добавлено'); break; }
-    case 'scyc': { const s = S.suras[+el.dataset.i]; s.s = (s.s+1)%4; save(); break; }
+    case 'scyc': { const s = S.suras[+el.dataset.i]; s.s = (s.s+1)%4; if (s.s >= 2 && !s.lr){ s.lr = key(today()); s.iv = 1; } save(); break; }
+    case 'hrev': { const s = S.suras[+el.dataset.i]; if (!s) return; const ok = el.dataset.q === 'ok'; s.lr = key(today()); s.iv = ok ? Math.min(90, Math.round(Math.max(2, (s.iv || 1)*2.2))) : 1; s.rc = (s.rc || 0) + 1; save(); toast(ok ? `${s.n}: следующее повторение через ${s.iv} ${plural(s.iv,'день','дня','дней')}` : `${s.n}: повторим завтра`); break; }
+    case 'gsel': gymSel = el.dataset.e; gymDraft = null; break;
+    case 'gstep': { const f = el.dataset.f, d = +el.dataset.d; gymDraft[f] = Math.max(f === 'w' ? 0 : 1, Math.round((+gymDraft[f] + d)*10)/10); break; }
+    case 'gadd': { const G = gymG(), tk = key(today()); (G.log[tk] ||= []).push({e:gymDraft.e, w:+gymDraft.w, r:+gymDraft.r, s:+gymDraft.s}); const d = ensureDay(tk); if (itemsOn(tk).some(i => i.id === 'train') && !d.c.train){ d.c.train = 1; toast('Записано · «Тренировка» отмечена ✓'); } else toast('Записано ✓'); save(); break; }
+    case 'gdel': { const G = gymG(), tk = key(today()); (G.log[tk] || []).splice(+el.dataset.i, 1); save(); break; }
+    case 'gex': { const t = ($('#g_t').value || '').trim().slice(0, 30); if (!t) return toast('Впиши название'); const G = gymG(); if (!G.ex.includes(t)) G.ex.push(t); gymSel = t; gymDraft = null; save(); break; }
     case 'fadd': { const t = $('#f_t').value.trim(); if (!t) return toast('Впиши страх'); S.fears.push({t, s:+$('#f_s').value, step:'', done:false, date:''}); save(); toast('Добавлено на ступень '+$('#f_s').value); break; }
     case 'fdone': { const f = S.fears[+el.dataset.i]; f.done = !f.done; f.date = f.done ? key(today()) : ''; if (f.done){ ensureDay(key(today())).c.fear = 1; toast('Ступень пройдена'); } save(); break; }
     case 'fdel': if (await ask('Удалить этот страх из лестницы?','Удалить')) { S.fears.splice(+el.dataset.i,1); save(); } break;
