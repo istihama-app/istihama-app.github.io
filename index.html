@@ -180,6 +180,8 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .wayhead{border-left:4px solid var(--a)} .waytoday{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;border-radius:12px;background:var(--soft);text-decoration:none;color:var(--ink);font-size:13.5px} .waytoday .dgo{color:var(--spirit);font-weight:600;white-space:nowrap}
 .waygrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px} .wtile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:var(--r,16px);background:var(--card);text-align:left;min-height:108px;box-shadow:var(--sh)} .wtile b{font-size:15px} .wti{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--a) 14%,var(--card));color:var(--a);font-size:18px;margin-bottom:2px} .wtile.locked{opacity:.5}
 .backc{margin:-6px 0 10px;display:inline-flex;text-decoration:none} .wtile,.wt{border:1.5px solid color-mix(in srgb,var(--pri,var(--ink)) 22%,var(--line));font:inherit;color:var(--ink);cursor:pointer} .wtile:active,.wt:active{transform:scale(.97)} .thint{color:var(--faith)}
+.pr{display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px} .pr button{min-width:0;padding-left:0;padding-right:0}
+@media (max-width:360px){.pradj{grid-template-columns:1fr} .rhead{flex-wrap:wrap;row-gap:6px} .rhead .rst{flex-wrap:wrap}}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -597,7 +599,13 @@ try { S = JSON.parse(localStorage.getItem(LS) || 'null'); } catch(e) { S = null;
 // новый человек — «basic» и окно первого запуска. Автотесты (navigator.webdriver) получают «owner», если не попросили первый запуск ключом istihama-test-onb.
 const FRESH = !S || typeof S !== 'object', AUTO = !!navigator.webdriver && !localStorage.getItem('istihama-test-onb');
 if (FRESH) S = defaults();
-function migrate(){ const d = defaults(); for (const k in d) if (S[k] === undefined) S[k] = d[k];
+function migrate(){ const d = defaults();
+  // испорченное хранилище (краш-тест v40): не тот тип у раздела — берём чистый, а испорченное откладываем в S._bad, ничего не теряя
+  if (!S || typeof S !== 'object' || Array.isArray(S)) S = defaults();
+  for (const k in d){ const a = d[k], v = S[k]; if (a === null || v === undefined) continue; const bad = v === null || (typeof a === 'object' && (typeof v !== 'object' || Array.isArray(a) !== Array.isArray(v))) || (typeof a !== 'object' && typeof v === 'object');
+    if (bad){ (S._bad = S._bad || {})[k] = v; S[k] = JSON.parse(JSON.stringify(a)); } }
+  for (const k in S.days){ const x = S.days[k]; if (!x || typeof x !== 'object' || Array.isArray(x) || !/^\d{4}-\d\d-\d\d$/.test(k)){ delete S.days[k]; continue; } if (!x.c || typeof x.c !== 'object') x.c = {}; if (!Array.isArray(x.p)) x.p = [0,0,0,0,0]; if (!x.n || typeof x.n !== 'object') x.n = {}; }
+  for (const k in d) if (S[k] === undefined) S[k] = d[k];
   if (!S.settings.profile){ S.settings.profile = FRESH && !AUTO ? 'basic' : 'owner'; if (FRESH && !AUTO) S.settings.onb = 1; }
   if (!Array.isArray(S.items) || !S.items.length) S.items = ITEMS.map(i => ({id:i.id, ax:i.ax, t:i.t, from:'', to:''}));   // v32: свои пункты
   if (S.settings && S.settings.weather && !['auto','off'].includes(S.settings.weather)) S.settings.weather = 'auto';   // ручной выбор дождя/снега убран из настроек
