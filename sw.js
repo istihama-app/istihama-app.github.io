@@ -1,9 +1,9 @@
-// РћС„Р»Р°Р№РЅ-СЂРµР¶РёРј В«Р§РµС‚С‹СЂС‘С… СЃРёР»В». РљСЌС€РёСЂСѓРµС‚ С‚РѕР»СЊРєРѕ С„Р°Р№Р»С‹ РїСЂРёР»РѕР¶РµРЅРёСЏ; РґР°РЅРЅС‹Рµ (localStorage, IndexedDB) РЅРµ С‚СЂРѕРіР°РµС‚.
-// РЎС‚СЂР°С‚РµРіРёСЏ: СЃРЅР°С‡Р°Р»Р° РёР· РєСЌС€Р° (РѕС‚РєСЂС‹РІР°РµС‚СЃСЏ Р±РµР· СЃРµС‚Рё), РІ С„РѕРЅРµ С‚РёС…Рѕ СЃРєР°С‡РёРІР°РµС‚ СЃРІРµР¶СѓСЋ РІРµСЂСЃРёСЋ вЂ”
-// РїРѕСЃР»Рµ РїСЂР°РІРѕРє РЅР° СЃР°Р№С‚Рµ РЅРѕРІР°СЏ РІРµСЂСЃРёСЏ РїРѕСЏРІРёС‚СЃСЏ СЃРѕ РІС‚РѕСЂРѕРіРѕ РѕС‚РєСЂС‹С‚РёСЏ. VERSION РјРµРЅСЏР№ РїСЂРё СЃРјРµРЅРµ СЃРїРёСЃРєР° С„Р°Р№Р»РѕРІ.
-const VERSION = 'v42';
+// Офлайн-режим «Ихсана». Кэширует только файлы приложения; данные (localStorage, IndexedDB) не трогает.
+// Стратегия: сначала из кэша (открывается без сети), в фоне тихо скачивает свежую версию —
+// после правок на сайте новая версия появится со второго открытия. VERSION меняй при каждой правке.
+const VERSION = 'v43';
 const CACHE = 'chetyre-sily-' + VERSION;
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icons/ic1.png', './icons/ic2.png', './icons/ic3.png', './icons/ic4.png', './icons/ic5.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
