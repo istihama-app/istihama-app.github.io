@@ -185,6 +185,8 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .khbig{display:flex;align-items:baseline;gap:10px} .khbig b{font-size:30px} .qrow{padding:10px 0;border-top:1px solid var(--line)} .fafter{display:flex;flex-wrap:wrap;gap:4px} .fafter .chip{min-width:34px;padding:3px 8px;justify-content:center}
 .moodrow{display:grid;grid-template-columns:repeat(5,1fr);gap:4px} .mood{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);font-size:11.5px;color:var(--muted);cursor:pointer} .mood i{width:18px;height:18px;border-radius:50%;background:color-mix(in srgb,var(--mc) 35%,var(--card));border:2px solid var(--mc)} .mood.on{border-color:var(--mc);color:var(--ink);font-weight:650;background:color-mix(in srgb,var(--mc) 12%,var(--card))} .mood.on i{background:var(--mc)}
 .kcal{display:grid;grid-template-columns:1fr 1fr;gap:12px} .kcal > div{display:flex;flex-direction:column;gap:2px} .kcal b{font-size:24px;line-height:1.1}
+.pradj2{display:grid;gap:6px} .pra2{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;align-items:center;font-size:14px;padding:6px 0;border-top:1px solid var(--line)} .pra2 > span{grid-column:1/-1} .pra2 .navbtn{height:36px;min-height:0;width:auto;font-size:13px;padding:0} .pra2 input.in{margin:0;padding:2px 0 !important;text-align:center;font-weight:700;min-width:0;height:36px;font-size:15px;-moz-appearance:textfield;appearance:textfield} .pra2 input::-webkit-inner-spin-button,.pra2 input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.qmini2{display:block;margin-top:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--faith) 7%,var(--card));border:1px dashed color-mix(in srgb,var(--faith) 35%,var(--line));text-decoration:none;color:var(--ink);font-size:13.5px} .qmini2.on{border-style:solid} .card > .qmini2:first-child{margin-top:0}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -909,7 +911,7 @@ function vToday(){
       <form data-form="itadd" data-a="${a}" class="row" style="gap:8px;margin-top:8px;flex-wrap:nowrap"><input class="in grow" name="t" maxlength="60" placeholder="Новый пункт в «${AX[a].n}»" required style="margin:0"><button class="btn pri">Добавить</button></form>
       <button class="btn" style="margin-top:8px;width:100%" data-act="axedit" data-a="">Готово</button></div>`; }
     else if (isT) h += `<button class="axeditbtn" data-act="axedit" data-a="${a}">Изменить пункты</button>`;
-    if (a === 'faith') h += hifzBox(isT);
+    if (a === 'faith') h += hifzBox(isT) + (isT ? qadaMini() : '');
     h += axTools(a, isT) + `</div>`;
   });
   h += ownCard(k, day);
@@ -1126,6 +1128,7 @@ function tPray(){ const t = today(), P = prayTimes(t), Pt = prayTimes(addD(t, 1)
   let h = `<div class="card prcard"><div class="rhead"><b style="font-size:17px">${esc(S.qibla.place)}</b><span class="rst">${hijTxt(t)}</span></div><div class="prwrap" id="prclock">${prClock()}</div>
     <div class="prlist">${PR_IDS.map(id => `<div class="prl ${id === nx.id && !nx.tom ? 'on' : ''} ${P[id] < now && id !== nx.id ? 'past' : ''}"><span>${PR_N[id]}</span><b>${hm(P[id])}</b></div>`).join('')}${ram ? `<div class="prl ram"><span>Имсак (конец сухура)</span><b>${hm(P.imsak)}</b></div>` : ''}<div class="prl past"><span>Завтра Фаджр</span><b>${hm(Pt.fajr)}</b></div></div>
     <div class="tiny muted" style="margin-top:8px">Время считается в телефоне по положению солнца для этого места, без интернета. Сверь с расписанием своей мечети или ДУМ ЧР и, если нужно, подгони поправками ниже.</div></div>`;
+  h += `<div class="card">${qadaMini()}</div>`;
   { const q = qiblaCalc(+S.qibla.lat, +S.qibla.lon); h += `<div class="card qmini"><div class="row" style="flex-wrap:nowrap;gap:12px;align-items:center"><span class="qdeg">${Math.round(q.brg)}°</span><span class="grow small"><b>Кибла</b><br><span class="tiny muted">от севера по часовой · ${esc(S.qibla.place)}</span></span><button class="btn pri" data-act="ttab" data-t="qibla">${ic('compass')}Компас</button></div></div>`; }
   h += `<div class="card"><h2>${ic('alert')} Напоминания</h2>
     <div class="row" style="flex-wrap:nowrap;gap:10px"><span class="small grow">Напоминать в приложении<br><span class="tiny muted">Звук и вибрация, когда наступает время намаза${ram ? ', сухура и ифтара' : ''}. Работает, пока приложение открыто.</span></span><button class="chip btn ${c.remind ? 'on' : ''}" data-act="prremind">${c.remind ? 'вкл' : 'выкл'}</button></div>
@@ -1134,7 +1137,7 @@ function tPray(){ const t = today(), P = prayTimes(t), Pt = prayTimes(addD(t, 1)
     <div class="tiny muted" style="margin-top:6px">На iPhone после скачивания нажми «Добавить все». Через месяц добавь заново — время меняется по сезону.</div></div>`;
   h += `<div class="card"><h2>${ic('gear')} Расчёт</h2><label class="f">Метод<select class="in" data-act-change="prmethod" id="prmethod">${Object.entries(PR_METHODS).map(([k, o]) => `<option value="${k}" ${c.method === k ? 'selected' : ''}>${o.n}</option>`).join('')}</select></label>
     <div class="muted small" style="margin:10px 0 6px">Аср</div><div class="chips"><button class="chip btn ${c.asr === 1 ? 'on' : ''}" data-act="prasr" data-v="1">Шафиитский (тень = предмет)</button><button class="chip btn ${c.asr === 2 ? 'on' : ''}" data-act="prasr" data-v="2">Ханафитский (тень ×2)</button></div>
-    <div class="muted small" style="margin:12px 0 6px">Поправки, минут</div><div class="pradj">${PR_IDS.map(id => `<div class="pra"><span>${PR_N[id]}</span><button class="navbtn" data-act="pradj" data-id="${id}" data-d="-1">−</button><b>${(+c.adj[id] || 0) > 0 ? '+' : ''}${+c.adj[id] || 0}</b><button class="navbtn" data-act="pradj" data-id="${id}" data-d="1">+</button></div>`).join('')}</div>
+    <div class="muted small" style="margin:12px 0 2px">Поправки, минут</div><div class="tiny muted" style="margin-bottom:6px">Если время расходится с расписанием мечети — сдвинь: «−10/+10» крупно, «−1/+1» точно, или впиши число (до ±120 мин).</div><div class="pradj2">${PR_IDS.map(id => `<div class="pra2"><span>${PR_N[id]} <b class="tiny muted">${hm(prayTimes(today())[id])}</b></span><button class="navbtn" data-act="pradj" data-id="${id}" data-d="-10">−10</button><button class="navbtn" data-act="pradj" data-id="${id}" data-d="-1">−1</button><input class="in" type="number" inputmode="numeric" data-pradj="${id}" value="${+c.adj[id] || 0}"><button class="navbtn" data-act="pradj" data-id="${id}" data-d="1">+1</button><button class="navbtn" data-act="pradj" data-id="${id}" data-d="10">+10</button></div>`).join('')}</div>
     <div class="row" style="gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap"><span class="small grow">Имсак — за сколько минут до Фаджра заканчивать сухур</span><button class="navbtn" data-act="primsak" data-d="-5">−</button><b>${c.imsak}</b><button class="navbtn" data-act="primsak" data-d="5">+</button></div>
     <div class="tiny muted" style="margin-top:8px">Место берётся из вкладки «Кибла»: <b>${esc(S.qibla.place)}</b> (${(+S.qibla.lat).toFixed(2)}, ${(+S.qibla.lon).toFixed(2)}). <a href="#tools" data-act="ttab" data-t="qibla" style="color:var(--spirit);font-weight:600;text-decoration:none">Изменить место</a></div></div>`;
   afterFns.push(prLive);
@@ -1324,6 +1327,10 @@ function pKhatm(){ const K = khG(), pace = khPace(), left = QP - K.p, tk = key(t
     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:nowrap"><input class="in grow" id="kh_p" type="number" inputmode="numeric" min="0" max="${QP}" placeholder="Я сейчас на странице…" style="margin:0"><button class="btn" data-act="khset">Сохранить</button></div>
     <div class="tiny muted" style="margin-top:6px">Страницы — по мусхафу Медины (604 стр., джуз ≈ 20 стр.). Это для себя: в игре ничего не даёт.</div></div>`; }
 const qaG = () => { S.qada = S.qada || {salah:0, saum:0, ds:0, df:0}; return S.qada; };
+function qadaMini(){ const Q = qaG(); if (!Q.salah && !Q.saum) return `<a class="qmini2" href="#path" data-act="ptab" data-t="qada">${ic('list')} Учёт пропущенных намазов и постов (каза) — задать</a>`;
+  const ls = Math.max(0, Q.salah - Q.ds), lf = Math.max(0, Q.saum - Q.df);
+  return `<div class="qmini2 on"><div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center"><span class="grow small"><b>Каза</b> · ${Q.salah ? `намазов осталось <b>${ls}</b>` : ''}${Q.salah && Q.saum ? ', ' : ''}${Q.saum ? `постов <b>${lf}</b>` : ''}</span><a class="tiny" href="#path" data-act="ptab" data-t="qada" style="color:var(--spirit)">все →</a></div>
+    <div class="row" style="gap:6px;margin-top:6px">${ls ? `<button class="chip btn" data-act="qadone" data-k="ds">+1 намаз восполнен</button>` : ''}${lf ? `<button class="chip btn" data-act="qadone" data-k="df">+1 день поста</button>` : ''}${!ls && !lf ? '<span class="small">Всё восполнено, альхамдулиллях ✓</span>' : ''}</div></div>`; }
 function pQada(){ const Q = qaG(), row = (lbl, tot, dn, kT, kD, steps, unit) => { const left = Math.max(0, tot - dn);
     return `<div class="qrow"><div class="rhead"><b>${lbl}</b><span class="rst">${tot ? `осталось <b>${left}</b> ${unit}` : 'не задано'}</span></div>${tot ? `<div class="bar" style="margin:6px 0"><i style="width:${pct(dn/tot)}%;background:var(--faith)"></i></div><div class="tiny muted">Восполнено ${dn} из ${tot}</div>` : ''}
       <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">${tot && left ? `<button class="btn pri" data-act="qadone" data-k="${kD}">Восполнил 1</button>` : ''}<span class="tiny muted">всего:</span>${steps.map(n => `<button class="chip btn" data-act="qatot" data-k="${kT}" data-d="${n}">${n > 0 ? '+' : ''}${n}</button>`).join('')}</div></div>`; };
@@ -3780,7 +3787,7 @@ document.addEventListener('click', async e => {
     case 'ttab': toolTab = el.dataset.t; if (toolTab !== 'qibla') stopCompass(); if (el.tagName === 'A'){ render(); return; } break;
     case 'prremind': S.pray = {...prCfg(), remind:!prCfg().remind}; save(); if (S.pray.remind) try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch(e){} break;
     case 'prasr': S.pray = {...prCfg(), asr:+el.dataset.v}; save(); break;
-    case 'pradj': { const c = prCfg(); c.adj[el.dataset.id] = Math.max(-30, Math.min(30, (+c.adj[el.dataset.id] || 0) + (+el.dataset.d))); S.pray = c; save(); break; }
+    case 'pradj': { const c = prCfg(); c.adj[el.dataset.id] = Math.max(-120, Math.min(120, (+c.adj[el.dataset.id] || 0) + (+el.dataset.d))); S.pray = c; save(); break; }
     case 'primsak': { const c = prCfg(); c.imsak = Math.max(0, Math.min(30, (+c.imsak || 0) + (+el.dataset.d))); S.pray = c; save(); break; }
     case 'prics': prIcs(); return;
     case 'calm': calOff += +el.dataset.d; break;
@@ -3817,7 +3824,7 @@ document.addEventListener('click', async e => {
   render();
 });
 async function flushDiary(){ if (diaryCache?.dirty) await saveEntry(true); }
-document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'prmethod'){ S.pray = {...prCfg(), method:t.value}; save(); render(); } });
+document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'prmethod'){ S.pray = {...prCfg(), method:t.value}; save(); render(); } if (t && t.dataset && t.dataset.pradj){ const c = prCfg(), v = Math.round(+t.value); c.adj[t.dataset.pradj] = isFinite(v) ? Math.max(-120, Math.min(120, v)) : 0; S.pray = c; save(); render(); } });
 document.addEventListener('input', e => {
   lastAct = Date.now();
   const t = e.target;
