@@ -182,6 +182,9 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .backc{margin:-6px 0 10px;display:inline-flex;text-decoration:none} .wtile,.wt{border:1.5px solid color-mix(in srgb,var(--pri,var(--ink)) 22%,var(--line));font:inherit;color:var(--ink);cursor:pointer} .wtile:active,.wt:active{transform:scale(.97)} .thint{color:var(--faith)}
 .pr{display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px} .pr button{min-width:0;padding-left:0;padding-right:0}
 @media (max-width:360px){.pradj{grid-template-columns:1fr} .rhead{flex-wrap:wrap;row-gap:6px} .rhead .rst{flex-wrap:wrap}}
+.khbig{display:flex;align-items:baseline;gap:10px} .khbig b{font-size:30px} .qrow{padding:10px 0;border-top:1px solid var(--line)} .fafter{display:flex;flex-wrap:wrap;gap:4px} .fafter .chip{min-width:34px;padding:3px 8px;justify-content:center}
+.moodrow{display:grid;grid-template-columns:repeat(5,1fr);gap:4px} .mood{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);font-size:11.5px;color:var(--muted);cursor:pointer} .mood i{width:18px;height:18px;border-radius:50%;background:color-mix(in srgb,var(--mc) 35%,var(--card));border:2px solid var(--mc)} .mood.on{border-color:var(--mc);color:var(--ink);font-weight:650;background:color-mix(in srgb,var(--mc) 12%,var(--card))} .mood.on i{background:var(--mc)}
+.kcal{display:grid;grid-template-columns:1fr 1fr;gap:12px} .kcal > div{display:flex;flex-direction:column;gap:2px} .kcal b{font-size:24px;line-height:1.1}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -918,6 +921,7 @@ function vToday(){
   if (mp && isOwner()) h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Фокус месяца · ${MN[viewDate.getMonth()]}</h2><div class="muted small" style="margin:-6px 0 8px">${st.n} — «${st.t}»</div>${AXO.map((a,i)=>`<div class="row" style="margin:6px 0;align-items:flex-start;flex-wrap:nowrap"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div><b>${AX[a].n}.</b> ${esc(mp[i])}</div></div>`).join('')}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg> Правило дня</h2><div>${RULES[(viewDate.getDate()+viewDate.getMonth())%RULES.length]}</div></div>`;
   if (isT && unl() >= 3) h += giftCard();
+  h += `<div class="card"><h2>${ic('heart')} Настроение дня</h2>${moodRow(k)}</div>`;
   if (isT) h += bkCard();
   if (isT) h += `<button class="btn pri" style="display:block;width:100%;text-align:center;padding:13px;margin-bottom:10px" data-act="evopen">${day && day.ev ? '✓ Итог дня подведён — открыть' : 'Подвести итог дня'}</button>`;
   h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
@@ -1214,6 +1218,7 @@ function pGym(){ const G = gymG(), tk = key(today()), todayL = G.log[tk] || [];
     <button class="btn pri" style="width:100%;margin-top:10px" data-act="gadd">Записать: ${esc(gymSel)}</button>
     ${todayL.length ? `<div class="muted small" style="margin:12px 0 4px">Сегодня записано</div>${todayL.map((x, i) => `<div class="row small" style="flex-wrap:nowrap;padding:4px 0;border-top:1px solid var(--line)"><span class="grow">${esc(x.e)}</span><b>${x.w ? String(x.w).replace('.', ',') + ' кг × ' : ''}${x.r} × ${x.s}</b><button class="navbtn" style="width:30px;height:30px;min-height:0;margin-left:8px" data-act="gdel" data-i="${i}" aria-label="Удалить">✕</button></div>`).join('')}` : ''}</div>`;
   const prog = G.ex.map(e => ({e, p:gymBest(e)})).filter(x => x.p.length);
+  h += foodCard();
   h += `<div class="card"><h2>${ic('chart')} Прогресс</h2>${prog.length ? prog.map(({e, p}) => `<div class="row" style="flex-wrap:nowrap;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="grow small"><b>${esc(e)}</b><br><span class="tiny muted">${p[0].bw ? 'повторов' : 'кг'}: ${String(p[0].v).replace('.', ',')} → <b>${String(p[p.length - 1].v).replace('.', ',')}</b> · тренировок: ${p.length}</span></span>${spark(p.slice(-12))}</div>`).join('') : '<div class="small muted">Запиши первую тренировку — здесь появится рост силы по каждому упражнению.</div>'}</div>`;
   h += `<div class="card"><h2>${ic('plus')} Своё упражнение</h2><div class="row" style="flex-wrap:nowrap;gap:8px"><input class="in grow" id="g_t" maxlength="30" placeholder="Например: выпады" style="margin:0"><button class="btn" data-act="gex">Добавить</button></div></div>`;
   return h; }
@@ -1304,20 +1309,74 @@ function onbDone(){ const O = onbInit(); if (!O.items.size) return toast('Выб
   if (O.lat != null){ S.qibla.lat = O.lat; S.qibla.lon = O.lon; S.qibla.place = O.place || 'Моё место'; S.qibla.decl = O.decl; }
   S.settings.onb = 0; save(true); applyTheme(); ONB = null; location.hash = '#town'; render(); toast(S.settings.name ? `Добро пожаловать, ${S.settings.name}!` : 'Добро пожаловать!'); }
 
+/* ================== ХАТМ, КАЗА, НАСТРОЕНИЕ, КАЛОРИИ (v41) ================== */
+// Хатм: S.khatm = {p (страница 0..604, мусхаф Медины), n (завершённых хатмов), log:{дата: страниц}}. Каза: S.qada = {salah, saum (всего восполнить), ds, df (восполнено)}.
+// Настроение дня: days[k].mood 1..5. Калории: S.food = {prof:{h, a, sex, act, goal, w}, log:{дата:[{n, k, p}]}}. Ничего из этого не даёт монет.
+const QP = 604, juzOf = p => p < 22 ? 1 : Math.min(30, Math.floor((p - 22)/20) + 2);
+const khG = () => { S.khatm = S.khatm || {p:0, n:0, log:{}}; S.khatm.log ||= {}; return S.khatm; };
+function khPace(){ const K = khG(), t = today(); let sum = 0; for (let i = 0; i < 14; i++) sum += +K.log[key(addD(t, -i))] || 0; return sum/14; }
+function pKhatm(){ const K = khG(), pace = khPace(), left = QP - K.p, tk = key(today()), fc = pace > 0 ? addD(today(), Math.ceil(left/pace)) : null;
+  return `<div class="card axis-faith"><h2>${ic('book')} Хатм Корана${K.n ? ` <span class="chip" style="margin-left:auto">завершено: ${K.n}</span>` : ''}</h2>
+    <div class="khbig"><b>стр. ${K.p}</b><span>из ${QP} · джуз ${juzOf(Math.max(1, K.p))}</span></div><div class="bar" style="margin:8px 0"><i style="width:${pct(K.p/QP)}%;background:var(--faith)"></i></div>
+    <div class="small">${pct(K.p/QP)}% · сегодня прочитано: <b>${+K.log[tk] || 0}</b> стр.${pace ? ` · в среднем ${String(Math.round(pace*10)/10).replace('.', ',')} стр. в день` : ''}</div>
+    ${fc ? `<div class="small" style="margin-top:4px">В таком темпе хатм — <b>${fmtD(fc)} ${fc.getFullYear()}</b>.</div>` : ''}
+    <div class="muted small" style="margin:12px 0 6px">Прочитал сегодня</div><div class="chips">${[1, 2, 5, 10, 20].map(n => `<button class="chip btn" data-act="khadd" data-d="${n}">+${n} стр.</button>`).join('')}<button class="chip btn" data-act="khadd" data-d="-1">−1</button></div>
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:nowrap"><input class="in grow" id="kh_p" type="number" inputmode="numeric" min="0" max="${QP}" placeholder="Я сейчас на странице…" style="margin:0"><button class="btn" data-act="khset">Сохранить</button></div>
+    <div class="tiny muted" style="margin-top:6px">Страницы — по мусхафу Медины (604 стр., джуз ≈ 20 стр.). Это для себя: в игре ничего не даёт.</div></div>`; }
+const qaG = () => { S.qada = S.qada || {salah:0, saum:0, ds:0, df:0}; return S.qada; };
+function pQada(){ const Q = qaG(), row = (lbl, tot, dn, kT, kD, steps, unit) => { const left = Math.max(0, tot - dn);
+    return `<div class="qrow"><div class="rhead"><b>${lbl}</b><span class="rst">${tot ? `осталось <b>${left}</b> ${unit}` : 'не задано'}</span></div>${tot ? `<div class="bar" style="margin:6px 0"><i style="width:${pct(dn/tot)}%;background:var(--faith)"></i></div><div class="tiny muted">Восполнено ${dn} из ${tot}</div>` : ''}
+      <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">${tot && left ? `<button class="btn pri" data-act="qadone" data-k="${kD}">Восполнил 1</button>` : ''}<span class="tiny muted">всего:</span>${steps.map(n => `<button class="chip btn" data-act="qatot" data-k="${kT}" data-d="${n}">${n > 0 ? '+' : ''}${n}</button>`).join('')}</div></div>`; };
+  return `<div class="card axis-faith"><h2>${ic('list')} Восполнение (каза)</h2><div class="small muted" style="margin:-6px 0 10px">Учёт пропущенных обязательных намазов и дней поста. Задай, сколько всего, и отмечай по одному. Для себя — в игре ничего не даёт.</div>
+    ${row('Намазы', Q.salah, Q.ds, 'salah', 'ds', [1, 5, 30, -1], 'нам.')}${row('Дни поста', Q.saum, Q.df, 'saum', 'df', [1, 5, -1], 'дн.')}</div>`; }
+const MOOD = ['Тяжело','Так себе','Ровно','Хорошо','Отлично'], MOODC = ['#b23838','#d08a3c','#a39a66','#5a9e5f','#1f7a5a'];
+const moodRow = k => { const d = getDay(k), m = d && d.mood; return `<div class="moodrow">${MOOD.map((n, i) => `<button class="mood ${m === i + 1 ? 'on' : ''}" data-act="mood" data-k="${k}" data-v="${i + 1}" style="--mc:${MOODC[i]}"><i></i>${n}</button>`).join('')}</div>`; };
+function moodCard(c){ const ds = c.list.map((d, i) => ({k:key(d), day:c.days[i]})).filter(x => x.day && x.day.mood); if (ds.length < 2) return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2><div class="small muted">Отмечай настроение дня (внизу «Сегодня» или в итоге дня) — здесь появится, от каких дел тебе лучше.</div></div>`;
+  const avg = ds.reduce((a, x) => a + x.day.mood, 0)/ds.length, its = itemsAll().filter((v, i, a) => a.findIndex(x => x.id === v.id) === i), cmp = [];
+  its.forEach(it => { const y = ds.filter(x => itemVal(x.day, it.id) > 0), n = ds.filter(x => !itemVal(x.day, it.id)); if (y.length >= 3 && n.length >= 3){ const a = y.reduce((s, x) => s + x.day.mood, 0)/y.length, b = n.reduce((s, x) => s + x.day.mood, 0)/n.length; cmp.push({it, a, b, d:a - b}); } });
+  cmp.sort((p, q) => q.d - p.d); const f = v => String(Math.round(v*10)/10).replace('.', ',');
+  return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2><div class="small">Среднее настроение: <b>${f(avg)}</b> из 5 (${MOOD[Math.round(avg) - 1].toLowerCase()}), отмечено дней: ${ds.length}.</div>
+    ${barChart(c.days.map(d => d && d.mood ? d.mood/5 : null), c.list.map(d => String(d.getDate())), 80)}
+    ${cmp.filter(x => x.d >= .3).slice(0, 3).map(x => `<div class="small" style="margin-top:6px">В дни, когда «${esc(x.it.t)}», настроение <b>${f(x.a)}</b>, без этого — ${f(x.b)}.</div>`).join('') || `<div class="tiny muted" style="margin-top:6px">${cmp.length ? 'Пока ни одно дело заметно не меняет настроение.' : 'Нужно ещё несколько дней с отметками, чтобы увидеть связь.'}</div>`}</div>`; }
+const fdG = () => { S.food = S.food || {prof:{}, log:{}}; S.food.prof ||= {}; S.food.log ||= {}; return S.food; };
+function fdTarget(){ const F = fdG(), P = F.prof, wp = weightPoints(), w = +P.w || (wp.length ? wp[wp.length - 1].v : 0); const h = +P.h, a = +P.a; if (!w || !h || !a) return null;
+  const bmr = 10*w + 6.25*h - 5*a + (P.sex === 'f' ? -161 : 5), tdee = bmr*({1:1.2, 2:1.375, 3:1.55, 4:1.725}[P.act || 2]), k = Math.round(tdee*({lose:.85, keep:1, gain:1.1}[P.goal || 'lose'])/10)*10;
+  return {k, p:Math.round(w*(P.goal === 'keep' ? 1.6 : 2)), w}; }
+let fdDraft = {n:'Обед', k:500, p:30};
+function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T = fdTarget(), sk = L.reduce((a, x) => a + (+x.k || 0), 0), sp = L.reduce((a, x) => a + (+x.p || 0), 0), D = fdDraft, P = F.prof;
+  const wk = [...Array(7)].map((_, i) => (F.log[key(addD(today(), -i - 1))] || []).reduce((a, x) => a + (+x.k || 0), 0)).filter(Boolean), avg = wk.length ? Math.round(wk.reduce((a, b) => a + b, 0)/wk.length) : 0;
+  const st = (f, d) => `<button class="navbtn" data-act="fdstep" data-f="${f}" data-d="${-d}">−</button><b>${D[f]}</b><button class="navbtn" data-act="fdstep" data-f="${f}" data-d="${d}">+</button>`;
+  return `<div class="card axis-body"><h2>${ic('heart')} Калории сегодня</h2>
+    <div class="kcal"><div><span class="tiny muted">Калории</span><b>${nf(sk)}</b><span class="tiny muted">${T ? `из ${nf(T.k)}` : ''}</span>${T ? `<div class="bar"><i style="width:${pct(Math.min(1, sk/T.k))}%;background:${sk > T.k*1.05 ? 'var(--body)' : 'var(--good)'}"></i></div>` : ''}</div>
+      <div><span class="tiny muted">Белок, г</span><b>${nf(sp)}</b><span class="tiny muted">${T ? `из ${T.p}` : ''}</span>${T ? `<div class="bar"><i style="width:${pct(Math.min(1, sp/T.p))}%;background:var(--mind)"></i></div>` : ''}</div></div>
+    ${T ? `<div class="tiny muted" style="margin-top:4px">${T.k - sk > 0 ? `Осталось ${nf(T.k - sk)} ккал.` : `Сверх цели на ${nf(sk - T.k)} ккал.`}${avg ? ` За прошлую неделю в среднем ${nf(avg)} ккал в день.` : ''}</div>` : `<div class="tiny muted" style="margin-top:4px">Заполни «Мои данные» ниже — посчитаю норму калорий и белка под цель.</div>`}
+    <div class="chips" style="margin-top:10px">${['Завтрак','Обед','Ужин','Перекус'].map(n => `<button class="chip btn ${D.n === n ? 'on' : ''}" data-act="fdmeal" data-n="${n}">${n}</button>`).join('')}</div>
+    <div class="gnums" style="margin-top:6px"><div class="gnum"><span class="tiny">ккал</span><div class="row" style="flex-wrap:nowrap;gap:6px;align-items:center">${st('k', 50)}</div></div><div class="gnum"><span class="tiny">белок, г</span><div class="row" style="flex-wrap:nowrap;gap:6px;align-items:center">${st('p', 5)}</div></div></div>
+    <button class="btn pri" style="width:100%;margin-top:8px" data-act="fdadd">Записать: ${D.n} · ${D.k} ккал</button>
+    ${L.length ? L.map((x, i) => `<div class="row small" style="flex-wrap:nowrap;padding:4px 0;border-top:1px solid var(--line)"><span class="grow">${esc(x.n)}</span><b>${x.k} ккал · ${x.p} г</b><button class="navbtn" style="width:30px;height:30px;min-height:0;margin-left:8px" data-act="fddel" data-i="${i}" aria-label="Удалить">✕</button></div>`).join('') : ''}
+    <details style="margin-top:10px" ${T ? '' : 'open'}><summary class="small" style="cursor:pointer;color:var(--spirit)">Мои данные для расчёта нормы</summary>
+      <div class="nums" style="margin-top:8px"><label class="f">Рост, см${inp('food|prof|h', '190', 'num')}</label><label class="f">Возраст${inp('food|prof|a', '30', 'num')}</label><label class="f">Вес, кг (пусто — из замеров)${inp('food|prof|w', T ? String(T.w) : '', 'num')}</label></div>
+      <div class="chips" style="margin-top:8px">${[['m','Мужчина'],['f','Женщина']].map(([v, n]) => `<button class="chip btn ${(P.sex || 'm') === v ? 'on' : ''}" data-act="fdprof" data-f="sex" data-v="${v}">${n}</button>`).join('')}</div>
+      <div class="muted tiny" style="margin:8px 0 4px">Активность</div><div class="chips">${[[1,'Сидячая'],[2,'Тренировки 1–3 в нед.'],[3,'3–5 в нед.'],[4,'Почти каждый день']].map(([v, n]) => `<button class="chip btn ${(+P.act || 2) === v ? 'on' : ''}" data-act="fdprof" data-f="act" data-v="${v}">${n}</button>`).join('')}</div>
+      <div class="muted tiny" style="margin:8px 0 4px">Цель</div><div class="chips">${[['lose','Похудеть'],['keep','Держать вес'],['gain','Набрать']].map(([v, n]) => `<button class="chip btn ${(P.goal || 'lose') === v ? 'on' : ''}" data-act="fdprof" data-f="goal" data-v="${v}">${n}</button>`).join('')}</div>
+      <div class="tiny muted" style="margin-top:6px">Норма — по формуле Миффлина — Сан Жеора: для похудения −15%, белок 2 г на кг веса. Это ориентир, не врачебный совет.</div></details></div>`; }
+
 /* ================== ПУТЬ: ЧЕТЫРЕ РАЗДЕЛА (v38) ================== */
 // Вкладка «Путь» = четыре раздела (Вера, Разум, Дух, Тело). В каждом: цель года, сегодня в разделе, плитки инструментов с живыми подписями, таймеры раздела.
 // Инструменты — прежние страницы (#tools, #path, #diary); сверху у них «‹ Раздел» и вкладки только этого раздела.
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
-const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['suras','path','suras','book','Суры наизусть'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
+const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
   mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
+  if (id === 'khatm'){ const K = khG(); return `стр. ${K.p} из ${QP} · джуз ${juzOf(Math.max(1, K.p))}`; }
+  if (id === 'qada'){ const Q = qaG(), l = Math.max(0, Q.salah - Q.ds) + Math.max(0, Q.saum - Q.df); return Q.salah || Q.saum ? `осталось ${l}` : 'задать, сколько восполнить'; }
   if (id === 'tasbih') return `сегодня ${nf(S.tasbih.day[tk] || 0)}`;
   if (id === 'qibla') return `${Math.round(qiblaCalc(+S.qibla.lat, +S.qibla.lon).brg)}° · ${S.qibla.place}`;
   if (id === 'suras'){ const n = S.suras.filter(x => x.s >= 2).length, d = hifzDue().length; return `${n} выучено${d ? ` · повторить ${d}` : ''}`; }
@@ -1356,6 +1415,7 @@ function evHTML(){
   let h = `<div class="evbg" data-act="evclose"></div><div class="evsheet" role="dialog" aria-label="Итог дня">
     <div class="row" style="flex-wrap:nowrap;align-items:center;gap:8px"><h2 class="grow" style="margin:0">Итог дня</h2><span class="muted small">${fmtD(t)}</span><button class="navbtn" data-act="evclose" aria-label="Закрыть">✕</button></div>`;
   h += `<div class="evblk"><div class="evbig ${kept?'ok':''}"><b>${pct(sc)}%</b><span>${st}</span></div>
+    <div class="muted tiny" style="margin:10px 0 6px">Как прошёл день?</div>${moodRow(k)}
     <div class="small" style="margin-top:6px">Сделано ${done} из ${ITEMS_ON().length}. ${kept ? `Серия: <b>${sk}</b> дн.` : m.length && need.length ? `До минимума осталось: ${need.map(id=>minName(id).toLowerCase()).join(', ')}.` : 'Засчитывается от 50% или с минимумом.'}</div>`;
   if (left.length || np < 5) h += `<div class="muted tiny" style="margin:10px 0 6px">Что ещё успел? Нажми — отметится.</div><div class="chips">${np < 5 ? `<span class="chip">Намазы ${np}/5</span>` : ''}${left.map(i=>`<button class="chip btn" data-act="tog" data-id="${i.id}">${MIN_S[i.id] || esc(i.t)}${m.includes(i.id) ? ' · мин.' : ''}</button>`).join('')}</div>`;
   h += `</div><div class="evblk"><b>Одна строка о дне</b><div class="muted tiny" style="margin:2px 0 8px">Главное за день: мысль, разговор, чему рад, что не вышло. Уйдёт в дневник под пароль.</div>`;
@@ -1477,6 +1537,7 @@ function vStats(){
     <div class="kpi"><div class="v">${c.quran}</div><div class="l">минут Корана</div></div>
     <div class="kpi"><div class="v">${c.fear}</div><div class="l">шагов вопреки страху</div></div>
     ${c.sleep?`<div class="kpi"><div class="v">${c.sleep.toFixed(1)}</div><div class="l">сон в среднем, ч</div></div>`:''}</div>`;
+  h += moodCard(c);
   h += `<div class="card"><h2>Разделы за период</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}
     <div class="muted small" style="margin-top:6px">${(()=>{const s=[...AXO].sort((x,y)=>c.ax[x]-c.ax[y]);return `Слабее всего сейчас — <b>${AX[s[0]].n}</b>. Сильнее всего — <b>${AX[s[3]].n}</b>.`})()}</div></div>`;
   if (statT === 'year'){
@@ -1525,9 +1586,9 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['suras','Суры'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 function pBA(){
   const B = S.before, A = S.after, N = nowVals();
@@ -1567,11 +1628,12 @@ function pFears(){
   let h = `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Добавить страх</h2><label class="f">Страх${`<input class="in" id="f_t" placeholder="Например: выступать перед залом">`}</label>
     <div class="row" style="margin-top:8px"><label class="f grow">Сила страха: <b id="f_sv">5</b> из 10<input type="range" id="f_s" min="1" max="10" value="5" style="width:100%" oninput="document.getElementById('f_sv').textContent=this.value"></label></div>
     <button class="btn pri" style="margin-top:8px" data-act="fadd">Добавить</button><div class="muted tiny" style="margin-top:8px">Выпиши около 20. Иди снизу вверх: каждую неделю — один шаг.</div></div>`;
-  const done = S.fears.filter(f=>f.done).length;
+  const done = S.fears.filter(f=>f.done).length, ba = S.fears.filter(f => f.done && f.after != null && f.s), drop = ba.length ? ba.reduce((a, f) => a + (+f.s - f.after), 0)/ba.length : 0;
+  if (ba.length) h += `<div class="card"><h2>${ic('flame')} Страх слабеет</h2><div class="small">По ${ba.length} пройденным ступеням страх в среднем был <b>${String(Math.round(ba.reduce((a, f) => a + +f.s, 0)/ba.length*10)/10).replace('.', ',')}</b>, после шага стал <b>${String(Math.round(ba.reduce((a, f) => a + f.after, 0)/ba.length*10)/10).replace('.', ',')}</b> из 10${drop > 0 ? ` — слабее на ${String(Math.round(drop*10)/10).replace('.', ',')}` : ''}.</div></div>`;
   h += `<div class="card ladder"><h2><svg class="ic" aria-hidden="true"><use href="#i-ladder"/></svg> Лестница <span class="muted small" style="margin-left:auto">${done} из ${S.fears.length} пройдено</span></h2>`;
   for (let lv=10; lv>=1; lv--){ const fs = S.fears.map((f,i)=>({f,i})).filter(x=>+x.f.s===lv);
     h += `<div class="step"><span class="lv" style="${fs.length&&fs.every(x=>x.f.done)?'background:var(--good);color:#fff':''}">${lv}</span><div class="grow">${fs.length?fs.map(({f,i})=>`<div style="margin-bottom:8px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><button class="mark ${f.done?'full':''} axis-spirit" style="width:26px;height:26px;background:${f.done?'var(--good)':'none'};border-color:${f.done?'var(--good)':'var(--line)'};color:#fff" data-act="fdone" data-i="${i}">${f.done?'✓':''}</button><div class="grow"><span class="${f.done?'done':''}">${esc(f.t)}</span>${f.done&&f.date?` <span class="muted tiny">· ${fmtD(parse(f.date))}</span>`:''}
-      <input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|step" placeholder="Какой шаг сделаю?" value="${esc(f.step||'')}">${f.done?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|felt" placeholder="Что почувствовал после?" value="${esc(f.felt||'')}">`:''}</div><button class="btn danger" style="padding:3px 8px" data-act="fdel" data-i="${i}">✕</button></div></div>`).join(''):'<span class="muted small">—</span>'}</div></div>`; }
+      <input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|step" placeholder="Какой шаг сделаю?" value="${esc(f.step||'')}">${f.done?`<div class="tiny muted" style="margin:6px 0 4px">Насколько страшно теперь? (было ${f.s})</div><div class="fafter">${[...Array(11)].map((_, v) => `<button class="chip btn ${f.after === v ? 'on' : ''}" data-act="fafter" data-i="${i}" data-v="${v}">${v}</button>`).join('')}</div>`:''}${f.done?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|felt" placeholder="Что почувствовал после?" value="${esc(f.felt||'')}">`:''}</div><button class="btn danger" style="padding:3px 8px" data-act="fdel" data-i="${i}">✕</button></div></div>`).join(''):'<span class="muted small">—</span>'}</div></div>`; }
   return h + `</div>`;
 }
 function pBooks(){
@@ -3031,6 +3093,14 @@ function townSVG(ph){
   // фонари вдоль главной улицы и деревья вдоль улиц
   if (rl >= 3) for (let x=-28; x<70; x+=9.5){ put(x+25.4, lamp(x,25.5)); put(x+4.7+29.6, lamp(x+4.7,29.5)); }
   [[17.2,25],[30.8,25],[57,25],[70.5,24.6],[12.6,41.9],[24.2,41.6],[47.3,41.8],[70.6,43.5],[59,30.2],[-16,25],[-31,25],[0.6,25],[-13,42],[-25.5,42],[-2,57.4],[30,57.6],[45,57.8]].forEach(([x,y],i)=>put(x+y, K.treeS(x,y,1.4+(i%3)*.2,i)));
+  // праздничное убранство (только атмосфера, без наград): в Рамадан — гирлянды с полумесяцами над главной улицей, в Ураза- и Курбан-байрам — ещё и флажки
+  { const hj = hijri(today()), ram = hj.m === 9, eid = (hj.m === 10 && hj.d <= 3) || (hj.m === 12 && hj.d >= 10 && hj.d <= 13);
+    if (ram || eid){ const nt = dark, bulb = i => nt ? (i % 3 ? WIN_LIT : '#bff2c8') : ['#e0b257', '#2f9e6a', '#ffffff'][i % 3]; let g = '';
+      for (const yy of [25.2, 29.8]) for (let x = -28; x < 68; x += 9.5){ const a = XY(x, yy, 3.4), b2 = XY(x + 9.5, yy, 3.4), m = [(a[0] + b2[0])/2, (a[1] + b2[1])/2 + 5];
+        g += `<path d="M${n1(a[0])} ${n1(a[1])}Q${n1(m[0])} ${n1(m[1] + 4)} ${n1(b2[0])} ${n1(b2[1])}" stroke="${nt ? '#3a3022' : '#8a7a5a'}" stroke-width=".5" fill="none"/>`;
+        for (let j = 1; j < 6; j++){ const tt = j/6, px = (1 - tt)*(1 - tt)*a[0] + 2*(1 - tt)*tt*m[0] + tt*tt*b2[0], py = (1 - tt)*(1 - tt)*a[1] + 2*(1 - tt)*tt*(m[1] + 4) + tt*tt*b2[1]; g += circ(px, py + .8, 1.05, eid && j % 2 ? ['#e2557a', '#2f9e6a', '#e0b257'][j % 3] : bulb(j + Math.round(x))); }
+        const c = XY(x, yy, 4.6); g += `<circle cx="${n1(c[0])}" cy="${n1(c[1])}" r="1.9" fill="${nt ? WIN_LIT : '#e0b257'}"/><circle cx="${n1(c[0] + .8)}" cy="${n1(c[1] - .4)}" r="1.6" fill="${nt ? '#2a2418' : C.tile}"/>`; }
+      h += K.flush() + g; } }
   h += K.flush() + `</svg>`;
   return cssVars(h); }
 
@@ -3599,6 +3669,18 @@ document.addEventListener('click', async e => {
     case 'allopen': S.settings.allOpen = S.settings.allOpen ? 0 : 1; save(); break;
     case 'unlok': S.settings.unlSeen = unl(); save(); if (el.tagName === 'A') return; break;
     case 'planon': S.settings.plan = S.settings.plan ? 0 : 1; save(); if (S.settings.plan) toast('План года включён — кнопка «План» вверху'); break;
+    case 'khadd': { const K = khG(), d = +el.dataset.d, tk = key(today()), np = Math.max(0, Math.min(QP, K.p + d)); K.log[tk] = Math.max(0, (+K.log[tk] || 0) + (np - K.p)); K.p = np;
+      if (K.p >= QP){ K.n = (K.n || 0) + 1; K.p = 0; toast('Хатм завершён! Машаллах. Начинаем заново'); } save(); break; }
+    case 'khset': { const K = khG(), v = Math.round(+$('#kh_p').value); if (!(v >= 0 && v <= QP)) return toast(`Страница от 0 до ${QP}`); const tk = key(today()); if (v > K.p) K.log[tk] = (+K.log[tk] || 0) + (v - K.p); K.p = v; save(); toast('Сохранено'); break; }
+    case 'qatot': { const Q = qaG(), k = el.dataset.k; Q[k] = Math.max(k === 'salah' ? Q.ds : Q.df, Q[k] + (+el.dataset.d)); save(); break; }
+    case 'qadone': { const Q = qaG(), k = el.dataset.k; Q[k]++; save(); toast(k === 'ds' ? 'Намаз восполнен ✓' : 'День поста восполнен ✓'); break; }
+    case 'fafter': { const f = S.fears[+el.dataset.i]; if (!f) return; f.after = +el.dataset.v; save(); break; }
+    case 'mood': { const d = ensureDay(el.dataset.k), v = +el.dataset.v; d.mood = d.mood === v ? 0 : v; save(); break; }
+    case 'fdmeal': fdDraft.n = el.dataset.n; break;
+    case 'fdstep': { const f = el.dataset.f; fdDraft[f] = Math.max(0, (+fdDraft[f] || 0) + (+el.dataset.d)); break; }
+    case 'fdadd': { const F = fdG(), tk = key(today()); (F.log[tk] ||= []).push({n:fdDraft.n, k:+fdDraft.k, p:+fdDraft.p}); const d = ensureDay(tk); if (itemsOn(tk).some(i => i.id === 'food') && !d.c.food && F.log[tk].length >= 3){ d.c.food = .5; } save(); toast(`Записано: ${fdDraft.n} · ${fdDraft.k} ккал`); break; }
+    case 'fddel': { const F = fdG(), tk = key(today()); (F.log[tk] || []).splice(+el.dataset.i, 1); save(); break; }
+    case 'fdprof': fdG().prof[el.dataset.f] = el.dataset.f === 'act' ? +el.dataset.v : el.dataset.v; save(); break;
     case 'wayax': wayTab = el.dataset.a || 'faith'; if (el.tagName === 'A') return; break;
     case 'wgo': { const v = el.dataset.v, t = el.dataset.t; if (v === 'tools') toolTab = t; if (v === 'path') pathTab = t; location.hash = '#' + v; return; }
     case 'axedit': axEdit = el.dataset.a || ''; break;
