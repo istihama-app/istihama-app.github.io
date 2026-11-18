@@ -648,10 +648,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) save(
 
 // Постепенное открытие (v36): новый человек видит приложение по шагам — по числу дней, в которые он что-то отметил.
 // Владелец и кто нажал «Открыть всё сразу» (settings.allOpen) видят всё. settings.unlSeen — какой шаг уже показан с поздравлением.
-const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом, участок и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал, «Путь» (книги, замеры, страхи, письмо себе) и страница года'}];
+const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом, участок и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал и страница года'}];
 let actC = null; const actDays = () => { if (actC && actC.v === S.days) return actC.n; let n = 0; for (const k in S.days){ const d = S.days[k]; if (d && ((d.p || []).some(Boolean) || Object.values(d.c || {}).some(v => v > 0) || (d.own || []).some(o => o && o.d))) n++; } actC = {v:S.days, n}; return n; };
 const unl = () => (!S || isOwner() || S.settings.allOpen) ? 4 : UNL.filter(u => actDays() >= u.need).length;
-const VIEW_UNL = {stats:2, week:2, home:3, plot:3, tree:3, path:2, year:4};
+const VIEW_UNL = {stats:2, week:2, home:3, plot:3, tree:3, year:4};   // записи («Путь»: суры, книги, тренировки…) открыты сразу — закрыто только игровое и сводки
 const viewOpen = v => unl() >= (VIEW_UNL[v] || 1);
 function lockView(v){ const need = UNL[(VIEW_UNL[v] || 1) - 1].need, left = Math.max(0, need - actDays());
   return topbar(VIEWS.find(x => x.id === v)?.n || '') + `<div class="card lock" style="text-align:center"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">Откроется скоро</h2><p class="small">Этот раздел откроется, когда наберётся <b>${need}</b> ${plural(need,'день','дня','дней')} с отметками. Осталось: <b>${left}</b>.</p><p class="tiny muted">Так приложение открывается постепенно, чтобы было проще разобраться. Не хочется ждать — в настройках есть «Открыть всё сразу».</p><a class="btn pri" href="#today">Отметить сегодняшние дела</a></div>`; }
@@ -1602,7 +1602,8 @@ function vDiary(){
     <form data-form="dset" style="max-width:320px;margin:0 auto;text-align:left"><label class="f">Пароль (от 6 символов)<input class="in" type="password" name="p1" autocomplete="new-password" required minlength="6"></label>
     <label class="f" style="margin-top:8px">Повтори пароль<input class="in" type="password" name="p2" autocomplete="new-password" required minlength="6"></label><button class="btn pri" style="width:100%;margin-top:12px">Создать дневник</button></form></div>`;
   if (!KEY) return h + `<div class="card lock"><div class="lockico"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg></div><h2 style="justify-content:center">Дневник закрыт</h2><p class="muted small">Записей: ${Object.keys(S.diary).length}</p>
-    <form data-form="dunlock" style="max-width:300px;margin:0 auto"><input class="in" type="password" name="p" placeholder="Пароль" autocomplete="current-password" required><button class="btn pri" style="width:100%;margin-top:10px">Открыть</button></form></div>`;
+    <form data-form="dunlock" style="max-width:300px;margin:0 auto"><input class="in" type="password" name="p" placeholder="Пароль" autocomplete="current-password" required><button class="btn pri" style="width:100%;margin-top:10px">Открыть</button></form>
+    <details style="max-width:320px;margin:16px auto 0;text-align:left"><summary class="small" style="cursor:pointer;color:var(--spirit)">Забыл пароль?</summary><p class="tiny muted">Пароль нельзя восстановить: записи зашифрованы именно им, и без него их не прочитает никто — ни ты, ни мы. Если вспомнить не получается, можно начать новый дневник с новым паролем. Старые записи (${Object.keys(S.diary).length}) при этом удалятся навсегда. Если есть копия данных со старым паролем — сначала попробуй вспомнить пароль, записи в копии тоже под ним.</p><button class="btn danger" style="width:100%" data-act="dforgot">Начать новый дневник</button></details></div>`;
   const keys = Object.keys(S.diary).sort().reverse(), d = parse(diaryDate);
   h += `<div class="row" style="margin-bottom:12px"><input class="in grow" type="date" id="ddate" value="${diaryDate}" style="max-width:200px;margin:0"><button class="btn" data-act="dtodayd">Сегодня</button><button class="btn" data-act="dlock"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Закрыть</button></div>`;
   if (!diaryCache || diaryCache.k !== diaryDate){ h += `<div class="card muted">Открываю запись…</div>`; afterFns.push(loadEntry); }
@@ -3618,6 +3619,7 @@ document.addEventListener('click', async e => {
     case 'cearly': if (await ask('Точно вскрыть раньше времени? Письмо писалось для себя через год.','Вскрыть')) { S.capsule.open = key(today()); save(); } break;
     case 'cnew': if (await ask('Старое письмо будет заменено. Продолжить?','Да')) { S.capsule = {text:'', open:key(addD(today(),365)), sealed:false, sealedAt:''}; save(); } break;
     case 'diaryday': diaryDate = el.dataset.k; diaryCache = null; return;
+    case 'dforgot': if (!await ask('Удалить все записи дневника и начать новый с новым паролем? Это нельзя отменить.','Дальше') || !await ask(`Точно? Пропадут ${Object.keys(S.diary).length} записей.`,'Удалить и начать заново')) return; S.diary = {}; S.crypto = null; KEY = null; diaryCache = null; save(true); toast('Придумай новый пароль'); break;
     case 'dlock': await flushDiary(); KEY = null; diaryCache = null; break;
     case 'dsave': await saveEntry(); return;
     case 'dopen': await flushDiary(); diaryDate = el.dataset.k; diaryCache = null; break;
