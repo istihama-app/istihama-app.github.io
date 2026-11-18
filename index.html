@@ -176,6 +176,10 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .gsug{margin:10px 0 6px;padding:8px 10px;border-radius:10px;background:var(--soft)} .gnums{display:grid;gap:6px} .gnum{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line)} .gnum .tiny{font-size:13px} .gnum b{min-width:52px;text-align:center;font-size:18px} .gnum .navbtn{width:38px;height:38px;min-height:0}
 .hero .rings{flex-wrap:wrap;justify-content:center;row-gap:10px} .hero .legend{min-width:0;flex:1 1 140px}
 .bnotes{margin-top:6px} .bnotes summary{cursor:pointer;color:var(--spirit)}
+.waytabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px} .wt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:14px;background:var(--card);font-size:13px;font-weight:600;color:var(--muted)} .wt .axb{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--a-s, var(--soft));color:var(--a)} .wt.on{color:var(--ink);border-color:var(--a) !important;box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 30%,transparent)}
+.wayhead{border-left:4px solid var(--a)} .waytoday{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;border-radius:12px;background:var(--soft);text-decoration:none;color:var(--ink);font-size:13.5px} .waytoday .dgo{color:var(--spirit);font-weight:600;white-space:nowrap}
+.waygrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px} .wtile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:var(--r,16px);background:var(--card);text-align:left;min-height:108px;box-shadow:var(--sh)} .wtile b{font-size:15px} .wti{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--a) 14%,var(--card));color:var(--a);font-size:18px;margin-bottom:2px} .wtile.locked{opacity:.5}
+.backc{margin:-6px 0 10px;display:inline-flex;text-decoration:none} .wtile,.wt{border:1.5px solid color-mix(in srgb,var(--pri,var(--ink)) 22%,var(--line));font:inherit;color:var(--ink);cursor:pointer} .wtile:active,.wt:active{transform:scale(.97)} .thint{color:var(--faith)}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
 #modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
@@ -647,7 +651,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) save(
 const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом, участок и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал, «Путь» (книги, замеры, страхи, письмо себе) и страница года'}];
 let actC = null; const actDays = () => { if (actC && actC.v === S.days) return actC.n; let n = 0; for (const k in S.days){ const d = S.days[k]; if (d && ((d.p || []).some(Boolean) || Object.values(d.c || {}).some(v => v > 0) || (d.own || []).some(o => o && o.d))) n++; } actC = {v:S.days, n}; return n; };
 const unl = () => (!S || isOwner() || S.settings.allOpen) ? 4 : UNL.filter(u => actDays() >= u.need).length;
-const VIEW_UNL = {stats:2, week:2, home:3, plot:3, tree:3, path:4, year:4};
+const VIEW_UNL = {stats:2, week:2, home:3, plot:3, tree:3, path:2, year:4};
 const viewOpen = v => unl() >= (VIEW_UNL[v] || 1);
 function lockView(v){ const need = UNL[(VIEW_UNL[v] || 1) - 1].need, left = Math.max(0, need - actDays());
   return topbar(VIEWS.find(x => x.id === v)?.n || '') + `<div class="card lock" style="text-align:center"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">Откроется скоро</h2><p class="small">Этот раздел откроется, когда наберётся <b>${need}</b> ${plural(need,'день','дня','дней')} с отметками. Осталось: <b>${left}</b>.</p><p class="tiny muted">Так приложение открывается постепенно, чтобы было проще разобраться. Не хочется ждать — в настройках есть «Открыть всё сразу».</p><a class="btn pri" href="#today">Отметить сегодняшние дела</a></div>`; }
@@ -728,13 +732,13 @@ const txt = (path, ph='', rows=3) => `<textarea class="in" rows="${rows}" data-b
 /* ================== НАВИГАЦИЯ ================== */
 // Меню (v24): внизу пять групп; у групп из нескольких разделов сверху вкладки. Кнопка группы ведёт в раздел, где был в последний раз.
 // «Ещё» убран из меню (раздел #more остаётся для старых ссылок). План и настройки — кнопками в шапке.
-const GROUPS = [{id:'town', n:'Город', v:['town','home','plot','tree'], t:{town:'Город', home:'Дом', plot:'Участок', tree:'Дерево'}}, {id:'today', n:'Сегодня', v:['today']}, {id:'tools', n:'Практика', v:['tools']}, {id:'diary', n:'Дневник', v:['diary']}, {id:'sum', n:'Итоги', v:['stats','week','path','year'], t:{stats:'Итоги', week:'Неделя', path:'Путь'}}];
+const GROUPS = [{id:'town', n:'Город', v:['town','home','plot','tree'], t:{town:'Город', home:'Дом', plot:'Участок', tree:'Дерево'}}, {id:'today', n:'Сегодня', v:['today']}, {id:'way', n:'Путь', v:['way','tools','path']}, {id:'diary', n:'Дневник', v:['diary']}, {id:'sum', n:'Итоги', v:['stats','week','year'], t:{stats:'Итоги', week:'Неделя'}}];
 const grpOf = v => GROUPS.find(g => g.v.includes(v)), grpLast = {};
-const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['town','home','plot','tree','today','tools','diary','stats','week','path','year','plan','setup'], NAV_MORE = [];
+const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['town','home','plot','tree','today','way','diary','stats','week','year','plan','setup'], NAV_MORE = [];
 function gtabs(){ const g = grpOf(view); if (!g || !g.t || g.v.filter(id=>g.t[id] && viewOpen(id)).length < 2) return ''; return `<div class="gtabs mob" role="tablist">${g.v.filter(id=>g.t[id] && viewOpen(id)).map(id=>`<a href="#${id}" role="tab" class="${id===view?'on':''}">${g.t[id]}</a>`).join('')}</div>`; }
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
-  {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
+  {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Записи', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>', side:1}, {id:'way', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
 ];
 let axEdit = '';
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
@@ -752,7 +756,7 @@ function renderNav(){
   $('#bnav').innerHTML = GROUPS.filter(g => g.v.some(viewOpen)).map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}${g.id === 'town' && newsUnread() ? '<i class="ndot" aria-label="свежие вести"></i>' : ''}</span>${g.n}</a>`; }).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1>${planOn() ? '' : '<!--'}<a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a>${planOn() ? '' : '-->'}<a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
-function render(){ if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); } if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear}[view]; let html = viewOpen(view) ? f() : lockView(view); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); onbSync(); }
+function render(){ if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); } if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; } renderNav(); const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay}[view]; let html = viewOpen(view) ? f() : lockView(view); const tb = gtabs(); if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; } $('#main').innerHTML = html; after(); evSync(); onbSync(); }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
 /* ================== ПОГОДА ================== */
@@ -884,7 +888,7 @@ function vToday(){
       if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz');
         h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${(()=>{ const PT = prayTimes(viewDate); return PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}<small class="prt">${hm(PT[PR5[j]])}</small></button>`).join(''); })()}</div></div></div>`;
       } else { const v = itemVal(day,i.id);
-        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
+        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${tHint(i.id, k)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
     });
     if (a === 'faith' && viewDate.getDay() === 5){ const rz = day && day.rz;
       h += `<button class="item" data-act="rz" id="rzItem"><span class="mark ${rz===1?'full':rz==='x'?'half':''}">${rz===1?'✓':rz==='x'?'–':''}</span><span class="lbl">Рузба в мечети<div class="hint">${rz==='x' ? 'Не смог (болезнь, дорога) — серия не прерывается' : 'Пятничная молитва — отметка для себя. Второе нажатие — «не смог»'}</div></span></button>`; }
@@ -1152,7 +1156,9 @@ setInterval(prTick, 20000);
 function prIcs(){ const z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Istihama//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Намаз — Истихама'];
   const ev = (at, title, dk, id, pre) => { L.push('BEGIN:VEVENT', `UID:${dk}-${id}@istihama`, `DTSTAMP:${z(new Date())}`, `DTSTART:${z(at)}`, 'DURATION:PT15M', `SUMMARY:${title}`, 'BEGIN:VALARM', `TRIGGER:-PT${pre || 0}M`, 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'END:VALARM', 'END:VEVENT'); };
   for (let i = 0; i < 30; i++){ const d = addD(today(), i), P = prayTimes(d), dk = key(d), ram = hijri(d).m === 9; PR5.forEach(id => ev(P[id], PR_N[id], dk, id, 0)); if (ram){ ev(P.imsak, 'Конец сухура (имсак)', dk, 'imsak', 20); ev(P.maghrib, 'Ифтар', dk, 'iftar', 10); } }
-  L.push('END:VCALENDAR'); const blob = new Blob([L.join('\r\n')], {type:'text/calendar'}), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-namaz-${key(today())}.ics`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  L.push('END:VCALENDAR'); const ics = L.join('\r\n');
+  if (isPhone() && /iPhone|iPad|iPod/.test(navigator.userAgent)){ location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics); return; }   // iPhone: календарь открывает файл сам
+  const blob = new Blob([ics], {type:'text/calendar'}), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-namaz-${key(today())}.ics`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast('Файл календаря скачивается'); try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch(e){} }
 
 // ---- копилка чёток ----
@@ -1289,6 +1295,46 @@ function onbDone(){ const O = onbInit(); if (!O.items.size) return toast('Выб
   S.settings.name = O.name.trim(); S.settings.theme = O.theme; S.settings.start = key(today()); S.capsule.open = key(addD(today(), 363)); S.books = [];
   if (O.lat != null){ S.qibla.lat = O.lat; S.qibla.lon = O.lon; S.qibla.place = O.place || 'Моё место'; S.qibla.decl = O.decl; }
   S.settings.onb = 0; save(true); applyTheme(); ONB = null; location.hash = '#town'; render(); toast(S.settings.name ? `Добро пожаловать, ${S.settings.name}!` : 'Добро пожаловать!'); }
+
+/* ================== ПУТЬ: ЧЕТЫРЕ РАЗДЕЛА (v38) ================== */
+// Вкладка «Путь» = четыре раздела (Вера, Разум, Дух, Тело). В каждом: цель года, сегодня в разделе, плитки инструментов с живыми подписями, таймеры раздела.
+// Инструменты — прежние страницы (#tools, #path, #diary); сверху у них «‹ Раздел» и вкладки только этого раздела.
+let wayTab = 'faith';
+const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
+const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['suras','path','suras','book','Суры наизусть'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
+  mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
+  spirit:[['fears','path','fears','ladder','Лестница страхов'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
+  body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
+const TOOL_AX = {namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+function waySub(id){ try { const t = today(), tk = key(t);
+  if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
+  if (id === 'cal') return hijTxt(t);
+  if (id === 'tasbih') return `сегодня ${nf(S.tasbih.day[tk] || 0)}`;
+  if (id === 'qibla') return `${Math.round(qiblaCalc(+S.qibla.lat, +S.qibla.lon).brg)}° · ${S.qibla.place}`;
+  if (id === 'suras'){ const n = S.suras.filter(x => x.s >= 2).length, d = hifzDue().length; return `${n} выучено${d ? ` · повторить ${d}` : ''}`; }
+  if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
+  if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
+  if (id === 'diary') return `записей: ${Object.keys(S.diary || {}).length}`;
+  if (id === 'capsule') return S.capsule.sealed ? `запечатано до ${fmtD(parse(S.capsule.open))}` : 'написать себе через год';
+  if (id === 'gym'){ const ks = Object.keys(gymG().log).filter(k => (gymG().log[k] || []).length).sort(); return ks.length ? `последняя — ${fmtD(parse(ks[ks.length - 1]))}` : 'записать первую'; }
+  if (id === 'measures'){ const w = weightPoints(); return w.length ? `вес ${String(w[w.length - 1].v).replace('.', ',')} кг` : 'вес, талия, сила'; }
+  if (id === 'ba') return S.before && S.before.locked ? '«До» зафиксировано' : 'зафиксировать «До»';
+  if (id === 'timer') return `${S.timers.list.length} таймеров`;
+  } catch(e){} return ''; }
+function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day = getDay(tk), its = itemsOn(tk).filter(i => i.ax === a), nd = its.filter(i => itemVal(day, i.id) >= 1).length;
+  const goal = isOwner() ? OWNER_GOALS[a] : (S.myplan && S.myplan.goals && S.myplan.goals[a]) || '';
+  let h = topbar('Путь');
+  h += `<div class="waytabs">${AXO.map(x => `<button class="wt axis-${x} ${x === a ? 'on' : ''}" data-act="wayax" data-a="${x}"><span class="axb">${ic(AXI[x])}</span>${AX[x].n}</button>`).join('')}</div>`;
+  h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}</b><span class="rst">${({faith:'Коран, намаз, иман', mind:'учёба и чтение', spirit:'страхи, мухасаба, характер', body:'тело и здоровье'})[a]}</span></div>
+    ${goal ? `<div class="small" style="margin-top:6px"><span class="muted">Цель года:</span> ${esc(goal)}</div>` : `<div class="tiny muted" style="margin-top:6px">${planOn() ? 'Цель года можно записать в «Плане».' : 'Цель года можно записать, если включить «План года» в настройках.'}</div>`}
+    <a class="waytoday" href="#today" data-act="dtoday"><span>Сегодня в разделе: <b>${nd} из ${its.length}</b></span><span class="bar" style="flex:1"><i style="width:${pct(its.length ? nd/its.length : 0)}%;background:var(--a)"></i></span><span class="dgo">отметить →</span></a></div>`;
+  h += `<div class="waygrid">${WAY[a].map(([id, v, t, icn, n]) => { const lock = !viewOpen(v); return `<button class="wtile ${lock ? 'locked' : ''}" data-act="wgo" data-v="${v}" data-t="${t}" data-a="${a}" ${lock ? 'disabled' : ''}><span class="wti axis-${a}">${ic(icn)}</span><b>${n}</b><span class="tiny muted">${lock ? 'откроется позже' : esc(waySub(id))}</span></button>`; }).join('')}</div>`;
+  if (a === 'spirit' && S.bigCh && S.bigCh.length) h += `<div class="card"><h2>${ic('target')} Большие вызовы года</h2>${S.bigCh.map((b, i) => `<button class="item" data-act="bigch" data-i="${i}"><span class="mark ${b.done ? 'full' : ''}">${b.done ? '✓' : ''}</span><span class="lbl">${esc(b.t)}${b.date ? `<div class="hint">пройден ${fmtD(parse(b.date))}</div>` : ''}</span></button>`).join('')}</div>`;
+  const tm = S.timers.list.filter(p => tItem(p) && tItem(p).ax === a);
+  if (tm.length) h += `<div class="card"><h2>${ic('timer')} Таймеры раздела</h2><div class="chips">${tm.map(tChip).join('')}</div><div class="tiny muted" style="margin-top:6px">Таймер закончился — пункт дня отмечается сам. Сделал без таймера — отметь пункт на «Сегодня» вручную.</div></div>`;
+  return h; }
+const backTo = a => a ? `<a class="chip btn backc" href="#way" data-act="wayax" data-a="${a}">‹ ${AX[a].n}</a>` : `<a class="chip btn backc" href="#way">‹ Путь</a>`;
 
 /* ================== ВЕЧЕРНИЙ ИТОГ ================== */
 // Итог дня за полминуты: что сделано и держится ли серия, одна строка в дневник, что прибавилось в городе.
@@ -1469,9 +1515,10 @@ function baField(side, f){
   return inp(`${side}|${f.k}`,'','num');
 }
 function vPath(){
-  let h = topbar('Путь');
+  const pa = TOOL_AX[pathTab] || 'body';
+  let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
   const tabs = [['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['suras','Суры'],['capsule','Письмо в будущее']];
-  h += `<div class="tabs">${tabs.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
+  const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
   return h + ({ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 function pBA(){
@@ -1658,8 +1705,9 @@ function vSetup(){
 /* ================== ПРАКТИКА: ТАЙМЕР, ЧЁТКИ, КИБЛА ================== */
 let toolTab = 'namaz';
 function vTools(){
-  let h = topbar('Практика');
-  h += `<div class="tabs">${[['namaz', ic('mosque') + ' Намаз'],['cal', ic('cal') + ' Календарь'],['timer','<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> Таймер'],['tasbih','<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg> Чётки']].filter(([k]) => unl() >= 2 || k === 'namaz' || k === 'tasbih').map(([k,n])=>`<button class="${toolTab===k || (k==='namaz' && toolTab==='qibla')?'on':''}" data-act="ttab" data-t="${k}">${n}</button>`).join('')}</div>`;
+  const fa = toolTab !== 'timer';
+  let h = topbar(TOOL_N[toolTab] || 'Практика') + backTo(fa ? 'faith' : '');
+  if (fa) h += `<div class="tabs">${[['namaz', ic('mosque') + ' Намаз'],['tasbih', ic('beads') + ' Чётки'],['cal', ic('cal') + ' Календарь'],['qibla', ic('compass') + ' Кибла']].filter(([k]) => unl() >= 2 || k === 'namaz' || k === 'tasbih').map(([k,n])=>`<button class="${toolTab===k?'on':''}" data-act="ttab" data-t="${k}">${n}</button>`).join('')}</div>`;
   return h + ({namaz:tPray, cal:tCal, timer:tTimer, tasbih:tTasbih, qibla:tQibla}[toolTab] || tPray)();
 }
 
@@ -1693,7 +1741,7 @@ function tFinish(id){
 function tCheck(){
   const done = []; for (const id of Object.keys(S.timers.run)){ const r = S.timers.run[id]; if (r && r.st && tRem(r) <= 0) done.push(tFinish(id)); }
   if (!done.length) return false;
-  save(true); beep(); vib([250,120,250]); toast(`Готово ✓ ${done.map(p=>p.t).join(', ')}`);
+  save(true); beep(); vib([250,120,250]); toast(`Время вышло ✓ ${done.map(p => tItem(p) ? `«${tItem(p).t}» отмечено` : p.t).join(', ')}`);
   const ae = document.activeElement; if (!(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName))) render();
   return true; }
 function tTick(){
@@ -1702,8 +1750,12 @@ function tTick(){
   document.querySelectorAll('[data-tring]').forEach(el=>{ const r = S.timers.run[el.dataset.tring]; if (r) el.setAttribute('stroke-dasharray', `${Math.max(0,tRem(r))/r.dur*326.7} 400`); });
 }
 setInterval(tTick, 500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tCheck(); });   // вернулся в приложение — закончившийся таймер сразу отмечает пункт
 const TICO = {read:'book', audio:'head', quran:'book', ilm:'mosque', str:'dumb', cardio:'heart', run:'run', walk:'walk'}, AXI = {faith:'crescent', mind:'book', spirit:'flame', body:'dumb'};
 const ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`, tIco = p => ic(TICO[p.id] || 'timer');
+// подсказка у пункта: идёт таймер — сколько осталось; есть таймер — «отметится сам по таймеру»
+function tHint(id, k){ if (k !== key(today())) return ''; const p = S.timers.list.find(x => x.item === id); if (!p) return ''; const r = S.timers.run[p.id];
+  return r ? `<div class="hint thint">⏱ ${r.st ? 'идёт' : 'на паузе'}: осталось <b data-tl="${esc(p.id)}">${fmtT(tRem(r))}</b> — отметится само</div>` : `<div class="hint">⏱ таймер «${esc(p.t)}» ${p.m} мин отметит этот пункт сам</div>`; }
 function tChip(p){ const r = S.timers.run[p.id];
   return `<button class="chip btn tchip ${r?(r.st?'run':'pause'):''}" data-act="tgo" data-id="${esc(p.id)}">${r ? `${r.st?'<svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg>':'<svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>'} ${esc(p.t)} <b data-tl="${esc(p.id)}">${fmtT(tRem(r))}</b>` : `<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> ${esc(p.t)} · ${p.m} мин`}</button>`; }
 function axTools(ax, isT){
@@ -2991,7 +3043,7 @@ function howCard(){ const open = !S.settings.howSeen;
       <div class="hsplit"><div class="hcol"><div class="harr">↓ Разум, Дух, Тело</div><div class="hbox gold"><b>Монеты</b><span>за отмеченные дела</span></div><div class="harr">↓ тратишь на</div>
         <div class="hbox"><b>Город · Дом · Участок</b><span>здания, квартал, высотки, комнаты</span></div><div class="harr">↓ город живёт сам</div><div class="hbox"><b>Жители</b><span>растут, если хватает воды, работы, школ; газета и просьбы каждый день</span></div></div>
         <div class="hcol"><div class="harr">↓ Вера</div><div class="hbox faith"><b>Только для себя</b><span>кольцо, серия, процент дня — без монет</span></div><div class="harr">↓ каждый день</div>
-        <a class="hbox ${unl() < 3 ? 'locked' : ''}" href="#tree"><b>Дерево года</b><span>Вера — ствол, Дух — корни, Тело — ветви, Разум — листья</span></a><div class="harr">↓ итоги</div><a class="hbox ${unl() < 2 ? 'locked' : ''}" href="#stats"><b>Итоги</b><span>неделя, путь, год</span></a></div></div></div></details>`; }
+        <a class="hbox ${unl() < 3 ? 'locked' : ''}" href="#tree"><b>Дерево года</b><span>Вера — ствол, Дух — корни, Тело — ветви, Разум — листья</span></a><div class="harr">↓ итоги</div><a class="hbox" href="#way"><b>Путь</b><span>инструменты разделов: намаз, суры, книги, страхи, тренировки</span></a><div class="harr">↓ итоги</div><a class="hbox ${unl() < 2 ? 'locked' : ''}" href="#stats"><b>Итоги</b><span>неделя, месяц, год</span></a></div></div></div></details>`; }
 function vTown(){
   const Y = townSync(), D = Y.D, X = coins(), T = S.town, B = S.build, L = cityLvl(), nb = nbStages(), gw = goodWeeks(), ids = Object.keys(ECON.town);
   const nextN = CITY.need[L], prevN = CITY.need[L-1], bon = townBonus(), lvSum = ids.reduce((a,i)=>a+bLvl(i),0), lvAll = ids.reduce((a,i)=>a+ECON.town[i].lv,0);
@@ -3538,6 +3590,8 @@ document.addEventListener('click', async e => {
     case 'allopen': S.settings.allOpen = S.settings.allOpen ? 0 : 1; save(); break;
     case 'unlok': S.settings.unlSeen = unl(); save(); if (el.tagName === 'A') return; break;
     case 'planon': S.settings.plan = S.settings.plan ? 0 : 1; save(); if (S.settings.plan) toast('План года включён — кнопка «План» вверху'); break;
+    case 'wayax': wayTab = el.dataset.a || 'faith'; if (el.tagName === 'A') return; break;
+    case 'wgo': { const v = el.dataset.v, t = el.dataset.t; if (v === 'tools') toolTab = t; if (v === 'path') pathTab = t; location.hash = '#' + v; return; }
     case 'axedit': axEdit = el.dataset.a || ''; break;
     case 'itdel': { const it = S.items.find(i => i.id === el.dataset.id && !i.to); if (!it) return; if (!await ask(`Убрать пункт «${esc(it.t)}»? С сегодняшнего дня его не будет. Прошлые дни и отметки сохранятся.`, 'Убрать')) return; it.to = key(today()); S.settings.minDay = (S.settings.minDay||[]).filter(x => x !== it.id); save(); toast('Пункт убран'); break; }
     case 'axfold': { const f = S.settings.fold = S.settings.fold || {}; f[el.dataset.a] = f[el.dataset.a] ? 0 : 1; save(); break; }
@@ -3710,8 +3764,12 @@ document.addEventListener('submit', async e => {
   render();
 });
 async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:S, photos:{before:PH.before, after:PH.after}}); }
+const isPhone = () => matchMedia('(pointer: coarse)').matches;
+async function shareFile(txt, name, type){ try { const f = new File([txt], name, {type}); if (isPhone() && navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return 'shared'; } } catch(e){ if (e && e.name === 'AbortError') return 'cancel'; } return ''; }
 async function doExport(){
-  try { const blob = new Blob([await exportText()], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-${key(today())}.json`;   // имя файла — по названию приложения; внутри по-прежнему app:"chetyre-sily" для совместимости document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  const txt0 = await exportText(), sh = await shareFile(txt0, `istihama-${key(today())}.json`, 'application/json');
+  if (sh === 'shared'){ S.lastExport = Date.now(); save(); toast('Копия готова — сохрани её в «Файлы» или отправь себе'); return; } if (sh === 'cancel') return;
+  try { const blob = new Blob([txt0], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `istihama-${key(today())}.json`;   // имя файла — по названию приложения; внутри по-прежнему app:"chetyre-sily" для совместимости document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
     S.lastExport = Date.now(); save(); toast('Копия скачивается'); } catch(err){ toast('Скачивание не сработало — используй «Скопировать»'); }
 }
 setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then(()=>{ KEY = null; diaryCache = null; if (view==='diary') render(); }); } }, 30000);
