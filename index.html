@@ -314,11 +314,15 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:none}
 .hopt{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--soft);border-radius:12px;padding:9px 10px;font-size:13.5px;text-align:left;min-height:44px}
 .hopt i{width:20px;height:20px;border-radius:50%;flex:none;box-shadow:0 0 0 1.5px var(--line)} .hopt span{flex:1;min-width:0} .hopt b{font-size:13px;white-space:nowrap} .hopt .ic{color:var(--muted)}
 .hopt.on{border-color:var(--ink);background:var(--card);font-weight:650} .hopt.try{border-color:var(--gold);border-style:dashed} .hopt.locked{opacity:.7}
-.spines{display:flex;gap:3px;overflow-x:auto;padding:10px 2px 6px;margin-top:8px;align-items:flex-end;border-bottom:5px solid #8a6240;scrollbar-width:thin}
-.spine{flex:none;width:30px;height:150px;border:0;border-radius:3px 3px 0 0;padding:6px 0;background:var(--soft);color:var(--muted);box-shadow:inset -3px 0 0 rgba(0,0,0,.12);position:relative;overflow:hidden}
-.spine span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;line-height:1.1;height:100%;overflow:hidden;display:block;margin:0 auto;white-space:nowrap}
+.spines{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));gap:6px;max-height:252px;overflow-y:auto;padding:8px 3px 8px;margin-top:8px;border-bottom:4px solid #8a6240;scrollbar-width:thin}
+.spine{display:flex;align-items:center;min-width:0;min-height:46px;border:1px solid var(--line);border-left:5px solid var(--a);border-radius:5px 9px 9px 5px;padding:6px 9px;background:var(--soft);color:var(--ink);text-align:left;box-shadow:inset -3px 0 color-mix(in srgb,var(--ink) 9%,transparent)}
+.spine span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font-size:13px;line-height:1.28}
+.spine.s2{background:color-mix(in srgb,var(--a) 23%,var(--card))}
+.spine.s1{border-left-color:var(--gold);background:var(--as)}
+.spine[aria-pressed=true]{outline:2px solid var(--pri);outline-offset:-2px}
+.shelf-detail{border:1px solid var(--line);border-radius:var(--r2);padding:12px;margin:12px 0;background:var(--card);overflow-wrap:anywhere}
+.shelf-detail .f{margin-top:10px}
 @media (max-width:420px){.tabs button{padding:8px 9px;font-size:13.5px}}
-.spine.s2{background:var(--a);color:#fff} .spine.s1{background:var(--as);color:var(--ink);box-shadow:inset -3px 0 0 rgba(0,0,0,.12),inset 0 12px 0 var(--gold)} .spine:nth-child(3n){height:138px} .spine:nth-child(4n+1){height:144px}
 .moregrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} @media (min-width:700px){.moregrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .mtile{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);margin:0;min-height:104px} .mtile .ic{font-size:24px;color:var(--muted);margin-bottom:6px}
 .dfold{padding:0} .dfold summary{display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;list-style:none} .dfold summary::-webkit-details-marker{display:none} .dfold summary .ic{color:var(--muted)} .dfold summary .muted{margin-left:auto}
@@ -4085,6 +4089,9 @@ const HOME = {
   special:{ faith:{n:'Резная панель', need:['lvl',4,'уровень города 4']}, mind:{n:'Глобус', need:['books',5,'5 прочитанных книг']}, spirit:{n:'Щит на стене', need:['fears',10,'10 пройденных страхов']}, body:{n:'Медали', need:['train',50,'50 дней с тренировкой']}, guest:{n:'Самовар', need:['own',50,'50 своих дел сделано']} },
   def:{wall:'w0', floor:'f0', rug:'r1', light:'l0', decor:'d1'} };
 let homeSlot = '', homeTry = null;
+let homeBook = null, shelfFilter = 'all';
+const SHELF_FILTERS = {all:'Все', reading:'Читаю', read:'Прочитано'};
+const SHELF_STATUS = ['В планах','Читаю','Прочитана'];
 const homeOpen = id => id === 'faith' ? !!S.build.mosque.roof : id === 'guest' ? !!annexSt().roof : !!S.build.open[id];
 const homeOpts = (room, slot) => slot === 'rug' && room === 'faith' ? HOME.faithRug : slot === 'decor' ? {...HOME.slots.decor.o, d3:{...HOME.special[room]}} : HOME.slots[slot].o;
 const homePick = (room, slot) => { const o = homeOpts(room, slot), v = S.home.pick[room] && S.home.pick[room][slot]; return o[v] ? v : slot === 'rug' && room === 'faith' ? 'p0' : room === 'spirit' && slot === 'floor' ? 'f2' : HOME.def[slot]; };
@@ -4210,6 +4217,29 @@ function homeSVG(room){
   if (night || eve) h += poly([P(0,0,H),P(W,0,H),P(W,0,0),P(W,D,0),P(0,D,0),P(0,D,H)], '#1a1630', `opacity="${night ? .26 : .12}" pointer-events="none"`) + ell(...XY(3.2,2.6,.6), 150, 86, 'url(#hglow)', 'pointer-events="none"');
   return h + HOT.join('') + `</svg>`; }
 
+function homeShelf(){
+  const books = S.books.map((book,index)=>({book,index}));
+  const read = books.filter(({book})=>book.s===2).length;
+  const shown = shelfFilter === 'all' ? books : books.filter(({book})=>book.s===(shelfFilter==='reading'?1:2));
+  const picked = S.books.indexOf(homeBook), active = picked >= 0 ? S.books[picked] : null;
+  const lastShelf = $('#hbooks .spines');
+  if (lastShelf?.dataset.filter === shelfFilter && lastShelf.scrollTop){
+    const scrollTop = lastShelf.scrollTop;
+    afterFns.push(()=>{ const shelf = $('#hbooks .spines'); if (shelf) shelf.scrollTop = scrollTop; });
+  }
+  const detail = active ? `<section class="shelf-detail" aria-labelledby="shelfBookTitle">
+    <h3 id="shelfBookTitle" tabindex="-1" style="margin-top:0">${esc(active.t)}</h3>
+    <p class="small muted">${SHELF_STATUS[active.s] || SHELF_STATUS[0]}${personDate(active.done) ? ` · ${fmtD(parse(active.done))} ${parse(active.done).getFullYear()}` : ''}</p>
+    <button class="btn" data-act="bcyc" data-i="${picked}">${['Начать читать','Отметить прочитанной','Вернуть в планы'][active.s] || 'Начать читать'}</button>
+    <label class="f">Главная мысль${inp(`books|${picked}|idea`,'Что запомнилось в книге?')}</label>
+    <label class="f">Заметки и цитаты${txt(`books|${picked}|notes`,'Цитаты со страницами или свои мысли…',4)}</label>
+  </section>` : '';
+  return `<section class="card" id="hbooks"><div class="rhead"><b style="font-size:17px">Книжная полка</b><span class="rst">прочитано ${read} из ${books.length}</span></div>
+    <div class="chips" style="margin-top:10px" aria-label="Книги по статусу">${Object.entries(SHELF_FILTERS).map(([id,n])=>`<button class="chip btn ${shelfFilter===id?'on':''}" aria-pressed="${shelfFilter===id}" data-act="shelfFilter" data-v="${id}">${n}</button>`).join('')}</div>
+    ${shown.length ? `<div class="spines" data-filter="${shelfFilter}">${shown.map(({book,index})=>`<button class="spine s${book.s} axis-${AXO.includes(book.ax)?book.ax:'mind'}" data-act="shelfBook" data-i="${index}" aria-pressed="${active===book}" title="${esc(book.t)}"><span>${esc(book.t)}</span></button>`).join('')}</div>` :
+      `<p class="small muted">${({all:'На полке пока нет книг.',reading:'Сейчас ни одна книга не в чтении.',read:'Пока нет прочитанных книг.'})[shelfFilter]}</p>`}
+    ${detail}<div class="row" style="flex-wrap:nowrap;margin-top:12px"><input class="in grow" id="hb_t" aria-label="Автор и название книги" placeholder="Автор — «Название»" style="margin-top:0"><button class="btn pri" data-act="hbadd">На полку</button></div></section>`;
+}
 function vHome(){
   const X = coins(), any = HOME.rooms.filter(r=>homeOpen(r.id)); let room = S.home.room; if (!HOME.rooms.some(r=>r.id === room)) room = (any[0] || HOME.rooms[1]).id;
   const R = HOME.rooms.find(r=>r.id === room), open = homeOpen(room);
@@ -4231,12 +4261,8 @@ function vHome(){
     h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px">${q('tasbih','beads','Чётки')}${q('qibla','compass','Кибла')}${q('suras','book','Суры')}</div></div>
       <div class="card"><div class="rhead"><b style="font-size:17px">Полка</b></div><div class="plist" style="margin-top:6px"><div class="g"><span>Сур выучено</span><b>${lrn} из ${S.suras.length}</b></div><div class="g"><span>Сейчас учу</span><b>${wrk}</b></div><div class="g"><span>Рузба: всего и подряд</span><b>${Rz.n} · ${Rz.cur}</b></div></div>
       <div class="tiny muted" style="margin-top:8px">${cityLvl() >= 5 ? 'Ковры во всю молельную открыты — выбери их в «Ковре».' : 'Ковры во всю молельную откроются, когда город дорастёт до 5-го уровня.'}</div></div>`; }
-  else if (room === 'mind'){ const ST = ['хочу прочитать','читаю','прочитана'];
-    h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px">${q('read','timer','Читать с таймером')}${q('diary','lock','Дневник')}</div></div>
-      <div class="card" id="hbooks"><div class="rhead"><b style="font-size:17px">Книжная полка</b><span class="rst">прочитано ${S.books.filter(b=>b.s===2).length} из ${S.books.length}</span></div>
-      <div class="spines">${S.books.map((b,i)=>`<button class="spine s${b.s} axis-${AXO.includes(b.ax)?b.ax:'mind'}" data-act="bcyc" data-i="${i}" title="${esc(b.t)} — ${ST[b.s]}"><span>${esc(b.t.length > 46 ? b.t.slice(0,45)+'…' : b.t)}</span></button>`).join('')}</div>
-      <div class="tiny muted" style="margin:8px 0">Нажми на корешок: хочу прочитать → читаю → прочитана. Яркий корешок — прочитана, с закладкой — читаю, бледный — впереди.</div>
-      <div class="row" style="flex-wrap:nowrap"><input class="in grow" id="hb_t" placeholder="Автор — «Название»" style="margin-top:0"><button class="btn pri" data-act="hbadd">На полку</button></div></div>`; }
+  else if (room === 'mind'){
+    h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px">${q('read','timer','Читать с таймером')}${q('diary','lock','Дневник')}</div></div>` + homeShelf(); }
   else if (room === 'spirit'){ const fd = S.fears.filter(f=>f.done).length, td = getDay(key(today())), done = td && td.c && td.c.fear;
     h += `<div class="card"><div class="rhead"><b style="font-size:17px">Быстрые кнопки</b></div><div class="row" style="margin-top:10px"><button class="btn ${done?'':'pri'}" data-act="hgo" data-t="fear">${ic('flame')}${done ? 'Шаг сегодня сделан ✓' : 'Сделал шаг вопреки страху'}</button>${q('chal','ladder','Лестница страхов')}</div></div>
       <div class="card"><div class="rhead"><b style="font-size:17px">Стена вызовов года</b><span class="rst">${S.bigCh.filter(b=>b.done).length} из ${S.bigCh.length}</span></div>${S.bigCh.map((b,i)=>`<div class="row" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span class="grow">${esc(b.t)}${b.done && b.date ? ` <span class="muted tiny">· ${fmtD(parse(b.date))}</span>` : ''}</span><button class="chip btn ${b.done?'on':''}" data-act="bigch" data-i="${i}">${b.done ? 'откован ✓' : 'впереди'}</button></div>`).join('')}
@@ -4475,7 +4501,9 @@ document.addEventListener('click', async e => {
       if (c.ok){ (S.home.pick[room] ||= {})[homeSlot] = v; homeTry = null; save(); } else homeTry = homeTry && homeTry.v === v && homeTry.slot === homeSlot ? null : {room, slot:homeSlot, v}; break; }
     case 'hbuy': { const t = homeTry; if (!t) return; const c = homeCan(t.room, t.slot, t.v), o = homeOpts(t.room, t.slot)[t.v]; if (!c.buy) return; if (!buy(c.buy, `Дом: ${o.n.toLowerCase()}`, 'p')) return;
       S.home.own[t.slot + ':' + t.v] = key(today()); (S.home.pick[t.room] ||= {})[t.slot] = t.v; homeTry = null; save(); toast(`${o.n} — теперь твоё ✓`); break; }
-    case 'hbadd': { const t = $('#hb_t').value.trim(); if (!t) return toast('Впиши название'); S.books.push({st:0, ax:'mind', t, s:0, idea:'', done:''}); save(); toast('Книга на полке'); break; }
+    case 'shelfFilter': if (!Object.hasOwn(SHELF_FILTERS,el.dataset.v)) return; shelfFilter = el.dataset.v; homeBook = null; break;
+    case 'shelfBook': homeBook = S.books[+el.dataset.i] || null; afterFns.push(()=>$('#shelfBookTitle')?.focus()); break;
+    case 'hbadd': { const t = $('#hb_t').value.trim(); if (!t) return toast('Впиши название'); homeBook = {st:0, ax:'mind', t, s:0, idea:'', done:''}; S.books.push(homeBook); shelfFilter = 'all'; save(); toast('Книга на полке'); break; }
     case 'hgo': { const t = el.dataset.t, go = (h2, f) => { if (f) f(); location.hash = h2; }, tm = id => { if (tPreset(id) && !S.timers.run[id]){ tToggle(id); toast('Таймер пошёл'); } toolTab = 'timer'; location.hash = '#tools'; };
       if (t === 'tasbih' || t === 'qibla') return go('#tools', () => { toolTab = t; });
       if (t === 'suras') return go('#path', () => { pathTab = 'suras'; }); if (t === 'chal') return go('#path', () => { pathTab = 'fears'; }); if (t === 'meas') return go('#path', () => { pathTab = 'measures'; });
