@@ -478,6 +478,13 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 :root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .top h1,
 :root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .hero .hl{font-family:Georgia,serif}
 .thbtn[aria-pressed=true]{border-color:var(--pri) !important;box-shadow:inset 0 0 0 1px var(--pri);font-weight:700}
+.diary-page{border-left:3px solid var(--pri);background:repeating-linear-gradient(var(--card) 0 27px,var(--soft) 27px 28px)}
+.diary-pages{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-bottom:10px;touch-action:pan-y}
+.diary-pages button{min-height:44px}
+.diary-pages button:disabled{opacity:.45}
+.cycle-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;margin-top:8px}
+.cycle-grid a{min-height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:7px;color:var(--ink);text-decoration:none}
+.cycle-grid a.on{background:var(--pri);color:var(--onpri)}
 </style>
 </head>
 <body>
@@ -625,7 +632,7 @@ function defaults(){
     bigCh:BIG0.map(t=>({t, done:false, date:''})),
     build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
-    home:{room:'', pick:{}, own:{}},
+    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{},
     gift:{p:'', got:[]}};
 }
 let S;
@@ -641,6 +648,7 @@ function migrate(){ const d = defaults();
     if (bad){ (S._bad = S._bad || {})[k] = v; S[k] = JSON.parse(JSON.stringify(a)); } }
   for (const k in S.days){ const x = S.days[k]; if (!x || typeof x !== 'object' || Array.isArray(x) || !/^\d{4}-\d\d-\d\d$/.test(k)){ delete S.days[k]; continue; } if (!x.c || typeof x.c !== 'object') x.c = {}; if (!Array.isArray(x.p)) x.p = [0,0,0,0,0]; if (!x.n || typeof x.n !== 'object') x.n = {}; }
   for (const k in d) if (S[k] === undefined) S[k] = d[k];
+  for (const k of Object.keys(S.cycleDays)) if (!/^\d{4}-\d\d-\d\d$/.test(k) || !Number.isInteger(S.cycleDays[k]) || S.cycleDays[k] < 1 || S.cycleDays[k] > 31) delete S.cycleDays[k];
   if (!S.settings.profile){ S.settings.profile = FRESH && !AUTO ? 'basic' : 'owner'; if (FRESH && !AUTO) S.settings.onb = 1; }
   if (!Array.isArray(S.items) || !S.items.length) S.items = ITEMS.map(i => ({id:i.id, ax:i.ax, t:i.t, from:'', to:''}));   // v32: свои пункты
   if (S.settings && S.settings.weather && !['auto','off'].includes(S.settings.weather)) S.settings.weather = 'auto';   // ручной выбор дождя/снега убран из настроек
@@ -715,13 +723,26 @@ const ITEM0 = Object.fromEntries(['faith','mind','spirit','body'].map(a => [a, I
 const itemsAll = () => (S && Array.isArray(S.items) && S.items.length ? S.items : ITEMS);
 const itemsOn = k => { const a = itemsAll().filter(i => (!i.from || i.from <= k) && (!i.to || k < i.to)); let ram = false; try { ram = !!(S && S.qibla && isRamadan(k)); } catch(e){} return ram ? a.concat(RAM_ITEMS) : a; };
 const ITEMS_ON = k => itemsOn(k || key(today()));
+const cycleMask = k => S.cycleDays[k] & 31;
+const cycleExempt = (k, id) => id === 'saum' || id === 'suhur'
+  ? cycleMask(k) === 31 || !!(cycleMask(k) && S.cycleQada[k])
+  : (id === 'namaz' || id === 'tarawih') && cycleMask(k) === 31;
+const countedItems = k => itemsOn(k).filter(i => !cycleExempt(k, i.id));
+const prayerSlots = k => PRAYERS.map((_,j)=>j).filter(j=>!(cycleMask(k) & (1 << j)));
+const prayerDone = (day, k) => prayerSlots(k).filter(j=>day?.p?.[j]).length;
+const fullyExcused = k => cycleMask(k) === 31 && !countedItems(k).length;
 const tagDay = (d, k) => { if (d && !d._k) Object.defineProperty(d, '_k', {value:k, enumerable:false, writable:true}); return d; };
 const dkey = d => (d && d._k) || key(today());
 function getDay(k){ return tagDay(S.days[k] || null, k); }
 function ensureDay(k){ if (!S.days[k]) S.days[k] = {c:{}, p:[0,0,0,0,0], n:{}, tr:'', focus:''}; const d = tagDay(S.days[k], k); d.c ||= {}; d.p ||= [0,0,0,0,0]; d.n ||= {}; return d; }
-function itemVal(day,id){ if (!day) return 0; if (id === 'namaz') return (day.p||[]).reduce((a,b)=>a+(b?1:0),0)/5; return day.c?.[id] || 0; }
-function dayScore(day){ if (!day) return 0; const its = itemsOn(dkey(day)), r = day.rz === 1 ? 1 : 0; return its.length + r ? (its.reduce((a,i)=>a+itemVal(day,i.id),0) + r)/(its.length + r) : 0; }
-function axisScore(day,ax){ const its = itemsOn(dkey(day)).filter(i=>i.ax===ax), r = ax === 'faith' && day && day.rz === 1 ? 1 : 0; return its.length + r ? (its.reduce((a,i)=>a+itemVal(day,i.id),0) + r)/(its.length + r) : 0; }
+function itemVal(day,id){
+  if (!day || cycleExempt(dkey(day), id)) return 0;
+  if (id !== 'namaz') return day.c?.[id] || 0;
+  const k = dkey(day);
+  return prayerDone(day,k) / prayerSlots(k).length;
+}
+function dayScore(day){ if (!day) return 0; const its = countedItems(dkey(day)), r = day.rz === 1 ? 1 : 0; return its.length + r ? (its.reduce((a,i)=>a+itemVal(day,i.id),0) + r)/(its.length + r) : 0; }
+function axisScore(day,ax){ const its = countedItems(dkey(day)).filter(i=>i.ax===ax), r = ax === 'faith' && day && day.rz === 1 ? 1 : 0; return its.length + r ? (its.reduce((a,i)=>a+itemVal(day,i.id),0) + r)/(its.length + r) : 0; }
 function stageIdx(d){ for (let i=STAGES.length-1;i>=0;i--) if (d >= mk(STAGES[i].from)) return i; return 0; }
 function weekNo(d){ return Math.floor((monday(d) - monday(startDate()))/ (7*864e5)) + 1; }
 // минимальный день: до трёх пунктов на выбор; сделаны все — день засчитан и серия не рвётся, даже если меньше 50%
@@ -731,14 +752,15 @@ const MIN_S = {study:'Учёба', lang:'Язык', sunna:'Сунна', salawat:
 const MIN_T = {namaz:'Пять намазов', azkar:'Азкары', quran:'Коран', maani:'Смыслы', ilm:'Изучение религии', deep:'Глубокое чтение', light:'Чтение или аудио', fear:'Шаг вопреки страху', muhasaba:'Мухасаба', train:'Тренировка или шаги', food:'Белок и вода', sleep:'Лёг вовремя'};
 const minSet = () => (S.settings.minDay || []).filter(id => ITEMS_ON().some(i=>i.id === id)).slice(0,3);
 const minOk = (day,id) => id === 'namaz' ? itemVal(day,id) >= 1 : itemVal(day,id) > 0;
-function minDone(day){ const m = minSet(); return !!day && m.length > 0 && m.every(id => minOk(day,id)); }
+const minFor = k => minSet().filter(id => !cycleExempt(k,id));
+function minDone(day){ const m = minFor(dkey(day)); return !!day && m.length > 0 && m.every(id => minOk(day,id)); }
 const mtag = id => minSet().includes(id) ? '<span class="mtag" title="Пункт минимального дня: сделаны все такие — день засчитан">минимум</span>' : '';
 const dayKept = day => dayScore(day) >= .5 || minDone(day);
 // правило «не пропускать дважды»: один пропуск между засчитанными днями серию не рвёт (но и не прибавляет), два подряд — обнуляют.
 // Сегодня, пока не засчитано, — не пропуск, а «день идёт».
 function streak(){
   let d = today(); if (!dayKept(getDay(key(d)))) d = addD(d,-1);
-  let n = 0, gap = 0; while (d >= firstStart()){ if (dayKept(getDay(key(d)))){ n++; gap = 0; } else if (++gap >= 2) break; d = addD(d,-1); }
+  let n = 0, gap = 0; while (d >= firstStart()){ const k = key(d); if (dayKept(getDay(k))){ n++; gap = 0; } else if (!fullyExcused(k) && ++gap >= 2) break; d = addD(d,-1); }
   return n;
 }
 
@@ -913,29 +935,32 @@ function ringsSVG(day){
 function vToday(){
   townSync();
   const k = key(viewDate), day = getDay(k), t = today(), isT = k === key(t);
-  const sc = dayScore(day), st = STAGES[stageIdx(viewDate)], mp = MONTHPLAN[k.slice(0,7)];
+  const sc = dayScore(day), st = STAGES[stageIdx(viewDate)], mp = MONTHPLAN[k.slice(0,7)], active = countedItems(k), minsToday = minFor(k);
   const y = getDay(key(addD(t,-1)));
   const mins = minSet().length ? `: ${minSet().map(id=>minName(id).toLowerCase()).join(', ')}` : '', sk = streak(), y2 = getDay(key(addD(t,-2)));
-  const warn = isT && addD(t,-1) >= startDate() && !dayKept(y) && !dayKept(day) ? `<div class="banner">${sk && addD(t,-2) >= startDate() && dayKept(y2) ? `Вчера пропуск, но серия ${sk} дн. ещё жива. Второй пропуск подряд её обнулит — сегодня хватит минимума${mins}.` : `Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума${mins}.`}</div>` : '';
+  const warn = isT && addD(t,-1) >= startDate() && !fullyExcused(key(addD(t,-1))) && !fullyExcused(k) && !dayKept(y) && !dayKept(day) ? `<div class="banner">${sk && addD(t,-2) >= startDate() && dayKept(y2) ? `Вчера пропуск, но серия ${sk} дн. ещё жива. Второй пропуск подряд её обнулит — сегодня хватит минимума${mins}.` : `Вчера был пропуск. Сегодня главное — не пропустить второй день подряд. Хватит и минимума${mins}.`}</div>` : '';
   const name = S.settings.name ? `, ${esc(S.settings.name)}` : '';
   const before = viewDate < startDate() ? `<div class="banner">План стартует ${fmtD(startDate())}. Отмечать можно уже сейчас.</div>` : '';
   let h = topbar(isT ? `Ассаляму алейкум${name}` : 'День');
   h += `<div class="datebar"><button class="navbtn" data-act="dprev">‹</button><div class="d"><b>${fmtD(viewDate)}</b><span class="muted small">${DFULL[viewDate.getDay()]} · ${hijTxt(viewDate)}</span></div><button class="navbtn" data-act="dnext">›</button></div>`;
   if (!isT) h += `<div style="text-align:center;margin:-4px 0 10px"><button class="chip btn" data-act="dtoday">Вернуться к сегодня</button></div>`;
-  h += ramadanCard(isT) + (isT && !isOwner() && !S.settings.allOpen && unl() > (S.settings.unlSeen || 1) ? unlCard() : '') + yearBanner(isT) + warn + before;
+  const ramadan = ramadanCard(isT);
+  h += ramadan + (isT && !isOwner() && !S.settings.allOpen && unl() > (S.settings.unlSeen || 1) ? unlCard() : '') + yearBanner(isT) + warn + before;
+  if (isT) h += quickCard(k,day);
   h += `<div class="card hero">${S.settings.wmark === false ? '' : '<span class="wmark" aria-hidden="true" lang="ar">إحسان</span>'}<div class="rings">${ringsSVG(day)}<div class="legend">
-    <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${itemsOn(k).filter(i=>itemVal(day,i.id) < 1).length} из ${itemsOn(k).length}${minSet().length && sc < .5 ? ` · минимум ${minSet().filter(id=>minOk(day,id)).length} из ${minSet().length}` : ''}</small></div>
+    <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${active.filter(i=>itemVal(day,i.id) < 1).length} из ${active.length}${minsToday.length && sc < .5 ? ` · минимум ${minsToday.filter(id=>minOk(day,id)).length} из ${minsToday.length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
-    <div class="herofoot"><span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && unl() >= 3 && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${isT ? `<button class="chip btn ${day && day.ev ? 'on' : (curPhase() === 'evening' || curPhase() === 'night') ? 'gchip' : ''}" data-act="evopen">${day && day.ev ? '✓ Итог дня' : 'Итог дня'}</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
+    <div class="herofoot">${isT && !quickOpen ? '<button class="chip btn" data-act="quickopen">Быстрые отметки</button>' : ''}<span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && unl() >= 3 && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${isT ? `<button class="chip btn ${day && day.ev ? 'on' : (curPhase() === 'evening' || curPhase() === 'night') ? 'gchip' : ''}" data-act="evopen">${day && day.ev ? '✓ Итог дня' : 'Итог дня'}</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
   h += `<details class="card dfold" ${day && day.focus ? 'open' : ''}><summary>${ic('target')}<b>Главный поступок дня</b><span class="muted tiny">необязательно</span></summary>${inp(`days|${k}|focus`,'Что сегодня самое важное? Одна строка')}</details>`;
   AXO.forEach(a=>{
     const its = itemsOn(k).filter(i=>i.ax===a);
     const fold = !!(S.settings.fold || {})[a], nd = its.filter(i => itemVal(day,i.id) >= 1).length;
     h += `<div class="card axcard axis-${a} ${fold ? 'folded' : ''}"><h2 class="axh" data-act="axfold" data-a="${a}" role="button" aria-expanded="${!fold}"><span class="axb">${ic(AXI[a])}</span>${AX[a].n}${fold ? `<span class="tiny muted" style="margin-left:6px;font-weight:500">${nd} из ${its.length}</span>` : ''}<span class="pct">${pct(day?axisScore(day,a):0)}%</span><span class="chev">${fold ? '▸' : '▾'}</span></h2>`;
-    if (fold){ h += `</div>`; return; }
+    if (fold){ h += (a === 'faith' ? cycleDayCard(k) : '') + '</div>'; return; }
     its.forEach(i=>{
-      if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz');
-        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':Math.round(v*5)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${(()=>{ const PT = prayTimes(viewDate); return PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j]?'on':''}" title="${n}">${PR_S[j]}<small class="prt">${hm(PT[PR5[j]])}</small></button>`).join(''); })()}</div></div></div>`;
+      if (cycleExempt(k,i.id)){ h += `<div class="item"><span class="mark">–</span><span class="lbl">${esc(i.t)}<div class="hint">Не требуется</div></span></div>`; }
+      else if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz'), mask = cycleMask(k);
+        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':prayerDone(day,k)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${(()=>{ const PT = prayTimes(viewDate); return PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j] && !(mask & (1 << j))?'on':''}" title="${n}${mask & (1 << j)?' · не требуется':''}" ${mask & (1 << j)?'disabled':''}>${PR_S[j]}<small class="prt">${mask & (1 << j)?'–':hm(PT[PR5[j]])}</small></button>`).join(''); })()}</div></div></div>`;
       } else { const v = itemVal(day,i.id);
         h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${tHint(i.id, k)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
     });
@@ -947,9 +972,10 @@ function vToday(){
       <form data-form="itadd" data-a="${a}" class="row" style="gap:8px;margin-top:8px;flex-wrap:nowrap"><input class="in grow" name="t" maxlength="60" placeholder="Новый пункт в «${AX[a].n}»" required style="margin:0"><button class="btn pri">Добавить</button></form>
       <button class="btn" style="margin-top:8px;width:100%" data-act="axedit" data-a="">Готово</button></div>`; }
     else if (isT) h += `<button class="axeditbtn" data-act="axedit" data-a="${a}">Изменить пункты</button>`;
-    if (a === 'faith') h += hifzBox(isT) + (isT ? qadaMini() : '');
+    if (a === 'faith') h += hifzBox(isT) + (isT ? qadaMini() : '') + cycleDayCard(k);
     h += axTools(a, isT) + `</div>`;
   });
+  if (isT && !ramadan) h += nextFaithDate(t);
   h += ownCard(k, day);
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-hash"/></svg> Цифры дня</h2><div class="nums">
     ${numStep(k,'quran','Коран, минут')}${numStep(k,'pages','Страниц книги')}${numStep(k,'steps','Шаги, тыс.')}${numStep(k,'sleep','Сон, часов')}${numStep(k,'weight','Вес утром, кг')}</div>
@@ -964,6 +990,23 @@ function vToday(){
   if (isT) h += `<button class="btn pri" style="display:block;width:100%;text-align:center;padding:13px;margin-bottom:10px" data-act="evopen">${day && day.ev ? '✓ Итог дня подведён — открыть' : 'Подвести итог дня'}</button>`;
   h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
   return h;
+}
+let quickDay = '', quickIndex = 0, quickOpen = false;
+function quickCard(k,day){
+  if (quickDay !== k){
+    quickDay = k; quickIndex = 0; quickOpen = S.settings.quickStart && S.settings.quickSeen !== k;
+    if (quickOpen){ S.settings.quickSeen = k; save(); }
+  }
+  const items = countedItems(k), item = quickOpen ? items[quickIndex] : null;
+  if (!item) return '';
+  const value = itemVal(day,item.id);
+  return `<div class="card" id="quickCard"><div class="row">
+    <span class="muted small grow">${AX[item.ax].n} · ${quickIndex + 1} из ${items.length}</span>
+    <button class="navbtn" data-act="quickclose" aria-label="Закрыть карточки">✕</button></div>
+    <h2>${esc(item.t)}</h2><div class="chips">
+    ${item.id === 'namaz' ? PRAYERS.map((n,j)=>cycleMask(k) & (1 << j) ? '' : `<button class="chip btn ${day?.p?.[j] ? 'on' : ''}" data-act="pr" data-j="${j}">${n}</button>`).join('') :
+      [[1,'Сделано'],[.5,'Частично'],[0,'Не сделано']].map(([v,n])=>`<button class="btn ${v && v === value ? 'pri' : ''}" data-act="quickmark" data-id="${esc(item.id)}" data-v="${v}">${n}</button>`).join('')}
+    <button class="btn" data-act="quicknext">${item.id === 'namaz' ? 'Дальше' : 'Позже'}</button></div></div>`;
 }
 
 /* ================== НАПОМИНАНИЕ О КОПИИ ================== */
@@ -1128,6 +1171,12 @@ const hijTxt = date => { const h = hijri(date); return `${h.d} ${HM[h.m - 1].toL
 const isRamadan = k => hijri(parse(k)).m === 9;
 const HEV = [[1,1,'Новый год по хиджре'],[1,10,'Ашура — сунна держать пост'],[3,12,'Мавлид — рождение Пророка ﷺ'],[7,27,'Исра и Мирадж'],[9,1,'Начало Рамадана'],[9,27,'27-я ночь Рамадана'],[10,1,'Ураза-байрам'],[12,9,'День Арафа — сунна держать пост'],[12,10,'Курбан-байрам']];
 function hijEvents(n){ const out = [], t = today(); for (let i = 0; i < 400 && out.length < n; i++){ const d = addD(t, i), h = hijri(d); HEV.forEach(([m, dd, txt]) => { if (h.m === m && h.d === dd) out.push({d, txt, i}); }); } return out; }
+function nextFaithDate(t){
+  const next = hijEvents(1)[0], h = hijri(t), sunnah = !cycleMask(key(t)) && (t.getDay() === 1 || t.getDay() === 4 || (h.d >= 13 && h.d <= 15));
+  if (!next || (!sunnah && next.i > 7)) return '';
+  return `<div class="card ramcard"><b>${sunnah ? 'Сегодня день сунны поста' : 'Ближайшая дата по хиджре'}</b>
+    ${next.i <= 7 ? `<div class="small">${fmtD(next.d)} · ${esc(next.txt)}</div>` : ''}</div>`;
+}
 
 // ---- Рамадан: дополнительные пункты Веры только в дни Рамадана ----
 const RAM_ITEMS = [{id:'saum', ax:'faith', t:'Пост (ураза)'}, {id:'suhur', ax:'faith', t:'Сухур до рассвета'}, {id:'tarawih', ax:'faith', t:'Таравих-намаз'}, {id:'juz', ax:'faith', t:'Коран: джуз за день'}];
@@ -1137,6 +1186,7 @@ function ramadanCard(isT){ if (!isT) return ''; const t = today(), h = hijri(t),
   if (h.m === 12 && h.d === 10) return `<div class="card ramcard eid"><b>Курбан-байрам мубарак!</b></div>`;
   if (h.m === 12 && h.d === 9) return `<div class="card ramcard"><b>День Арафа</b><div class="small" style="margin-top:4px">Сунна — держать пост: он искупает грехи прошлого и следующего года.</div></div>`;
   if (h.m !== 9) return '';
+  if (cycleExempt(key(t),'saum')) return `<div class="card ramcard"><b>Рамадан · день ${h.d}</b><div class="small">Пост сегодня исключён из отметок.</div></div>`;
   const fast = now >= P.imsak && now < P.maghrib, nx = now < P.imsak ? ['Сухур — до', P.imsak] : now < P.maghrib ? ['Ифтар — в', P.maghrib] : ['Сухур завтра до', prayTimes(addD(t, 1)).imsak];
   return `<div class="card ramcard"><div class="rhead"><b style="font-size:17px">Рамадан · день ${h.d}</b><span class="rst">${fast ? 'пост идёт' : 'пост не держат'}</span></div>
     <div class="ramrow"><div><span class="tiny muted">Сухур до (имсак)</span><b>${hm(P.imsak)}</b></div><div><span class="tiny muted">Фаджр</span><b>${hm(P.fajr)}</b></div><div><span class="tiny muted">Ифтар (магриб)</span><b>${hm(P.maghrib)}</b></div></div>
@@ -1199,7 +1249,7 @@ function tCal(){ const t = today(), h0 = hijri(t);
 
 // ---- напоминания: в приложении и файлом календаря ----
 const prDone = {};
-function prTick(){ if (!S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9, list = PR5.map(id => [id, P[id], `Время намаза: ${PR_N[id]}`]);
+function prTick(){ if (!S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9 && !cycleExempt(dk,'saum'), list = prayerSlots(dk).map(j => { const id = PR5[j]; return [id, P[id], `Время намаза: ${PR_N[id]}`]; });
   if (ram){ list.push(['iftar', P.maghrib, 'Время ифтара — разговляйся']); list.push(['iftar10', new Date(P.maghrib - 600000), 'Через 10 минут ифтар']); list.push(['imsak', P.imsak, 'Имсак — сухур заканчивается']); list.push(['imsak15', new Date(P.imsak - 900000), 'Через 15 минут конец сухура']); }
   list.forEach(([id, at, txt]) => { const k = dk + id; if (prDone[k] || now < at || now - at > 120000) return; prDone[k] = 1; toast(txt); try { beep(); } catch(e){} vib([200, 100, 200]);
     try { if (window.Notification && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r => r.showNotification('Ихсан', {body:txt, icon:'icon-192.png', tag:k})); } catch(e){} }); }
@@ -1293,7 +1343,7 @@ function vYear(){
     <div class="ybig"><b>${kept}</b><span>засчитанных дней из ${done}${done < total ? ` прошедших (всего ${total})` : ''}</span></div>
     <div class="bar" style="margin-top:8px"><i style="width:${pct(kept/Math.max(1,total))}%;background:var(--good)"></i></div>
     <div class="muted small" style="margin-top:8px">${over ? (cur ? 'Год пройден. То, что ты делал каждый день, никуда не делось — оно в тебе и в городе.' : 'Этот год в архиве.') : `До финала ${Math.max(0, Math.round((Y.b - t)/864e5))} дн.`}</div></div>`;
-  h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.n ? pct(c.pr/(c.n*5))+'%' : '0%','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
+  h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.prDue ? pct(c.pr/c.prDue)+'%' : '—','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
   { const bk = S.books.filter(b => b.s === 2 && inY(b.done)); if (bk.length) h += `<div class="card"><h2>${ic('book')} Книги года — главные мысли</h2>${bk.map(b => `<div style="padding:6px 0;border-top:1px solid var(--line)"><b class="small">${esc(b.t)}</b>${b.idea ? `<div class="small">${esc(b.idea)}</div>` : ''}${b.notes ? `<div class="tiny muted" style="white-space:pre-wrap;margin-top:2px">${esc(b.notes.slice(0, 400))}${b.notes.length > 400 ? '…' : ''}</div>` : ''}</div>`).join('')}</div>`; }
   h += `<div class="card"><h2>Разделы за год</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}</div>`;
   if (cur){ const G = gGrid(), gh = Object.values(G).filter(x => UP.includes(x)).length;
@@ -1328,6 +1378,7 @@ function onbHTML(){ const O = onbInit();
     <p class="small">Каждый день отмечай дела в четырёх разделах: Вера, Разум, Дух и Тело. За дела Разума, Духа и Тела растёт твой город — с жителями, кварталами и высотками. Дела Веры — только для себя, за них в игре ничего не дают.</p>
     <p class="tiny muted">Всё хранится только в этом телефоне: ни регистрации, ни сервера. Дневник закрывается паролем.</p>
     <div class="onbblk"><b>Как к тебе обращаться</b><input class="in" id="onbname" maxlength="30" placeholder="Имя — необязательно" value="${esc(O.name)}"></div>
+    <div class="onbblk"><b>Пол</b>${sexChoices()}</div>
     <div class="onbblk"><b>Где ты живёшь</b><div class="tiny muted" style="margin:2px 0 8px">Нужно для времени намазов и направления на Каабу.</div>
       <button class="btn" data-act="onbgps" style="width:100%">${ic('pin')}Определить моё место</button>
       <div class="chips" style="margin-top:8px">${CITIES.map(([n]) => `<button class="chip btn ${O.place === n ? 'on' : ''}" data-act="onbcity" data-n="${n}">${n}</button>`).join('')}</div>
@@ -1451,16 +1502,16 @@ const backTo = a => a ? `<a class="chip btn backc" href="#way" data-act="wayax" 
 // Строка до записи живёт только в памяти (evLine) и шифруется тем же паролем, что и дневник; в днях хранятся лишь флаги ev (итог подведён) и evl (строка записана).
 let evOpen = false, evLine = '', evPass = '';
 function evHTML(){
-  const t = today(), k = key(t), day = getDay(k), sc = dayScore(day), kept = dayKept(day), md = minDone(day), X = coins(), sk = streak(), m = minSet();
-  const left = ITEMS_ON().filter(i => i.id !== 'namaz' && !itemVal(day,i.id)), np = Math.round(itemVal(day,'namaz')*5), need = m.filter(id => !minOk(day,id));
+  const t = today(), k = key(t), day = getDay(k), sc = dayScore(day), kept = dayKept(day), md = minDone(day), X = coins(), sk = streak(), m = minFor(k);
+  const active = countedItems(k), left = active.filter(i => i.id !== 'namaz' && !itemVal(day,i.id)), np = prayerDone(day,k), due = prayerSlots(k).length, need = m.filter(id => !minOk(day,id));
   const st = sc >= .75 ? 'Хороший день' : sc >= .5 ? 'День засчитан' : md ? 'Минимум — день засчитан' : 'День пока не засчитан';
-  const buys = S.build.log.filter(l => l.d === k && +l.c > 0), done = ITEMS_ON().filter(i=>itemVal(day,i.id) >= 1).length;
+  const buys = S.build.log.filter(l => l.d === k && +l.c > 0), done = active.filter(i=>itemVal(day,i.id) >= 1).length;
   let h = `<div class="evbg" data-act="evclose"></div><div class="evsheet" role="dialog" aria-label="Итог дня">
     <div class="row" style="flex-wrap:nowrap;align-items:center;gap:8px"><h2 class="grow" style="margin:0">Итог дня</h2><span class="muted small">${fmtD(t)}</span><button class="navbtn" data-act="evclose" aria-label="Закрыть">✕</button></div>`;
   h += `<div class="evblk"><div class="evbig ${kept?'ok':''}"><b>${pct(sc)}%</b><span>${st}</span></div>
     <div class="muted tiny" style="margin:10px 0 6px">Как прошёл день?</div>${moodRow(k)}
-    <div class="small" style="margin-top:6px">Сделано ${done} из ${ITEMS_ON().length}. ${kept ? `Серия: <b>${sk}</b> дн.` : m.length && need.length ? `До минимума осталось: ${need.map(id=>minName(id).toLowerCase()).join(', ')}.` : 'Засчитывается от 50% или с минимумом.'}</div>`;
-  if (left.length || np < 5) h += `<div class="muted tiny" style="margin:10px 0 6px">Что ещё успел? Нажми — отметится.</div><div class="chips">${np < 5 ? `<span class="chip">Намазы ${np}/5</span>` : ''}${left.map(i=>`<button class="chip btn" data-act="tog" data-id="${i.id}">${MIN_S[i.id] || esc(i.t)}${m.includes(i.id) ? ' · мин.' : ''}</button>`).join('')}</div>`;
+    <div class="small" style="margin-top:6px">Сделано ${done} из ${active.length}. ${kept ? `Серия: <b>${sk}</b> дн.` : m.length && need.length ? `До минимума осталось: ${need.map(id=>minName(id).toLowerCase()).join(', ')}.` : 'Засчитывается от 50% или с минимумом.'}</div>`;
+  if (left.length || np < due) h += `<div class="muted tiny" style="margin:10px 0 6px">Что ещё успел? Нажми — отметится.</div><div class="chips">${np < due ? `<span class="chip">Намазы ${np}/${due}</span>` : ''}${left.map(i=>`<button class="chip btn" data-act="tog" data-id="${i.id}">${MIN_S[i.id] || esc(i.t)}${m.includes(i.id) ? ' · мин.' : ''}</button>`).join('')}</div>`;
   h += `</div><div class="evblk"><b>Одна строка о дне</b><div class="muted tiny" style="margin:2px 0 8px">Главное за день: мысль, разговор, чему рад, что не вышло. Уйдёт в дневник под пароль.</div>`;
   if (!cryptoOK() || !S.crypto) h += `<div class="small muted">Дневник ещё не создан. <a href="#diary" data-act="evclose">Создать в «Дневнике»</a> — тогда строка дня будет храниться там под паролем.</div>`;
   else h += `${day && day.evl ? `<div class="small" style="margin-bottom:8px">✓ Строка дня уже в дневнике. Можно дописать ещё.</div>` : ''}<textarea class="in" rows="2" id="evline" maxlength="300" placeholder="Одной строкой…">${esc(evLine)}</textarea>${KEY ? '' : `<input class="in" type="password" id="evpass" placeholder="Пароль дневника" autocomplete="current-password" style="margin-top:8px" value="${esc(evPass)}">`}<button class="btn" style="margin-top:8px" data-act="evsave">${ic('lock')}Записать в дневник</button>`;
@@ -1490,7 +1541,8 @@ function vWeek(){
   itemsAll().filter(it => days.some(d => itemsOn(key(d)).includes(it))).forEach(it=>{
     h += `<tr class="axis-${it.ax}"><td><span class="dot" style="background:var(--${it.ax});margin-right:6px"></span>${it.t}</td>`;
     days.forEach(d=>{ const k = key(d), v = itemVal(getDay(k),it.id), fut = d > today(); if (!itemsOn(k).includes(it)){ h += `<td class="${k===t?'today-col':''}"><span class="muted">·</span></td>`; return; }
-      const lab = it.id==='namaz' ? (v===1?'✓':v>0?Math.round(v*5):'') : (v===1?'✓':v>0?'½':'');
+      if (cycleExempt(k,it.id)){ h += '<td><span class="muted" title="Не требуется">–</span></td>'; return; }
+      const lab = it.id==='namaz' ? (v===1?'✓':prayerDone(getDay(k),k)||'') : (v===1?'✓':v>0?'½':'');
       h += `<td class="${k===t?'today-col':''}"><button class="cellbtn ${v===1?'full':v>0?'half':''} ${fut?'fut':''}" data-act="${it.id==='namaz'?'wnamaz':'wtog'}" data-k="${k}" data-id="${it.id}">${lab}</button></td>`; });
     h += `</tr>`;
   });
@@ -1524,13 +1576,13 @@ function periodRange(){
 function collect(a,b){
   const t = today(), s = firstStart(), list = [];
   for (let d = new Date(a); d <= b; d = addD(d,1)) if (d <= t && d >= s) list.push(d);
-  const n = list.length || 1, days = list.map(d=>getDay(key(d)));
+  const n = list.filter(d=>!fullyExcused(key(d))).length || 1, days = list.map(d=>getDay(key(d)));
   const r = {n:list.length, list, days, avg:days.reduce((x,d)=>x+dayScore(d),0)/n, good:days.filter(d=>dayScore(d)>=.75).length,
     ax:Object.fromEntries(AXO.map(a=>[a, days.reduce((x,d)=>x+(d?axisScore(d,a):0),0)/n])),
-    pr:days.reduce((x,d)=>x+(d?.p||[]).reduce((y,z)=>y+(z?1:0),0),0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
+    pr:list.reduce((x,d,i)=>x+prayerDone(days[i],key(d)),0), prDue:list.reduce((x,d)=>x+prayerSlots(key(d)).length,0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
     pages:days.reduce((x,d)=>x+(+d?.n?.pages||0),0), quran:days.reduce((x,d)=>x+(+d?.n?.quran||0),0), fear:days.filter(d=>d?.c?.fear).length,
     sleep:(()=>{const v=days.map(d=>+d?.n?.sleep).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})()};
-  let best = 0, cur = 0, gap = 0; days.forEach(d=>{ if (dayKept(d)){ cur++; gap = 0; best = Math.max(best,cur); } else if (++gap >= 2) cur = 0; }); r.best = best;   // то же правило «не пропускать дважды»
+  let best = 0, cur = 0, gap = 0; days.forEach((d,i)=>{ if (dayKept(d)){ cur++; gap = 0; best = Math.max(best,cur); } else if (!fullyExcused(key(list[i])) && ++gap >= 2) cur = 0; }); r.best = best;
   return r;
 }
 function barChart(vals, labels, h=120){
@@ -1570,11 +1622,12 @@ function vStats(){
   h += `<div class="tabs">${[['week','Неделя'],['month','Месяц'],['stage','Этап (квартал)'],['year','Год']].filter(([k])=>k !== 'stage' || isOwner()).map(([k,n])=>`<button class="${statT===k?'on':''}" data-act="stt" data-t="${k}">${n}</button>`).join('')}</div>`;
   h += `<div class="datebar">${statT!=='year'?`<button class="navbtn" data-act="sprev">‹</button>`:''}<div class="d"><b style="font-size:17px">${R.title}</b><span class="muted small">${c.n} дн. учтено</span></div>${statT!=='year'?`<button class="navbtn" data-act="snext">›</button>`:''}</div>`;
   if (!c.n){ h += `<div class="card muted">За этот период ещё нет прошедших дней плана.</div>`; return h + reviewBlock(R); }
+  h += `<div class="card row"><span class="grow small">${R.b > today() ? 'Предварительный отчёт' : 'Отчёт за период'}</span><button class="btn" data-act="report">Открыть отчёт для PDF</button></div>`;
   h += `<div class="kpis">
     <div class="kpi"><div class="v">${pct(c.avg)}%</div><div class="l">средний балл дня</div></div>
     <div class="kpi"><div class="v">${c.good}</div><div class="l">хороших дней (от 75%)</div></div>
     <div class="kpi"><div class="v">${c.best}</div><div class="l">лучшая серия, дней</div></div>
-    <div class="kpi"><div class="v">${c.n?pct(c.pr/(c.n*5)):0}%</div><div class="l">намазов вовремя</div></div>
+    <div class="kpi"><div class="v">${c.prDue ? pct(c.pr/c.prDue)+'%' : '—'}</div><div class="l">намазов вовремя</div></div>
     <div class="kpi"><div class="v">${c.train}</div><div class="l">тренировок</div></div>
     <div class="kpi"><div class="v">${c.pages}</div><div class="l">страниц прочитано</div></div>
     <div class="kpi"><div class="v">${c.quran}</div><div class="l">минут Корана</div></div>
@@ -1596,6 +1649,76 @@ function vStats(){
   const it = ITEMS_ON().map(i=>({i, v:c.days.reduce((x,d)=>x+itemVal(d,i.id),0)/(c.n||1)})).sort((a,b)=>a.v-b.v);
   h += `<div class="card"><h2>Что проседает</h2>${it.slice(0,3).map(x=>`<div class="axrow axis-${x.i.ax}" style="grid-template-columns:1fr 90px 44px"><span>${x.i.t}</span><div class="bar"><i style="width:${pct(x.v)}%"></i></div><b>${pct(x.v)}%</b></div>`).join('')}</div>`;
   return h + reviewBlock(R);
+}
+function reportHTML(R){
+  const c = collect(R.a,R.b), previous = collect(addD(R.a,-c.n),addD(R.a,-1)), last = c.list.at(-1);
+  const rows = new Map();
+  c.list.forEach((d,j)=>{
+    const k = key(d), day = c.days[j];
+    countedItems(k).forEach(i=>{
+      if (!rows.has(i.id)) rows.set(i.id,{t:i.t, ax:i.ax, due:0, full:0, half:0, yes:[], no:[]});
+      const r = rows.get(i.id), v = itemVal(day,i.id);
+      r.due++; if (v === 1) r.full++; else if (v > 0) r.half++;
+      if (day?.mood >= 1 && day.mood <= 5){
+        if (v === 1) r.yes.push(+day.mood); else if (!v) r.no.push(+day.mood);
+      }
+    });
+    (Array.isArray(day?.own) ? day.own : []).forEach(i=>{
+      if (!i?.t) return;
+      const id = 'own:' + i.t;
+      if (!rows.has(id)) rows.set(id,{t:i.t, ax:'own', due:0, full:0, half:0, yes:[], no:[]});
+      const r = rows.get(id);
+      r.due++; if (i.d) r.full++;
+    });
+  });
+  const avg = values => values.reduce((a,b)=>a+b,0)/values.length;
+  const observations = [...rows.values()].filter(r=>r.yes.length >= 3 && r.no.length >= 3)
+    .map(r=>({...r, a:avg(r.yes), b:avg(r.no)})).filter(r=>Math.abs(r.a-r.b)>=.3)
+    .sort((a,b)=>Math.abs(b.a-b.b)-Math.abs(a.a-a.b)).slice(0,3);
+  const rate = r => (r.full + .5*r.half)/r.due;
+  const ranked = [...rows.values()].filter(r=>r.due >= 3).sort((a,b)=>rate(b)-rate(a));
+  const high = ranked[0], low = ranked.at(-1);
+  const values = [], labels = [], step = c.n > 45 ? 7 : 1;
+  for (let j=0;j<c.n;j+=step){
+    const group = c.list.slice(j,j+step).map((d,i)=>fullyExcused(key(d)) ? null : dayScore(c.days[j+i])).filter(v=>v !== null);
+    values.push(group.length ? avg(group) : null); labels.push(key(c.list[j]).slice(5).split('-').reverse().join('.'));
+  }
+  const diff = pct(c.avg) - pct(previous.avg), dates = d => d.toLocaleDateString('ru-RU');
+  return `<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ихсан — отчёт ${key(R.a)}</title>
+  <style>
+    :root{--ink:#17261f;--line:#d4dfd8;--muted:#52635b;--good:#236b50;--gold:#99532c}
+    *{box-sizing:border-box}body{font:14px/1.5 system-ui,sans-serif;color:var(--ink);max-width:780px;margin:0 auto;padding:22px}
+    h1{font-size:30px;margin:0}h2{font-size:18px;margin:20px 0 8px;break-after:avoid}
+    .brand{color:var(--good);font-weight:700;margin:0}.muted{color:var(--muted)}p{margin:5px 0 10px}
+    .metrics{display:flex;flex-wrap:wrap;gap:12px 20px;border-block:1px solid var(--line);padding:10px 0}
+    .metrics strong{display:block;font-size:21px}.svgchart{display:block;width:100%;height:auto;max-height:240px}
+    table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}td,th{padding:6px;text-align:right;border-bottom:1px solid var(--line)}td:first-child,th:first-child{text-align:left}
+    tr{break-inside:avoid}thead{display:table-header-group}.graph{break-inside:avoid}button{margin-bottom:12px;padding:8px 12px}
+    @page{size:A4;margin:14mm}@media print{body{padding:0;max-width:none}button{display:none}}
+  </style><body><button id="printReport">Печать / сохранить PDF</button>
+  <p class="brand">Ихсан · личные итоги</p><h1>${esc(R.title)}</h1>
+  <p class="muted">${dates(c.list[0])} – ${dates(last)} · ${c.n} дн.${R.b >= today()?' · период ещё идёт':''}</p>
+  <div class="metrics"><div><strong>${pct(c.avg)}%</strong>Средний балл дня</div><div><strong>${c.good}</strong>Хороших дней</div><div><strong>${c.best}</strong>Лучшая серия, дн.</div>
+  ${previous.n === c.n ? `<div><strong>${diff > 0 ? '+' : ''}${diff} п. п.</strong>К предыдущим ${c.n} дням</div>` : ''}</div>
+  <div class="graph"><h2>Как менялся балл ${step === 1 ? 'по дням' : 'по неделям'}</h2>${barChart(values,labels)}</div>
+  <h2>Настроение и привычки</h2>
+  ${observations.length ? observations.map(r=>`<p><b>${esc(r.t)}</b> · ${r.a.toFixed(1).replace('.',',')} из 5 в дни выполнения (${r.yes.length} дн.) и ${r.b.toFixed(1).replace('.',',')} в дни без отметки (${r.no.length} дн.).</p>`).join('') + '<p class="muted">Это сравнение наблюдений. Причину изменений по нему определить нельзя.</p>' : '<p class="muted">Пока нет заметных различий или мало оценок настроения для сравнения.</p>'}
+  <h2>Результат по каждому пункту</h2>
+  ${high && pct(rate(high)) > pct(rate(low)) ? `<p>Лучше всего шло «${esc(high.t)}» (${pct(rate(high))}%). Самый низкий результат у «${esc(low.t)}» (${pct(rate(low))}%). Полная отметка даёт 1 балл, частичная — ½.</p>` : ''}
+  <table><thead><tr><th>Пункт</th><th>План</th><th>Готово</th><th>Часть</th><th>Без отметки</th></tr></thead><tbody>
+  ${[...rows.values()].sort((a,b)=>[...AXO,'own'].indexOf(a.ax)-[...AXO,'own'].indexOf(b.ax)).map(r=>`<tr><td>${esc(r.t)}<br><span class="muted">${AX[r.ax]?.n || 'Свои дела'}</span></td><td>${r.due}</td><td>${r.full}</td><td>${r.half}</td><td>${r.due-r.full-r.half}</td></tr>`).join('')}
+  </tbody></table>
+  <h2>Другие результаты</h2><p>${c.train} тренировок · ${c.pages} страниц · ${c.quran} мин. Корана · ${c.fear} шагов вопреки страху${c.sleep ? ` · ${c.sleep.toFixed(1).replace('.',',')} ч сна в среднем` : ''}</p>
+  </body></html>`;
+}
+function openReport(){
+  const range = periodRange();
+  if (!collect(range.a,range.b).n) return;
+  const tab = window.open('','_blank');
+  if (!tab) return toast('Разреши открытие новой вкладки для отчёта');
+  tab.opener = null;
+  tab.document.open(); tab.document.write(reportHTML(range)); tab.document.close();
+  tab.document.getElementById('printReport').onclick = ()=>tab.print();
 }
 function reviewBlock(R){
   const base = `rev|${statT}|${R.key}`;
@@ -1718,10 +1841,26 @@ function vDiary(){
     <form data-form="dunlock" style="max-width:300px;margin:0 auto"><input class="in" type="password" name="p" placeholder="Пароль" autocomplete="current-password" required><button class="btn pri" style="width:100%;margin-top:10px">Открыть</button></form>
     <details style="max-width:320px;margin:16px auto 0;text-align:left"><summary class="small" style="cursor:pointer;color:var(--spirit)">Забыл пароль?</summary><p class="tiny muted">Пароль нельзя восстановить: записи зашифрованы именно им, и без него их не прочитает никто — ни ты, ни мы. Если вспомнить не получается, можно начать новый дневник с новым паролем. Старые записи (${Object.keys(S.diary).length}) при этом удалятся навсегда. Если есть копия данных со старым паролем — сначала попробуй вспомнить пароль, записи в копии тоже под ним.</p><button class="btn danger" style="width:100%" data-act="dforgot">Начать новый дневник</button></details></div>`;
   const keys = Object.keys(S.diary).sort().reverse(), d = parse(diaryDate);
+  const older = keys.find(k => k < diaryDate), newer = keys.filter(k => k > diaryDate).at(-1);
   h += `<div class="row" style="margin-bottom:12px"><input class="in grow" type="date" id="ddate" value="${diaryDate}" style="max-width:200px;margin:0"><button class="btn" data-act="dtodayd">Сегодня</button><button class="btn" data-act="dlock"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Закрыть</button></div>`;
+  h += `<nav class="diary-pages" id="diaryPages" aria-label="Страницы дневника">
+    <button class="btn" data-act="dpage" data-k="${older || ''}" ${older ? '' : 'disabled'}>‹ Раньше</button>
+    <span class="small muted">${fmtD(d)}</span>
+    <button class="btn" data-act="dpage" data-k="${newer || ''}" ${newer ? '' : 'disabled'}>Позже ›</button>
+    </nav>`;
+  afterFns.push(()=>{
+    const pages = $('#diaryPages'); let start;
+    pages.addEventListener('touchstart', e=>{ start = e.touches.length === 1 ? e.touches[0] : null; }, {passive:true});
+    pages.addEventListener('touchend', e=>{
+      if (!start || e.touches.length) return;
+      const end = e.changedTouches[0], dx = end.clientX - start.clientX, dy = end.clientY - start.clientY;
+      start = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5) pages.querySelectorAll('button')[dx > 0 ? 0 : 1].click();
+    }, {passive:true});
+  });
   if (!diaryCache || diaryCache.k !== diaryDate){ h += `<div class="card muted">Открываю запись…</div>`; afterFns.push(loadEntry); }
   else { const e = diaryCache.e;
-    h += `<div class="card axis-spirit axcard"><h2>${fmtD(d)} ${d.getFullYear()}, ${DFULL[d.getDay()]}</h2>
+    h += `<div class="card axis-spirit axcard diary-page"><h2>${fmtD(d)} ${d.getFullYear()}, ${DFULL[d.getDay()]}</h2>
       ${e.line !== undefined ? `<h3>Итог дня одной строкой</h3><textarea class="in" rows="2" data-diary="line">${esc(e.line||'')}</textarea>` : ''}
       <h3>Мухасаба</h3>
       <div class="f" style="margin-top:10px">${MUHL()[0]}</div><div class="chips copts">${MUHQ_().q1.map(o=>`<button class="chip btn ${chipSet(e.q1).includes(o)?'on':''}" data-act="dctx" data-q="q1" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q1" placeholder="Своими словами — необязательно">${esc(e.q1||'')}</textarea>
@@ -1733,9 +1872,10 @@ function vDiary(){
   h += `<div class="muted tiny" style="text-align:center">Дневник закрывается сам, когда уходишь из раздела или 10 минут ничего не делаешь.</div>`;
   return h;
 }
-async function loadEntry(){ const k = diaryDate; let e = {};
-  if (S.diary[k]) { try { e = await decObj(KEY, S.diary[k]); } catch(err){ toast('Не удалось расшифровать запись'); } }
-  diaryCache = {k, e, dirty:false}; if (view==='diary') render(); }
+async function loadEntry(){ const k = diaryDate, diaryKey = KEY; let e = {};
+  if (S.diary[k]) { try { e = await decObj(diaryKey, S.diary[k]); } catch(err){ toast('Не удалось расшифровать запись'); } }
+  if (KEY !== diaryKey || diaryDate !== k || view !== 'diary' || diaryCache?.k === k) return;
+  diaryCache = {k, e, dirty:false}; render(); }
 let dTimer = null;
 async function saveEntry(silent){
   if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !['q1','q2','q3','free','line'].some(x=>(e[x]||'').trim());
@@ -1782,6 +1922,43 @@ function vPlan(){
 }
 
 /* ================== НАСТРОЙКИ ================== */
+function sexChoices(){
+  return `<div class="chips" style="margin-top:6px">${[['f','Женский'],['m','Мужской'],['','Пропустить']].map(([v,n])=>`<button class="chip btn ${(S.settings.sex || '') === v ? 'on' : ''}" data-act="sex" data-v="${v}">${n}</button>`).join('')}</div>`;
+}
+let cycleMonth = 0;
+function cycleCalendar(){
+  const t = today(), start = new Date(t.getFullYear(),t.getMonth()+cycleMonth,1);
+  const n = new Date(start.getFullYear(),start.getMonth()+1,0).getDate(), lead = (start.getDay()+6)%7;
+  return `<div class="datebar"><button class="navbtn" data-act="cyclemonth" data-v="-1" aria-label="Предыдущий месяц">‹</button><b>${start.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}</b><button class="navbtn" data-act="cyclemonth" data-v="1" aria-label="Следующий месяц" ${cycleMonth === 0 ? 'disabled' : ''}>›</button></div>
+    <div class="cycle-grid">${DN.map(d=>`<span class="muted tiny">${d}</span>`).join('')}${'<span></span>'.repeat(lead)}${Array.from({length:n},(_,j)=>{
+      const d = addD(start,j), k = key(d), mask = cycleMask(k);
+      return d > t ? `<span class="muted">${j+1}</span>` : `<a href="#today" class="${mask ? 'on' : ''}" data-act="cycleday" data-k="${k}" aria-label="${fmtD(d)}${mask ? ', день отмечен' : ''}">${j+1}</a>`;
+    }).join('')}</div>`;
+}
+function cycleSettings(){
+  if (S.settings.sex !== 'f' && !S.settings.cycle && !Object.keys(S.cycleDays).length) return '';
+  const t = key(today());
+  return `<div class="card"><h2>Календарь цикла</h2>
+    <button class="chip btn ${S.settings.cycle ? 'on' : ''}" data-act="ctog" data-p="settings|cycle">${S.settings.cycle ? 'Скрыть календарь' : 'Показать календарь'}</button>
+    ${S.settings.cycle ? `<p class="small muted">Отметь фактические даты. Записи хранятся на устройстве и входят в резервную копию.</p>
+    <form data-form="cycleRange"><div class="nums">
+      <label class="f">С<input class="in" type="date" name="start" value="${t}" max="${t}" required></label>
+      <label class="f">По<input class="in" type="date" name="end" value="${t}" max="${t}" required></label>
+    </div><div class="chips" style="margin-top:8px"><button class="btn pri" name="mode" value="add">Отметить дни</button><button class="btn" name="mode" value="clear">Снять отметки в датах</button></div></form>
+    <p class="small muted">Поправить отдельные намазы в день начала или окончания можно на странице этого дня.</p>
+    ${cycleCalendar()}` : ''}</div>`;
+}
+function cycleDayCard(k){
+  if (!S.settings.cycle || k > key(today())) return '';
+  const mask = cycleMask(k), canAdd = mask && isRamadan(k) && !S.cycleQada[k];
+  return `<div class="sep"></div><details class="dfold" id="cycleDay">
+    <summary>Календарь цикла${mask ? ' · день отмечен' : ''}</summary>
+    <p class="small muted">Отметь намазы, которые в этот день не требовались.</p>
+    <div class="chips">${PRAYERS.map((n,j)=>`<button class="chip btn ${mask & (1 << j) ? 'on' : ''}" data-act="cyclepr" data-j="${j}">${n}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:8px"><button class="btn" data-act="cycleall" data-v="${mask === 31 ? 0 : 31}">${mask === 31 ? 'Снять отметки цикла' : 'Весь день'}</button>
+    ${canAdd ? '<button class="btn" data-act="cycleqada">Добавить день поста в каза</button>' : S.cycleQada[k] ? '<span class="chip">День поста добавлен в каза</span>' : ''}</div>
+    </details>`;
+}
 function vSetup(){
   let h = topbar('Настройки');
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg> Основное</h2><div class="nums"><label class="f">Как к тебе обращаться${inp('settings|name','Имя')}</label><label class="f">Старт плана${inp('settings|start','','date')}</label></div>
@@ -1803,6 +1980,8 @@ function vSetup(){
     <div class="muted small" style="margin:12px 0 6px">Погода в городе</div><div class="chips">${[['auto','Погода сама'],['off','Всегда ясно']].map(([v,n])=>`<button class="chip btn ${(S.settings.weather||'auto')===v?'on':''}" data-act="wx" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${Wx.N[Wx.now().k]}. Погода меняется сама по дням и времени года: летом чаще ясно, осенью дожди, зимой снег. Без интернета. «Всегда ясно» — если телефон греется.</div>
     <div class="row" style="margin-top:12px;flex-wrap:nowrap"><span class="small" style="flex:1">Жизнь в городе<br><span class="tiny muted">Человечки, машины и автобус на карте. Выключи, если телефон греется или карта идёт рывками.</span></span><button class="chip btn ${S.settings.life!==false?'on':''}" data-act="life">${S.settings.life!==false?'вкл':'выкл'}</button></div><div></div></div>`;
+  h += `<div class="card"><h2>Пол</h2>${sexChoices()}</div>` + cycleSettings();
+  h += `<div class="card"><h2>Быстрые отметки</h2><button class="chip btn ${S.settings.quickStart ? 'on' : ''}" data-act="ctog" data-p="settings|quickStart">${S.settings.quickStart ? 'Показывать карточки при первом открытии «Сегодня»' : 'Открывать карточки по кнопке'}</button></div>`;
   h += `<div class="card"><h2>${ic('flame')} Минимальный день</h2><div class="small">До трёх пунктов, которые держат день в плохие дни. Сделал все — день засчитан и серия не рвётся, даже если остальное не успел. Монет минимум сам по себе не даёт.</div>
     <div class="chips" style="margin-top:10px">${ITEMS_ON().map(i=>`<button class="chip btn ${minSet().includes(i.id)?'on':''}" data-act="minpick" data-id="${i.id}">${MIN_T[i.id] || esc(i.t)}</button>`).join('')}</div>
     <div class="tiny muted" style="margin-top:6px">Выбрано ${minSet().length} из 3. Намазы считаются, когда отмечены все пять; остальное — любая отметка, и «½» тоже. Ничего не выбрано — минимума нет, день засчитывается только от 50%.</div><div class="tiny muted" style="margin-top:6px"><b>Серия не боится одного пропуска:</b> один пропущенный день между засчитанными прощается (в счёт не идёт, но и не обнуляет), два подряд — обнуляют.</div></div>`;
@@ -2138,7 +2317,7 @@ function treeDetail(T){
   const c = T.c, n = c.n || 1, D = c.days, k = (v,l) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
   const avg = f => { const v = D.map(f).filter(x=>x>0); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
   if (treePart === 'trunk') return `<h2><span class="dot" style="background:var(--faith)"></span>Ствол — Вера</h2><div class="muted small" style="margin:-6px 0 10px">Ствол растёт в высоту и толщину от каждого дня с намазами, Кораном и азкарами.</div>
-    <div class="kpis">${k(pct(c.ax.faith)+'%','Вера в среднем за день')}${k(c.n?pct(c.pr/(c.n*5))+'%':'—','намазов вовремя')}${k(c.quran,'минут Корана')}${k(D.filter(d=>d?.c?.azkar).length,'дней с азкарами')}${k(D.filter(d=>d?.c?.ilm).length,'дней учёбы по религии')}</div>`;
+    <div class="kpis">${k(pct(c.ax.faith)+'%','Вера в среднем за день')}${k(c.prDue ? pct(c.pr/c.prDue)+'%' : '—','намазов вовремя')}${k(c.quran,'минут Корана')}${k(D.filter(d=>d?.c?.azkar).length,'дней с азкарами')}${k(D.filter(d=>d?.c?.ilm).length,'дней учёбы по религии')}</div>`;
   if (treePart === 'roots'){ const done = S.fears.map(f=>f).filter(f=>f.done);
     return `<h2><span class="dot" style="background:var(--spirit)"></span>Корни — Дух</h2><div class="muted small" style="margin:-6px 0 10px">Под землёй, их не видно со стороны. Каждый пройденный страх, мухасаба и вызов удлиняет корни или даёт новый.</div>
     <div class="kpis">${k(T.fearsDone+' из '+S.fears.length,'страхов пройдено')}${k(c.fear,'шагов вопреки страху')}${k(T.muh,'вечеров мухасабы')}${k(T.wch,'вызовов недели')}${k(T.big+' из 4','больших вызовов')}</div>
@@ -3199,7 +3378,7 @@ function howCard(){ const open = !S.settings.howSeen;
 function vTown(){
   const Y = townSync(), D = Y.D, X = coins(), T = S.town, B = S.build, L = cityLvl(), nb = nbStages(), gw = goodWeeks(), ids = Object.keys(ECON.town);
   const nextN = CITY.need[L], prevN = CITY.need[L-1], bon = townBonus(), lvSum = ids.reduce((a,i)=>a+bLvl(i),0), lvAll = ids.reduce((a,i)=>a+ECON.town[i].lv,0);
-  const td = getDay(key(today())), tsc = dayScore(td), left = ITEMS_ON().filter(i => itemVal(td, i.id) < 1).length;
+  const td = getDay(key(today())), tsc = dayScore(td), left = countedItems(key(today())).filter(i => itemVal(td, i.id) < 1).length;
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
   h += `<a class="card daystrip" href="#today"><span class="dsp ${dayKept(td) ? 'ok' : ''}">${pct(tsc)}%</span><span class="grow"><b>${dayKept(td) ? 'День засчитан' : tsc ? 'День идёт' : 'Сегодняшние дела'}</b><span class="tiny muted">${left ? `осталось ${left} из ${ITEMS_ON().length} · ` : 'всё сделано · '}+${nf(X.today)} монет сегодня · серия ${streak()} дн.</span></span><span class="dgo">Отметить →</span></a>`;
   h += unlCard();
@@ -3689,6 +3868,7 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, k = key(viewDate);
   switch(a){
+    case 'report': openReport(); return;
     case 'ysel': yearSel = +el.dataset.n; break;
     case 'ynext': await yearNext(); return;
     case 'ystat': statT = 'year'; statO = 0; return;
@@ -3701,6 +3881,7 @@ document.addEventListener('click', async e => {
       toast('Определяю место…'); navigator.geolocation.getCurrentPosition(p => { O.lat = +p.coords.latitude.toFixed(4); O.lon = +p.coords.longitude.toFixed(4); const near = CITIES.find(c => Math.abs(c[1] - O.lat) < .3 && Math.abs(c[2] - O.lon) < .3); O.place = near ? near[0] : 'Моё место'; O.decl = near ? near[3] : 7; onbSync(); toast('Место определено'); }, () => toast('Не получилось — выбери город из списка'), {timeout:12000, maximumAge:600000}); return; }
     case 'onbdark': S.settings.dark = el.dataset.v; applyTheme(); onbSync(); return;
     case 'onbdone': onbDone(); return;
+    case 'sex': S.settings.sex = el.dataset.v; save(); break;
     case 'evopen': viewDate = today(); evOpen = true; break;
     case 'evclose': evOpen = false; if (el.tagName === 'A') return; break;
     case 'evtown': evOpen = false; townShowToday = true; return;
@@ -3710,6 +3891,36 @@ document.addEventListener('click', async e => {
     case 'dprev': viewDate = addD(viewDate,-1); break;
     case 'dnext': viewDate = addD(viewDate,1); break;
     case 'dtoday': viewDate = today(); break;
+    case 'quickopen':
+      quickIndex = 0; quickOpen = true;
+      afterFns.push(()=>$('#quickCard')?.scrollIntoView({block:'nearest'})); break;
+    case 'quickmark': {
+      const id = el.dataset.id, d = ensureDay(k), val = +el.dataset.v;
+      if (val) d.c[id] = val; else delete d.c[id];
+      save();
+    }
+    // После ответа переходим к следующей карточке.
+    case 'quicknext':
+      if (++quickIndex < countedItems(k).length) break;
+      quickOpen = false; S.settings.quickSeen = k; save(); break;
+    case 'quickclose': quickOpen = false; S.settings.quickSeen = k; save(); break;
+    case 'cyclemonth': cycleMonth = Math.min(0,cycleMonth + +el.dataset.v); break;
+    case 'cycleday': {
+      viewDate = parse(el.dataset.k);
+      afterFns.push(()=>requestAnimationFrame(()=>{ const panel = $('#cycleDay'); if (panel){ panel.open = true; panel.scrollIntoView({block:'center'}); } }));
+      return;
+    }
+    case 'cyclepr':
+    case 'cycleall': {
+      if (!S.settings.cycle || k > key(today())) return;
+      const mask = a === 'cycleall' ? +el.dataset.v : cycleMask(k) ^ (1 << +el.dataset.j);
+      if (mask) S.cycleDays[k] = mask; else delete S.cycleDays[k];
+      save(true); afterFns.push(()=>{ const panel = $('#cycleDay'); if (panel) panel.open = true; }); break;
+    }
+    case 'cycleqada':
+      if (!S.settings.cycle || !cycleMask(k) || !isRamadan(k) || S.cycleQada[k]) return;
+      if (!await ask('Добавить один пропущенный день поста в каза?','Добавить')) return;
+      qaG().saum++; S.cycleQada[k] = true; save(true); break;
     case 'tog': { const d = ensureDay(k), c0 = coins().today, r0 = el.getBoundingClientRect(); d.c[el.dataset.id] = cycle(d.c[el.dataset.id]||0); if (!d.c[el.dataset.id]) delete d.c[el.dataset.id]; save();
       if (coins().today > c0){ flyFrom = [r0.left + 22, r0.top + 20]; afterFns.push(flyCoin); } break; }
     case 'nst': { const f = el.dataset.f, st = NUMF[f]; if (!st) return; const d = ensureDay(k), cur = num(d.n[f]), prev = lastNum(f, k); let v = cur == null ? (prev != null ? prev : (+el.dataset.d > 0 ? st[0] : 0)) : cur + (+el.dataset.d)*st[0];
@@ -3717,18 +3928,18 @@ document.addEventListener('click', async e => {
     case 'mst': { const f = el.dataset.k, i = $('#m_' + f), st = MSTEP[f] || 1; if (!i) return; const prev = latest(f); i.value = i.value === '' ? (prev != null ? prev : st) : Math.max(0, Math.round((+i.value + (+el.dataset.d)*st)*10)/10); return; }
     case 'ctx': { const p = el.dataset.p, v = el.dataset.v, cur = chipSet(getPath(p)), j = cur.indexOf(v); j >= 0 ? cur.splice(j, 1) : cur.push(v); setPath(p, cur.join('; ')); save(); break; }
     case 'cset': { const p = el.dataset.p; setPath(p, getPath(p) === el.dataset.v ? '' : el.dataset.v); save(); break; }
-    case 'ctog': { const p = el.dataset.p; setPath(p, !getPath(p)); save(); break; }
+    case 'ctog': { const p = el.dataset.p; setPath(p, !getPath(p)); if (p === 'settings|quickStart'){ quickDay = ''; quickOpen = false; } save(); break; }
     case 'dctx': { if (!diaryCache) return; const q = el.dataset.q, cur = chipSet(diaryCache.e[q]), j = cur.indexOf(el.dataset.v); j >= 0 ? cur.splice(j, 1) : cur.push(el.dataset.v); diaryCache.e[q] = cur.join('; '); diaryCache.dirty = true; break; }
     case 'asyest': { const y = getDay(key(addD(viewDate,-1))); if (!y) return toast('За вчера отметок нет'); const d = ensureDay(k); yUndo = {k, snap:JSON.stringify(d)}; let n = 0;
       for (const id in (y.c || {})){ if (id === 'muhasaba' || id === 'fear') continue; if ((d.c[id]||0) < y.c[id]){ d.c[id] = y.c[id]; n++; } }
-      (y.p || []).forEach((v,i)=>{ if (v && !d.p[i]){ d.p[i] = 1; n++; } }); if (y.tr && !d.tr) d.tr = y.tr; save(); toast(n ? `Отмечено как вчера: ${n}. Проверь и поправь, что не так` : 'Всё вчерашнее уже отмечено'); break; }
+      (y.p || []).forEach((v,i)=>{ if (v && !d.p[i] && !((cycleMask(dkey(y)) | cycleMask(k)) & (1 << i))){ d.p[i] = 1; n++; } }); if (y.tr && !d.tr) d.tr = y.tr; save(); toast(n ? `Отмечено как вчера: ${n}. Проверь и поправь, что не так` : 'Всё вчерашнее уже отмечено'); break; }
     case 'asyundo': { if (yUndo && yUndo.k === k){ S.days[k] = JSON.parse(yUndo.snap); save(); } yUndo = null; break; }
-    case 'pr': { const d = ensureDay(k); d.p[+el.dataset.j] = d.p[+el.dataset.j] ? 0 : 1; save(); break; }
+    case 'pr': { const j = +el.dataset.j; if (cycleMask(k) & (1 << j)) return; const d = ensureDay(k); d.p[j] = d.p[j] ? 0 : 1; save(); break; }
     case 'tr': { const d = ensureDay(k); const t = el.dataset.t; d.tr = d.tr===t ? '' : t; if (d.tr && d.tr!=='Отдых') d.c.train = 1; save(); break; }
     case 'wprev': weekStart = addD(weekStart,-7); break;
     case 'wnext': weekStart = addD(weekStart,7); break;
     case 'wtog': { const d = ensureDay(el.dataset.k); const id = el.dataset.id; d.c[id] = cycle(d.c[id]||0); if (!d.c[id]) delete d.c[id]; save(); break; }
-    case 'wnamaz': { const d = ensureDay(el.dataset.k); const all = d.p.every(x=>x); d.p = all ? [0,0,0,0,0] : [1,1,1,1,1]; save(); break; }
+    case 'wnamaz': { const dk = el.dataset.k, mask = cycleMask(dk); if (mask === 31) return; const d = ensureDay(dk), next = itemVal(d,'namaz') === 1 ? 0 : 1; d.p = PRAYERS.map((_,j)=>mask & (1 << j) ? d.p[j] : next); save(); break; }
     case 'stt': statT = el.dataset.t; statO = 0; break;
     case 'sprev': statO--; break;
     case 'snext': statO++; break;
@@ -3788,7 +3999,8 @@ document.addEventListener('click', async e => {
     case 'dforgot': if (!await ask('Удалить все записи дневника и начать новый с новым паролем? Это нельзя отменить.','Дальше') || !await ask(`Точно? Пропадут ${Object.keys(S.diary).length} записей.`,'Удалить и начать заново')) return; S.diary = {}; S.crypto = null; KEY = null; diaryCache = null; save(true); toast('Придумай новый пароль'); break;
     case 'dlock': await flushDiary(); KEY = null; diaryCache = null; break;
     case 'dsave': await saveEntry(); return;
-    case 'dopen': await flushDiary(); diaryDate = el.dataset.k; diaryCache = null; break;
+    case 'dpage':
+    case 'dopen': if (!el.dataset.k) return; await flushDiary(); diaryDate = el.dataset.k; diaryCache = null; break;
     case 'dtodayd': await flushDiary(); diaryDate = key(today()); diaryCache = null; break;
     case 'proom': plotSel = plotSel === el.dataset.r ? '' : el.dataset.r; if (plotSel && !e.target.closest('.plegend') && innerWidth < 900) afterFns.push(()=>{ const c = $('#room-'+plotSel); if (c) c.scrollIntoView({block:'center', behavior:'smooth'}); }); break;
     case 'gotree': location.hash = '#tree'; return;
@@ -3916,6 +4128,16 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'cycleRange'){
+      const start = String(fd.get('start')), end = String(fd.get('end'));
+      if (!S.settings.cycle || start > end || end > key(today()) || !/^\d{4}-\d\d-\d\d$/.test(start) || !/^\d{4}-\d\d-\d\d$/.test(end) || key(parse(start)) !== start || key(parse(end)) !== end) return toast('Проверь даты');
+      const clearing = e.submitter?.value === 'clear';
+      for (let d = parse(start); key(d) <= end; d = addD(d,1)){
+        const k = key(d);
+        if (clearing) delete S.cycleDays[k]; else if (!cycleMask(k)) S.cycleDays[k] = 31;
+      }
+      save(true); render(); return;
+    }
     if (f.dataset.form === 'itadd'){ const t = String(fd.get('t')||'').trim().slice(0,60), a = f.dataset.a; if (!t || !AX[a]) return; if (itemsOn(key(today())).filter(i=>i.ax===a).length >= 10) return toast('В разделе уже 10 пунктов'); S.items.push({id:'u' + Date.now().toString(36), ax:a, t, from:key(today()), to:''}); save(); render(); toast('Пункт добавлен'); return; }
     if (f.dataset.form === 'ownadd'){ const t = String(fd.get('t')||'').trim().slice(0,80); if (!t) return; const d = ensureDay(key(viewDate)); d.own ||= []; if (d.own.length >= OWN_MAX_LIST) return toast('Дел на день уже много'); d.own.push({t, d:0}); save(); render(); setTimeout(()=>{ const i = $('#ownCard input'); if (i) i.focus(); }, 30); return; }
     if (f.dataset.form === 'dset'){ if (fd.get('p1') !== fd.get('p2')) return toast('Пароли не совпадают');
