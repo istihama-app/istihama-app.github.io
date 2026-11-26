@@ -985,7 +985,7 @@ function vToday(){
   if (mp && isOwner()) h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Фокус месяца · ${MN[viewDate.getMonth()]}</h2><div class="muted small" style="margin:-6px 0 8px">${st.n} — «${st.t}»</div>${AXO.map((a,i)=>`<div class="row" style="margin:6px 0;align-items:flex-start;flex-wrap:nowrap"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div><b>${AX[a].n}.</b> ${esc(mp[i])}</div></div>`).join('')}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg> Правило дня</h2><div>${RULES[(viewDate.getDate()+viewDate.getMonth())%RULES.length]}</div></div>`;
   if (isT && unl() >= 3) h += giftCard();
-  h += `<div class="card"><h2>${ic('heart')} Настроение дня</h2>${moodRow(k)}</div>`;
+  h += `<div class="card"><h2>${ic('heart')} Настроение дня</h2>${moodRow(k)}<div class="chips" style="margin-top:10px"><a class="chip btn" href="#diary" data-act="wellDiary" data-k="${k}">Записать самочувствие</a><a class="chip btn" href="#path" data-act="ptab" data-t="wellbeing">О тревоге и панике</a></div></div>`;
   if (isT) h += bkCard();
   if (isT) h += `<button class="btn pri" style="display:block;width:100%;text-align:center;padding:13px;margin-bottom:10px" data-act="evopen">${day && day.ev ? '✓ Итог дня подведён — открыть' : 'Подвести итог дня'}</button>`;
   h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
@@ -1462,10 +1462,10 @@ let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
 const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
   mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
-  spirit:[['fears','path','fears','ladder','Лестница страхов'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
+  spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1476,6 +1476,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'suras'){ const n = S.suras.filter(x => x.s >= 2).length, d = hifzDue().length; return `${n} выучено${d ? ` · повторить ${d}` : ''}`; }
   if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
+  if (id === 'wellbeing') return 'тревога, приступы, что помогло';
   if (id === 'diary') return `записей: ${Object.keys(S.diary || {}).length}`;
   if (id === 'capsule') return S.capsule.sealed ? `запечатано до ${fmtD(parse(S.capsule.open))}` : 'написать себе через год';
   if (id === 'gym'){ const ks = Object.keys(gymG().log).filter(k => (gymG().log[k] || []).length).sort(); return ks.length ? `последняя — ${fmtD(parse(ks[ks.length - 1]))}` : 'записать первую'; }
@@ -1752,9 +1753,23 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['books','Книги'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['books','Книги'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+}
+function pWellbeing(){
+  return `<div class="card"><h2>${ic('lock')} Личные отметки</h2>
+    <p class="small">В тетради можно отметить тревогу, число приступов, примерное время и что помогло. Эти записи защищены паролем дневника.</p>
+    <a class="btn pri" href="#diary" data-act="wellDiary" data-k="${key(today())}">Записать самочувствие</a></div>
+    <div class="card"><h2>Если накрыла знакомая паника</h2>
+    <p>Если ты в безопасности, остановись, попробуй дышать медленнее и напомни себе, что приступ пройдёт. Можно сосредоточиться на чём-то спокойном вокруг.</p>
+    <p class="small">При сильной боли в груди, выраженной одышке, обмороке или других внезапных тяжёлых симптомах обратись за экстренной медицинской помощью.</p></div>
+    <div class="card"><h2>Когда стоит обратиться за помощью</h2>
+    <p>Если приступы повторяются, тревога мешает спать или работать, либо из-за страха ты избегаешь привычных мест и дел, обсуди это с врачом. Похожие симптомы бывают при разных состояниях, поэтому важно разобраться в их причине.</p>
+    <details class="dfold"><summary>Как лечат паническое и тревожные расстройства</summary>
+      <p>При паническом расстройстве применяют когнитивно-поведенческую терапию (КПТ). На ней учатся распознавать мысли и реакции во время приступа и постепенно возвращаться к тому, чего начали избегать. При длительной тревоге также используют КПТ, а подход выбирают после оценки симптомов и того, как они влияют на жизнь.</p>
+      <p>Врач может обсудить с тобой лекарства, если они подходят в твоём случае.</p></details>
+    <div class="chips" style="margin-top:10px"><a class="btn" href="https://www.nhs.uk/mental-health/conditions/panic-disorder/" target="_blank" rel="noopener noreferrer">О паническом расстройстве · NHS</a><a class="btn" href="https://www.nice.org.uk/guidance/cg113/chapter/recommendations" target="_blank" rel="noopener noreferrer">Рекомендации NICE</a></div></div>`;
 }
 function pBA(){
   const B = S.before, A = S.after, N = nowVals();
@@ -1830,6 +1845,23 @@ function pCapsule(){
 }
 
 /* ================== ДНЕВНИК ================== */
+let diaryFocusWellbeing = false;
+const WELL_FIELDS = ['anxiety','panicCount','panicTime','wellbeing'];
+const diaryHasWellbeing = e => WELL_FIELDS.some(field=>String(e?.[field] ?? '').trim());
+function diaryWellbeing(e){
+  return `<details id="diaryWellbeing" class="dfold" ${diaryFocusWellbeing || diaryHasWellbeing(e) ? 'open' : ''}>
+    <summary><b>Самочувствие</b></summary>
+    <label class="f">Тревога за день <select class="in" data-diary="anxiety"><option value="">Без оценки</option>
+      ${Array.from({length:11},(_,n)=>`<option value="${n}" ${e.anxiety === String(n) ? 'selected' : ''}>${n}${n === 0 ? ' · спокойно' : n === 10 ? ' · очень сильная' : ''}</option>`).join('')}
+    </select></label>
+    <div class="nums" style="margin-top:8px">
+      <label class="f">Число приступов<input class="in" type="number" min="0" step="1" inputmode="numeric" data-diary="panicCount" value="${esc(e.panicCount||'')}" placeholder="Не указано"></label>
+      <label class="f">Примерное время<input class="in" type="time" data-diary="panicTime" value="${esc(e.panicTime||'')}"></label>
+    </div>
+    <label class="f" style="margin-top:8px">Что происходило и что помогло<textarea class="in" rows="3" data-diary="wellbeing" maxlength="3000">${esc(e.wellbeing||'')}</textarea></label>
+    <a class="chip btn" href="#path" data-act="ptab" data-t="wellbeing">О тревоге и панике</a>
+    </details>`;
+}
 function vDiary(){
   let h = topbar('Дневник');
   if (!cryptoOK()) return h + `<div class="card">Этот браузер не поддерживает шифрование. Открой приложение в Chrome, Safari или Edge по адресу https.</div>`;
@@ -1860,6 +1892,9 @@ function vDiary(){
   });
   if (!diaryCache || diaryCache.k !== diaryDate){ h += `<div class="card muted">Открываю запись…</div>`; afterFns.push(loadEntry); }
   else { const e = diaryCache.e;
+    if (diaryFocusWellbeing){
+      afterFns.push(()=>requestAnimationFrame(()=>$('#diaryWellbeing')?.scrollIntoView({block:'start'})));
+    }
     h += `<div class="card axis-spirit axcard diary-page"><h2>${fmtD(d)} ${d.getFullYear()}, ${DFULL[d.getDay()]}</h2>
       ${e.line !== undefined ? `<h3>Итог дня одной строкой</h3><textarea class="in" rows="2" data-diary="line">${esc(e.line||'')}</textarea>` : ''}
       <h3>Мухасаба</h3>
@@ -1867,7 +1902,9 @@ function vDiary(){
       <div class="f" style="margin-top:10px">${MUHL()[1]}</div><div class="chips copts">${MUHQ_().q2.map(o=>`<button class="chip btn ${chipSet(e.q2).includes(o)?'on':''}" data-act="dctx" data-q="q2" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q2" placeholder="Своими словами — необязательно">${esc(e.q2||'')}</textarea>
       <div class="f" style="margin-top:10px">${MUHL()[2]}</div><div class="chips copts">${MUHQ_().q3.map(o=>`<button class="chip btn ${chipSet(e.q3).includes(o)?'on':''}" data-act="dctx" data-q="q3" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q3" placeholder="Своими словами — необязательно">${esc(e.q3||'')}</textarea>
       <h3>Свободная запись</h3><textarea class="in" rows="8" data-diary="free" placeholder="Сны, мысли, разговоры, оговорки — всё, что хочется записать">${esc(e.free||'')}</textarea>
+      ${diaryWellbeing(e)}
       <div class="row" style="margin-top:10px"><button class="btn pri" data-act="dsave">Сохранить</button><span class="muted tiny" id="dstatus">${S.diary[diaryDate]?'Сохранено, зашифровано':'Новая запись'}</span></div></div>`; }
+  if (diaryFocusWellbeing && diaryCache?.k === diaryDate) diaryFocusWellbeing = false;
   h += `<div class="card entry-list"><h2>Записи</h2>${keys.length?keys.map(k=>`<button class="${k===diaryDate?'on':''}" data-act="dopen" data-k="${k}">${fmtD(parse(k))} ${parse(k).getFullYear()}</button>`).join(''):'<div class="muted small">Пока пусто.</div>'}</div>`;
   h += `<div class="muted tiny" style="text-align:center">Дневник закрывается сам, когда уходишь из раздела или 10 минут ничего не делаешь.</div>`;
   return h;
@@ -1878,7 +1915,7 @@ async function loadEntry(){ const k = diaryDate, diaryKey = KEY; let e = {};
   diaryCache = {k, e, dirty:false}; render(); }
 let dTimer = null;
 async function saveEntry(silent){
-  if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !['q1','q2','q3','free','line'].some(x=>(e[x]||'').trim());
+  if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !diaryHasWellbeing(e) && !['q1','q2','q3','free','line'].some(x=>(e[x]||'').trim());
   if (empty){ delete S.diary[diaryCache.k]; } else { S.diary[diaryCache.k] = await encObj(KEY, e);
     if ((e.q1||e.q2||e.q3||'').trim()) { const d = ensureDay(diaryCache.k); d.c.muhasaba = 1; } }
   save(true); diaryCache.dirty = false; if (view==='diary' && !document.querySelector(`[data-act=dopen][data-k="${diaryCache.k}"]`) !== !S.diary[diaryCache.k]) { render(); if (!silent) toast('Запись сохранена'); return; } const st = $('#dstatus'); if (st) st.textContent = 'Сохранено, зашифровано'; if (!silent) toast('Запись сохранена');
@@ -3996,6 +4033,7 @@ document.addEventListener('click', async e => {
     case 'cearly': if (await ask('Точно вскрыть раньше времени? Письмо писалось для себя через год.','Вскрыть')) { S.capsule.open = key(today()); save(); } break;
     case 'cnew': if (await ask('Старое письмо будет заменено. Продолжить?','Да')) { S.capsule = {text:'', open:key(addD(today(),365)), sealed:false, sealedAt:''}; save(); } break;
     case 'diaryday': diaryDate = el.dataset.k; diaryCache = null; return;
+    case 'wellDiary': diaryDate = el.dataset.k; diaryCache = null; diaryFocusWellbeing = true; return;
     case 'dforgot': if (!await ask('Удалить все записи дневника и начать новый с новым паролем? Это нельзя отменить.','Дальше') || !await ask(`Точно? Пропадут ${Object.keys(S.diary).length} записей.`,'Удалить и начать заново')) return; S.diary = {}; S.crypto = null; KEY = null; diaryCache = null; save(true); toast('Придумай новый пароль'); break;
     case 'dlock': await flushDiary(); KEY = null; diaryCache = null; break;
     case 'dsave': await saveEntry(); return;
@@ -4112,7 +4150,10 @@ document.addEventListener('input', e => {
   if (t.id === 'onbname'){ onbInit().name = t.value; return; }
   if (t.id === 'evline') evLine = t.value; if (t.id === 'evpass') evPass = t.value;
   if (t.dataset.bind){ let v = t.value; if (t.dataset.type==='num') v = v===''? '' : +v; setPath(t.dataset.bind, v); save(); }
-  if (t.dataset.diary && diaryCache){ diaryCache.e[t.dataset.diary] = t.value; diaryCache.dirty = true; const st = $('#dstatus'); if (st) st.textContent = 'Есть несохранённые изменения…'; clearTimeout(dTimer); dTimer = setTimeout(()=>saveEntry(true), 1500); }
+  if (t.dataset.diary && diaryCache){
+    if (t.dataset.diary === 'panicCount' && !t.validity.valid) return;
+    diaryCache.e[t.dataset.diary] = t.value; diaryCache.dirty = true; const st = $('#dstatus'); if (st) st.textContent = 'Есть несохранённые изменения…'; clearTimeout(dTimer); dTimer = setTimeout(()=>saveEntry(true), 1500);
+  }
 });
 document.addEventListener('change', async e => {
   const t = e.target;
