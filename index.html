@@ -4074,7 +4074,7 @@ const Life = (()=>{
 
 /* ================== ДОМ ВНУТРИ ================== */
 // Четыре комнаты в разрезе: молельная (внутри мечети на участке), читальня-лаборатория, кузница, спортзал. Комната доступна, когда построена.
-// В каждой — места под вещи (HOME.slots): стены, пол, ковёр, свет, мелочи. Часть бесплатно, часть за монеты (p), часть за достижения (need).
+// В каждой — места под вещи (HOME.slots): стены, пол, ковёр, свет, окна, мелочи. Часть бесплатно, часть за монеты (p), часть за достижения (need).
 // Вещи в комнате — ещё и быстрые кнопки приложения (действие hgo). Купленное общее для всех комнат и хранится в S.home.own.
 const HOME = {
   rooms:[{id:'faith', n:'Молельная', ax:'faith'}, {id:'mind', n:'Читальня', ax:'mind'}, {id:'spirit', n:'Кузница', ax:'spirit'}, {id:'body', n:'Спортзал', ax:'body'}, {id:'guest', n:'Гостиная', ax:'gold'}],
@@ -4083,11 +4083,12 @@ const HOME = {
     floor:{n:'Пол', o:{f0:{n:'Светлые доски', c:'#c9a273'}, f1:{n:'Тёмные доски', c:'#8a6240'}, f2:{n:'Каменная плитка', c:'#a9a59c', p:80}, f3:{n:'Татами', c:'#b9b27c', p:100}}},
     rug:{n:'Ковёр', o:{r0:{n:'Без ковра'}, r1:{n:'Простой', c:'#a4553a'}, r2:{n:'С узором', c:'#3d5f8a', p:70}, r3:{n:'Большой с каймой', c:'#8a3a42', p:120}}},
     light:{n:'Свет', o:{l0:{n:'Плафон'}, l1:{n:'Фонарь', p:60}, l2:{n:'Люстра', p:150}}},
+    window:{n:'Окна', o:{n0:{n:'Без отделки'}, n1:{n:'Льняные шторы', c:'#e4cfa8', kind:'curtain'}, n2:{n:'Деревянные ставни', c:'#8b6244', kind:'shutter', p:80}, n3:{n:'Оливковые шторы', c:'#71805b', kind:'curtain', p:60}}},
     decor:{n:'Мелочи', o:{d0:{n:'Ничего'}, d1:{n:'Растение'}, d2:{n:'Часы', p:40}, d3:{n:'Особая вещь'}}} },
   // у молельной свои коврики, а «особая вещь» и люстра в каждой комнате — за своё достижение
   faithRug:{p0:{n:'Зелёный коврик', c:'#3f7358'}, p1:{n:'Бордовый коврик', c:'#8a3a42'}, p2:{n:'Синий с узором', c:'#3d5f8a', p:60}, p3:{n:'Ковры во всю молельную', c:'#8a3a42', need:['lvl',5,'город 5-го уровня']}},
   special:{ faith:{n:'Резная панель', need:['lvl',4,'уровень города 4']}, mind:{n:'Глобус', need:['books',5,'5 прочитанных книг']}, spirit:{n:'Щит на стене', need:['fears',10,'10 пройденных страхов']}, body:{n:'Медали', need:['train',50,'50 дней с тренировкой']}, guest:{n:'Самовар', need:['own',50,'50 своих дел сделано']} },
-  def:{wall:'w0', floor:'f0', rug:'r1', light:'l0', decor:'d1'} };
+  def:{wall:'w0', floor:'f0', rug:'r1', light:'l0', window:'n0', decor:'d1'} };
 let homeSlot = '', homeTry = null;
 let homeBook = null, shelfFilter = 'all';
 const SHELF_FILTERS = {all:'Все', reading:'Читаю', read:'Прочитано'};
@@ -4121,11 +4122,23 @@ function homeSVG(room){
   h += poly(WL(0,0,D,H), mix(wc,'#fff',90)) + poly(WR(0,0,W,H), sh(wc,90)) + poly(WL(0,0,D,.14), sh(wc,70)) + poly(WR(0,0,W,.14), sh(wc,62));
   h += poly([P(0,0,H),P(W,0,H),P(W,-.2,H),P(-.2,-.2,H),P(-.2,D,H),P(0,D,H)], mix(wc,'#fff',70)) + poly([P(0,D,0),P(-.2,D,0),P(-.2,D,H),P(0,D,H)], sh(wc,80)) + poly([P(W,0,0),P(W,-.2,0),P(W,-.2,H),P(W,0,H)], sh(wc,66));
   // окно в правой стене: за ним то же время суток, что в городе
+  const windowTrim = (x0,x1)=>{
+    const o = opt('window');
+    if (!o.kind) return '';
+    const edge = (x1-x0)*.26, c = o.c;
+    if (o.kind === 'shutter'){
+      return [[x0,x0+edge],[x1-edge,x1]].map(([lo,hi])=>poly(WR(lo,1.02,hi,2.33),c,`stroke="${sh(c,66)}" stroke-width="1.3"`) +
+        [1.19,1.4,1.61,1.82,2.03,2.24].map(z=>line([P(lo,0,z),P(hi,0,z)],sh(c,72),1)).join('')).join('');
+    }
+    const curtain = (x,side)=>poly([P(x,0,2.47),P(x+side*edge,0,2.47),P(x+side*edge*.52,0,1.65),P(x+side*edge*.83,0,.99),P(x,0,.99)],c,
+      `stroke="${sh(c,75)}" stroke-width=".75"`) + line([P(x,0,1.65),P(x+side*edge*.54,0,1.65)],sh(c,58),1.7);
+    return line([P(x0-.08,0,2.5),P(x1+.08,0,2.5)],'#68513a',1.8) + curtain(x0,1) + curtain(x1,-1);
+  };
   const win = (x0, x1) => { const sky = night ? '#1c2440' : eve ? '#f2a25c' : ph === 'morning' ? '#f6d9b8' : '#a9d4ee', mt = night ? '#2c3352' : eve ? '#8a6a78' : '#8fa3b8';
     let s = poly(WR(x0,1,x1,2.35), sky) + poly([P(x0,0,1),P(x0+(x1-x0)*.3,0,1.75),P(x0+(x1-x0)*.5,0,1.35),P(x0+(x1-x0)*.72,0,1.9),P(x1,0,1.2),P(x1,0,1)], mt) + poly([P(x0+(x1-x0)*.22,0,1.55),P(x0+(x1-x0)*.3,0,1.75),P(x0+(x1-x0)*.38,0,1.56)], '#fff') + poly([P(x0+(x1-x0)*.64,0,1.68),P(x0+(x1-x0)*.72,0,1.9),P(x0+(x1-x0)*.81,0,1.62)], '#fff');
     if (night) s += circ(...XY(x0+(x1-x0)*.8,0,2.1), 4, '#f3ecd2') + circ(...XY(x0+(x1-x0)*.25,0,2.15), .9, '#fff') + circ(...XY(x0+(x1-x0)*.5,0,2.05), .8, '#fff');
     s += poly(WR(x0,1,x1,2.35), 'none', 'stroke="#fff8ea" stroke-width="3" stroke-linejoin="round"') + line([P((x0+x1)/2,0,1),P((x0+x1)/2,0,2.35)], '#fff8ea', 2) + poly([P(x0-.1,0,.92),P(x1+.1,0,.92),P(x1+.1,.18,.92),P(x0-.1,.18,.92)], '#fff8ea');
-    if (!night && !eve) s += poly([P(x0,.9),P(x1,.9),P(x1+.6,2.7),P(x0+.6,2.7)], '#fff', 'opacity=".16"'); return s; };
+    if (!night && !eve) s += poly([P(x0,.9),P(x1,.9),P(x1+.6,2.7),P(x0+.6,2.7)], '#fff', 'opacity=".16"'); return s + windowTrim(x0,x1); };
   const lampAt = (x,y) => { const l = pick('light'), p = XY(x,y,H), q = XY(x,y,2.35); let s = `<path d="M${n1(p[0])} ${n1(p[1])}V${n1(q[1])}" stroke="#4a4038" stroke-width="1.2"/>`;
     if (l === 'l1') s += `<path d="M${n1(q[0]-6)} ${n1(q[1])}h12l3 15h-18z" fill="#3a332c"/><path d="M${n1(q[0]-4.5)} ${n1(q[1]+3)}h9l2 10h-13z" fill="#ffd58a"/>`;
     else if (l === 'l2') s += ell(q[0], q[1]+6, 20, 7, 'none', `stroke="var(--gold)" stroke-width="2.4"`) + [-18,-7,7,18].map(dx=>circ(q[0]+dx, q[1]+6+(Math.abs(dx)>10?-1:5), 3.2, '#ffe6a8')).join('') + circ(q[0], q[1], 3, 'var(--gold)');
