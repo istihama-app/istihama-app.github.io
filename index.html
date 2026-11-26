@@ -485,6 +485,16 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .cycle-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;margin-top:8px}
 .cycle-grid a{min-height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:7px;color:var(--ink);text-decoration:none}
 .cycle-grid a.on{background:var(--pri);color:var(--onpri)}
+.people-map{display:grid;justify-items:center;gap:0}
+.people-map .people-self{border:1px solid var(--pri);border-radius:999px;background:var(--tint);padding:9px 18px;font-weight:700}
+.people-branches{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:relative;padding-top:22px}
+.people-branches::before{content:"";position:absolute;inset:0 16.7% auto;height:12px;border-bottom:1px solid var(--line);background:linear-gradient(var(--line),var(--line)) center top / 1px 100% no-repeat}
+.people-branches a{position:relative;display:grid;justify-items:center;text-align:center;gap:2px;min-width:0;padding-inline:4px;text-decoration:none}
+.people-branches a::before{content:"";position:absolute;left:50%;bottom:100%;height:10px;border-left:1px solid var(--line)}
+.people-list article{padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.person-form{display:grid;gap:8px;margin:8px 0}
+.person-form .in{min-width:0}
+.people-list h2{scroll-margin-top:12px}
 </style>
 </head>
 <body>
@@ -632,7 +642,7 @@ function defaults(){
     bigCh:BIG0.map(t=>({t, done:false, date:''})),
     build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
-    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{},
+    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[],
     gift:{p:'', got:[]}};
 }
 let S;
@@ -977,6 +987,8 @@ function vToday(){
   });
   if (isT && !ramadan) h += nextFaithDate(t);
   h += ownCard(k, day);
+  const duePeople = isT ? peopleDue(k).length : 0;
+  if (duePeople) h += `<div class="card row"><span class="grow small">Близкие · напоминаний ${duePeople}</span><a class="btn" href="#path" data-act="ptab" data-t="people">Открыть</a></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-hash"/></svg> Цифры дня</h2><div class="nums">
     ${numStep(k,'quran','Коран, минут')}${numStep(k,'pages','Страниц книги')}${numStep(k,'steps','Шаги, тыс.')}${numStep(k,'sleep','Сон, часов')}${numStep(k,'weight','Вес утром, кг')}</div>
     <div class="muted tiny" style="margin-top:8px">Нажми на пункт один раз — ✓. Второй раз — «½», засчитан минимум. Третий — снять отметку. Числа: «+» и «−», первое нажатие подставляет прошлое значение. Кнопки <svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> запускают таймер: пункт отметится сам, когда отсчёт дойдёт до нуля.</div></div>`;
@@ -1462,10 +1474,10 @@ let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
 const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
   mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
-  spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
+  spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1477,6 +1489,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
   if (id === 'wellbeing') return 'тревога, приступы, что помогло';
+  if (id === 'people') return peopleDue(tk).length ? `напоминаний: ${peopleDue(tk).length}` : 'семья, родные и друзья';
   if (id === 'diary') return `записей: ${Object.keys(S.diary || {}).length}`;
   if (id === 'capsule') return S.capsule.sealed ? `запечатано до ${fmtD(parse(S.capsule.open))}` : 'написать себе через год';
   if (id === 'gym'){ const ks = Object.keys(gymG().log).filter(k => (gymG().log[k] || []).length).sort(); return ks.length ? `последняя — ${fmtD(parse(ks[ks.length - 1]))}` : 'записать первую'; }
@@ -1753,9 +1766,49 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['books','Книги'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+}
+const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
+const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
+const personDate = k => typeof k === 'string' && /^\d{4}-\d\d-\d\d$/.test(k) && key(parse(k)) === k ? k : '';
+const personById = id => S.people.find(p=>p?.id === id);
+const peopleDue = k => S.people.filter(p=>p?.id && Object.hasOwn(PEOPLE_GROUPS,p.group) && personDate(p.remind) && p.remind <= k);
+function personForm(person){
+  const p = person || {}, t = key(today());
+  return `<form class="person-form" data-form="person" data-id="${esc(p.id||'')}">
+    <div class="nums">
+      <label class="f">Имя<input class="in" name="name" value="${esc(p.name||'')}" maxlength="60" required></label>
+      <label class="f">Ветка<select class="in" name="group">${Object.entries(PEOPLE_GROUPS).map(([v,n])=>`<option value="${v}" ${(p.group||'family')===v?'selected':''}>${n}</option>`).join('')}</select></label>
+      <label class="f">Кто тебе этот человек<input class="in" name="relation" value="${esc(p.relation||'')}" maxlength="60" placeholder="Например, двоюродная сестра"></label>
+      <label class="f">Когда общались<input class="in" type="date" name="last" value="${esc(p.last||'')}" max="${t}"></label>
+      <label class="f">Дата напоминания<input class="in" type="date" name="remind" value="${esc(p.remind||'')}"></label>
+      <label class="f">Повторять<select class="in" name="repeat">${PEOPLE_REPEAT.map(([v,n])=>`<option value="${v}" ${(p.repeat||0)===v?'selected':''}>${n}</option>`).join('')}</select></label>
+    </div>
+    <label class="f">О чём напомнить<input class="in" name="prompt" value="${esc(p.prompt||'')}" maxlength="100" placeholder="Например, позвонить или спросить, как дела"></label>
+    <div class="chips"><button class="btn pri">${person ? 'Сохранить' : 'Добавить'}</button>
+      ${person ? `<button class="btn danger" type="button" data-act="personDelete" data-id="${esc(p.id)}">Удалить карточку</button>` : ''}</div>
+  </form>`;
+}
+function pPeople(){
+  const t = key(today()), due = peopleDue(t), people = S.people.filter(p=>p?.id && Object.hasOwn(PEOPLE_GROUPS,p.group));
+  const dateText = k => fmtD(parse(k)) + (k.slice(0,4) !== t.slice(0,4) ? ' '+k.slice(0,4) : '');
+  return `<div class="card"><h2>${ic('user')} Карта близких</h2>
+    <div class="people-map"><span class="people-self">Я</span><div class="people-branches">
+      ${Object.entries(PEOPLE_GROUPS).map(([id,n])=>`<a class="btn" href="#path" data-act="peopleBranch" data-t="${id}"><b>${n}</b><span class="tiny muted">${people.filter(p=>p.group===id).length}</span></a>`).join('')}
+    </div></div></div>
+    ${due.length ? `<div class="card"><h2>${ic('cal')} Пора связаться</h2>
+      ${due.map(p=>`<div class="row" style="margin-top:8px"><span class="grow"><b>${esc(p.name)}</b><br><span class="muted small">${esc(p.prompt || 'Узнать, как дела')} · ${dateText(p.remind)}</span></span>
+      <button class="chip btn" data-act="personContact" data-id="${esc(p.id)}">Отметить общение</button></div>`).join('')}</div>` : ''}
+    <div class="card"><details class="dfold" ${people.length ? '' : 'open'}><summary><b>Добавить человека</b></summary>${personForm(null)}</details>
+      <p class="small muted">Напоминания появляются на экране «Сегодня» и здесь. Если выбрать повтор, новая дата считается от последнего отмеченного общения. Карточки хранятся на устройстве и входят в обычную резервную копию.</p></div>
+    ${Object.entries(PEOPLE_GROUPS).map(([id,n])=>`<section class="card people-list"><h2 id="people-${id}">${n}</h2>
+      ${people.filter(p=>p.group===id).map(p=>`<article><b>${esc(p.name)}</b>${p.relation ? ` <span class="muted small">· ${esc(p.relation)}</span>` : ''}
+        <div class="small muted">${personDate(p.last) ? (p.last === t ? 'Общались сегодня' : 'Общались '+dateText(p.last)) : 'Общение ещё не отмечено'}${personDate(p.remind) ? ' · напомнить '+dateText(p.remind) : ''}</div>
+        <div class="chips" style="margin-top:8px"><button class="chip btn" data-act="personContact" data-id="${esc(p.id)}">Отметить общение</button>
+        ${p.remind ? `<button class="chip btn" data-act="personClear" data-id="${esc(p.id)}">Снять напоминание</button>` : ''}</div>
+        <details class="dfold"><summary>Изменить карточку</summary>${personForm(p)}</details></article>`).join('') || '<p class="small muted">Пока пусто.</p>'}</section>`).join('')}`;
 }
 function pWellbeing(){
   return `<div class="card"><h2>${ic('lock')} Личные отметки</h2>
@@ -3905,6 +3958,29 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, k = key(viewDate);
   switch(a){
+    case 'peopleBranch':
+      e.preventDefault();
+      document.getElementById('people-' + el.dataset.t)?.scrollIntoView({block:'start'});
+      return;
+    case 'personContact': {
+      const p = personById(el.dataset.id);
+      if (!p) return;
+      const now = today();
+      p.last = key(now);
+      const repeat = +p.repeat;
+      p.remind = PEOPLE_REPEAT.some(([v])=>v > 0 && v === repeat) ? key(addD(now,repeat)) : '';
+      save(true); toast('Общение отмечено'); break;
+    }
+    case 'personClear': {
+      const p = personById(el.dataset.id);
+      if (!p) return;
+      p.remind = ''; p.repeat = 0; save(true); break;
+    }
+    case 'personDelete': {
+      const p = personById(el.dataset.id);
+      if (!p || !await ask(`Удалить карточку «${esc(p.name)}»?`,'Удалить')) return;
+      S.people = S.people.filter(person=>person !== p); save(true); break;
+    }
     case 'report': openReport(); return;
     case 'ysel': yearSel = +el.dataset.n; break;
     case 'ynext': await yearNext(); return;
@@ -4169,6 +4245,25 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'person'){
+      const name = String(fd.get('name') || '').trim().slice(0,60), group = fd.get('group');
+      if (!name || !Object.hasOwn(PEOPLE_GROUPS,group)) return toast('Укажи имя и ветку');
+      const now = key(today()), last = personDate(fd.get('last')), repeat = +fd.get('repeat');
+      if (last > now || !PEOPLE_REPEAT.some(([v])=>v === repeat)) return toast('Проверь дату и повтор');
+      const remind = personDate(fd.get('remind')) || (repeat ? key(addD(parse(last || now),repeat)) : '');
+      const data = {name,group,last,remind,repeat,relation:String(fd.get('relation') || '').trim().slice(0,60),prompt:String(fd.get('prompt') || '').trim().slice(0,100)};
+      if (f.dataset.id){
+        const p = personById(f.dataset.id);
+        if (!p) return;
+        Object.assign(p,data);
+      } else {
+        const stamp = Date.now().toString(36);
+        let id = stamp, suffix = 0;
+        while (personById(id)) id = stamp + '-' + (++suffix);
+        S.people.push({id,...data});
+      }
+      save(true); render(); toast(f.dataset.id ? 'Карточка сохранена' : 'Человек добавлен'); return;
+    }
     if (f.dataset.form === 'cycleRange'){
       const start = String(fd.get('start')), end = String(fd.get('end'));
       if (!S.settings.cycle || start > end || end > key(today()) || !/^\d{4}-\d\d-\d\d$/.test(start) || !/^\d{4}-\d\d-\d\d$/.test(end) || key(parse(start)) !== start || key(parse(end)) !== end) return toast('Проверь даты');
