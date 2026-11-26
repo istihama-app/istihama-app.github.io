@@ -1,9 +1,9 @@
 // Офлайн-режим «Ихсана». Кэширует только файлы приложения; данные (localStorage, IndexedDB) не трогает.
 // Стратегия: сначала из кэша (открывается без сети), в фоне тихо скачивает свежую версию —
 // после правок на сайте новая версия появится со второго открытия. VERSION меняй при каждой правке.
-const VERSION = 'v44';
+const VERSION = 'v45';
 const CACHE = 'chetyre-sily-' + VERSION;
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icons/ic1.png', './icons/ic2.png', './icons/ic3.png', './icons/ic4.png', './icons/ic5.png'];
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icons/ic1.png', './icons/ic2.png', './icons/ic3.png', './icons/ic4.png', './icons/ic5.png', './themes/warm.webp', './themes/journal.webp', './themes/twilight.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

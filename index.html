@@ -465,6 +465,16 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 :root[data-theme=warm] .card.hero{background:var(--pat,none),linear-gradient(145deg,var(--tint),var(--card) 68%) !important;border-color:var(--gold)}
 :root[data-theme=journal] .card.hero{background:repeating-linear-gradient(transparent 0 27px,color-mix(in srgb,var(--line) 45%,transparent) 27px 28px),var(--card) !important;border-left:3px solid var(--pri)}
 :root[data-theme=twilight] .card.hero{background:radial-gradient(ellipse at 85% 0%,#684256 0%,transparent 65%),linear-gradient(145deg,#303a62,var(--card) 72%) !important}
+:root[data-theme=warm]{--hero-art:url('./themes/warm.webp');--hero-art-color:#082919}
+:root[data-theme=journal]{--hero-art:url('./themes/journal.webp');--hero-art-color:#f7ead3}
+:root[data-theme=twilight]{--hero-art:url('./themes/twilight.webp');--hero-art-color:#151f52}
+:root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .card.hero{padding-top:112px}
+:root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .card.hero::before{
+  content:"";position:absolute;inset:0 0 auto;height:108px;pointer-events:none;
+  background:linear-gradient(to bottom,transparent 72%,var(--card)),
+    linear-gradient(to right,var(--hero-art-color) max(0px,calc(100% - 342px)),transparent calc(100% - 255px)),
+    var(--hero-art) right center / auto 100% no-repeat,var(--hero-art-color);
+}
 :root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .top h1,
 :root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .hero .hl{font-family:Georgia,serif}
 .thbtn[aria-pressed=true]{border-color:var(--pri) !important;box-shadow:inset 0 0 0 1px var(--pri);font-weight:700}
