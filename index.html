@@ -307,6 +307,11 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:none}
 .clv{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--as);color:var(--a);font-size:22px;font-weight:750;flex:none}
 .tgoal .btn{padding:8px 14px;min-height:38px}
 .home{max-width:640px;margin:0 auto;border-radius:12px;overflow:hidden;background:var(--soft)} .home svg{display:block;width:100%;height:auto}
+.room-snapshot{width:min(470px,calc(100% - 26px));max-height:calc(100% - 26px);border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--card);color:var(--ink)}
+.room-snapshot::backdrop{background:#0008}
+.room-snapshot h2{margin:0;font-size:18px}
+.room-snapshot img{display:block;width:100%;height:auto;max-height:55vh;object-fit:contain;border-radius:var(--r2);margin:10px 0 0}
+.room-snapshot [hidden]{display:none}
 .hfire{animation:hfire 1.3s ease-in-out infinite alternate} @keyframes hfire{from{opacity:.75}to{opacity:1}} .hdot{animation:hdot 2.4s ease-in-out infinite} @keyframes hdot{0%,100%{opacity:.16}50%{opacity:.42}}
 @media (prefers-reduced-motion:reduce){.hfire,.hdot{animation:none}}
 @media (min-width:900px){.homegrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0 12px;align-items:start}}
@@ -4102,16 +4107,16 @@ function homeStat(k){ return k === 'ruz' ? (S.town.ruz || 0) : k === 'lvl' ? cit
 function homeCan(room, slot, v){ const o = homeOpts(room, slot)[v]; if (!o) return {no:1}; if (o.need) return homeStat(o.need[0]) >= o.need[1] ? {ok:1} : {lock:`Откроется за достижение: ${o.need[2]} (сейчас ${homeStat(o.need[0])})`};
   if (o.p && !S.home.own[slot + ':' + v]) return {buy:o.p}; return {ok:1}; }
 
-function homeSVG(room){
+function homeSVG(room,snapshot=false){
   const ph = curPhase(), night = ph === 'night', eve = ph === 'evening', dark = isDark(), W = 6, D = 5, H = 3;
   const K = mkIso({A:33, Bv:19.1, Zs:37.8, OX:196, OY:128, dark:false, sn:'summer'}), {P,XY,poly,line,circ,ell,mix,n1,C} = K;
-  const pick = s => homeTry && homeTry.room === room && homeTry.slot === s ? homeTry.v : homePick(room, s), opt = s => homeOpts(room, s)[pick(s)] || {};
+  const pick = s => !snapshot && homeTry && homeTry.room === room && homeTry.slot === s ? homeTry.v : homePick(room, s), opt = s => homeOpts(room, s)[pick(s)] || {};
   const sh = (c,p) => mix(c,'#000',p), box = (x0,y0,x1,y1,z0,z1,c) => K.pbox(x0,x1,y0,y1,z0,z1, mix(c,'#fff',84), c, sh(c,72));
   const WL = (y0,z0,y1,z1) => [P(0,y0,z0),P(0,y1,z0),P(0,y1,z1),P(0,y0,z1)], WR = (x0,z0,x1,z1) => [P(x0,0,z0),P(x1,0,z0),P(x1,0,z1),P(x0,0,z1)], FL = (x0,y0,x1,y1,z=0) => [P(x0,y0,z),P(x1,y0,z),P(x1,y1,z),P(x0,y1,z)], FR = (x0,z0,x1,z1,y) => [P(x0,y,z0),P(x1,y,z0),P(x1,y,z1),P(x0,y,z1)];
   const D2 = [], put = (d,s) => D2.push([d, D2.length, s]), HOT = [];
-  const hot = (pts, t, label) => { HOT.push(`<polygon points="${pts.join(' ')}" fill="transparent" data-act="hgo" data-t="${t}" style="cursor:pointer"><title>${label}</title></polygon>`); };
+  const hot = (pts, t, label) => { if (!snapshot) HOT.push(`<polygon points="${pts.join(' ')}" fill="transparent" data-act="hgo" data-t="${t}" style="cursor:pointer"><title>${label}</title></polygon>`); };
   const hbox = (x0,y0,x1,y1,z1) => [P(x0,y1,0),P(x1,y1,0),P(x1,y0,0),P(x1,y0,z1),P(x0,y0,z1),P(x0,y1,z1)];
-  const dot = (x,y,z) => { const p = XY(x,y,z); return `<circle class="hdot" cx="${n1(p[0])}" cy="${n1(p[1])}" r="5.5" fill="var(--gold)" opacity=".28"/><circle cx="${n1(p[0])}" cy="${n1(p[1])}" r="2.4" fill="var(--gold)" stroke="#fff" stroke-width=".8"/>`; };
+  const dot = (x,y,z) => { if (snapshot) return ''; const p = XY(x,y,z); return `<circle class="hdot" cx="${n1(p[0])}" cy="${n1(p[1])}" r="5.5" fill="var(--gold)" opacity=".28"/><circle cx="${n1(p[0])}" cy="${n1(p[1])}" r="2.4" fill="var(--gold)" stroke="#fff" stroke-width=".8"/>`; };
   const wc = opt('wall').c || '#efe6d2', fc = opt('floor').c || '#c9a273', fl = pick('floor'), ax = HOME.rooms.find(r=>r.id===room).ax, acc = `var(--${ax})`;
   let h = `<svg viewBox="0 0 426 352" role="img" aria-label="${HOME.rooms.find(r=>r.id===room).n} в разрезе"><defs><radialGradient id="hglow"><stop offset="0" stop-color="#ffd58a" stop-opacity="${night ? .55 : eve ? .42 : .2}"/><stop offset="1" stop-color="#ffd58a" stop-opacity="0"/></radialGradient></defs>`;
   h += ell(213, 318, 190, 20, '#000', `opacity="${dark ? .35 : .12}"`);
@@ -4169,7 +4174,7 @@ function homeSVG(room){
     lamp = lampAt(3.2,2.6);
   } else if (room === 'mind'){
     h += win(4, 5.5) + rugAt(2.4,1.6,5,3.6);
-    { const bs = S.books, c0 = '#7a5238'; let s = box(.3,0,3.5,.42,0,2.5,c0) + poly(FR(.38,.1,3.42,2.42,.42), sh(c0,58));   // книжные полки: корешки — книги из списка
+    { const bs = snapshot ? Array.from({length:12},()=>({s:0})) : S.books, c0 = '#7a5238'; let s = box(.3,0,3.5,.42,0,2.5,c0) + poly(FR(.38,.1,3.42,2.42,.42), sh(c0,58));   // на снимке полка без данных о чтении
       [.1,.68,1.26,1.84].forEach((z,r)=>{ s += poly(FR(.38,z+.5,3.42,z+.56,.42), mix(c0,'#fff',80)); bs.slice(r*29, r*29+29).forEach((b,i)=>{ const hh = .34+((i*7+r*3)%5)*.03, col = b.s === 2 ? `var(--${AXO.includes(b.ax) ? b.ax : 'mind'})` : b.s === 1 ? mix(`var(--${AXO.includes(b.ax) ? b.ax : 'mind'})`,'#fff',55) : '#d9d2c2';
           s += poly(FR(.42+i*.103,z,.42+i*.103+.09,z+hh,.42), col, 'stroke="#3a2d22" stroke-width=".35"') + (b.s === 1 ? line([P(.465+i*.103,.42,z+hh),P(.465+i*.103,.42,z+hh-.12)], '#e0b257', 1.2) : ''); }); });
       put(1.9+.3, s); hot(hbox(.3,0,3.5,.42,2.5), 'books', 'Книжные полки — список книг'); }
@@ -4193,7 +4198,7 @@ function homeSVG(room){
     { const c = '#8a6240'; if (S.build.furn.spirit) put(4+.5, box(2.4,.05,5.6,.75,.8,.9,c) + [[2.5,.7],[5.5,.7]].map(([x,y])=>line([P(x,y,0),P(x,y,.8)], sh(c,70), 3)).join('') + line([P(3,.4,.92),P(3.7,.4,.92)], '#6b4a2c', 2.2) + poly(FL(3.6,.25,3.95,.55,.92), '#5c6168') + line([P(4.5,.3,.92),P(5.2,.5,.92)], '#3a3a3a', 1.6));   // верстак с молотом и клещами
       put(5.4+4.2, K.cyl(5.4,4.2,0,.75,.36,'#7a5238') + ell(...XY(5.4,4.2,.75), 13, 7, '#5d9ac0')); }
     // стена вызовов года: четыре щита — большие вызовы, подковы — пройденные страхи
-    { S.bigCh.forEach((b,i)=>{ const x = 2.2+i*.72, p = XY(x,0,2.25), on = b.done; h += `<path d="M${n1(p[0]-9)} ${n1(p[1]-8)}l9 -6l9 4v14q-1 10 -11 15q-8 -6 -7 -15z" fill="${on ? '#c9cdd3' : 'none'}" stroke="${on ? '#5c6168' : sh(wc,60)}" stroke-width="${on ? 1.4 : 1.2}" ${on ? '' : 'stroke-dasharray="3 2"'}/>` + (on ? `<path d="M${n1(p[0]-3)} ${n1(p[1]+3)}l3 4l6 -9" stroke="var(--spirit)" stroke-width="2.2" fill="none" stroke-linecap="round"/>` : ''); });
+    if (!snapshot){ S.bigCh.forEach((b,i)=>{ const x = 2.2+i*.72, p = XY(x,0,2.25), on = b.done; h += `<path d="M${n1(p[0]-9)} ${n1(p[1]-8)}l9 -6l9 4v14q-1 10 -11 15q-8 -6 -7 -15z" fill="${on ? '#c9cdd3' : 'none'}" stroke="${on ? '#5c6168' : sh(wc,60)}" stroke-width="${on ? 1.4 : 1.2}" ${on ? '' : 'stroke-dasharray="3 2"'}/>` + (on ? `<path d="M${n1(p[0]-3)} ${n1(p[1]+3)}l3 4l6 -9" stroke="var(--spirit)" stroke-width="2.2" fill="none" stroke-linecap="round"/>` : ''); });
       const nf2 = Math.min(12, S.fears.filter(f=>f.done).length); for (let i=0;i<nf2;i++){ const p = XY(2+i*.27,0,1.45); h += `<path d="M${n1(p[0]-3)} ${n1(p[1]+4)}v-5a3.4 3.4 0 0 1 6.8 0v5" stroke="#8d949c" stroke-width="1.8" fill="none" stroke-linecap="round"/>`; }
       hot(WR(1.8,1.2,5,2.75), 'chal', 'Стена вызовов года'); h += dot(1.95,0,2.25); }
     decor(5.3,1.6, 3.9, () => { const p = XY(0,3.9,2); h += `<path d="M${n1(p[0]-13)} ${n1(p[1]-13)}l13 -7l13 7v18q-2 14 -15 20q-12 -8 -11 -20z" fill="var(--spirit)" stroke="#5c6168" stroke-width="2"/><path d="M${n1(p[0])} ${n1(p[1]-14)}v36M${n1(p[0]-11)} ${n1(p[1]-1)}h23" stroke="#fff8ea" stroke-width="2"/>`; });
@@ -4218,9 +4223,11 @@ function homeSVG(room){
     { const p = XY(4.7,1.3,H), q = XY(4.7,1.3,2.25); put(4.7+1.3, `<path d="M${n1(p[0])} ${n1(p[1])}V${n1(q[1])}" stroke="#4a4038" stroke-width="1.6"/>` + K.cyl(4.7,1.3,.95,2.25,.3,'#a4423a') + dot(4.7,1.3,1.7)); const g = XY(4.7,1.3,.95); hot([[q[0]-16,q[1]-4],[q[0]+16,q[1]-4],[g[0]+16,g[1]+10],[g[0]-16,g[1]+10]].map(v=>n1(v[0])+','+n1(v[1])), 'cardio', 'Груша — таймер кардио'); }
     if (S.build.furn.body || true){ const c = '#3a3a40'; put(4.6+4.2, box(3.7,3.7,5.5,4.5,0,.22,c) + poly(FL(3.8,3.78,5.4,4.42,.23), '#55565c') + line([P(5.4,3.75,.22),P(5.4,3.75,1.2)], '#8d949c', 2.4) + line([P(5.4,4.45,.22),P(5.4,4.45,1.2)], '#8d949c', 2.4) + poly([P(5.4,3.75,1.2),P(5.4,4.45,1.2),P(5.4,4.45,1.45),P(5.4,3.75,1.45)], '#2a2a2e') + line([P(5.4,3.75,1.1),P(4.6,3.75,.95)], '#8d949c', 1.8) + line([P(5.4,4.45,1.1),P(4.6,4.45,.95)], '#8d949c', 1.8) + dot(4.6,4.1,.5));   // дорожка
       hot(hbox(3.7,3.7,5.5,4.5,1.45), 'run', 'Дорожка — таймер пробежки'); }
-    { h += poly(WR(.6,1.15,2.8,2.45), '#fff8ea', 'stroke="#6b4a2c" stroke-width="2.4" stroke-linejoin="round"'); const N = nowVals(); [['sq',140],['bp',110],['dl',180],['pu',15]].forEach(([k,g],i)=>{ const v = Math.max(.08, Math.min(1, (N[k]||0)/g)); h += poly(WR(.85+i*.48,1.3,1.15+i*.48,1.3+v*.95), 'var(--body)') + line([P(.8+i*.48,0,2.27),P(1.2+i*.48,0,2.27)], '#c9bfae', 1, 'stroke-dasharray="2 2"'); });   // доска с замерами
-      hot(WR(.6,1.15,2.8,2.45), 'meas', 'Доска замеров и рекордов'); h += dot(2.6,0,2.3);
-      if (S.build.furn.body) for (let z=.5; z<2.5; z+=.33) h += line([P(0,3.6,z),P(0,4.7,z)], '#c99a5c', 2.2); if (S.build.furn.body) h += line([P(0,3.6,.2),P(0,3.6,2.6)], '#8f653b', 3) + line([P(0,4.7,.2),P(0,4.7,2.6)], '#8f653b', 3); }
+    if (!snapshot){ h += poly(WR(.6,1.15,2.8,2.45), '#fff8ea', 'stroke="#6b4a2c" stroke-width="2.4" stroke-linejoin="round"'); const N = nowVals(); [['sq',140],['bp',110],['dl',180],['pu',15]].forEach(([k,g],i)=>{ const v = Math.max(.08, Math.min(1, (N[k]||0)/g)); h += poly(WR(.85+i*.48,1.3,1.15+i*.48,1.3+v*.95), 'var(--body)') + line([P(.8+i*.48,0,2.27),P(1.2+i*.48,0,2.27)], '#c9bfae', 1, 'stroke-dasharray="2 2"'); });   // доска с замерами
+      hot(WR(.6,1.15,2.8,2.45), 'meas', 'Доска замеров и рекордов'); h += dot(2.6,0,2.3); }
+    if (S.build.furn.body){
+      for (let z=.5; z<2.5; z+=.33) h += line([P(0,3.6,z),P(0,4.7,z)], '#c99a5c', 2.2);
+      h += line([P(0,3.6,.2),P(0,3.6,2.6)], '#8f653b', 3) + line([P(0,4.7,.2),P(0,4.7,2.6)], '#8f653b', 3); }
     decor(5.4,.6, 4.2, () => { [0,1,2].forEach(i=>{ const p = XY(0,3.9+i*.3,2.4); h += `<path d="M${n1(p[0]-3)} ${n1(p[1]-10)}l3 9l3 -9" stroke="${['var(--body)','var(--mind)','var(--faith)'][i]}" stroke-width="2.4" fill="none"/>` + circ(p[0], p[1]+3, 4.4, ['#e0b257','#c9cdd3','#c9853a'][i], 'stroke="#6b4a2c" stroke-width=".8"'); }); });
     lamp = lampAt(3.2,2.6);
   }
@@ -4231,6 +4238,63 @@ function homeSVG(room){
   if (night || eve) h += poly([P(0,0,H),P(W,0,H),P(W,0,0),P(W,D,0),P(0,D,0),P(0,D,H)], '#1a1630', `opacity="${night ? .26 : .12}" pointer-events="none"`) + ell(...XY(3.2,2.6,.6), 150, 86, 'url(#hglow)', 'pointer-events="none"');
   return h + HOT.join('') + `</svg>`; }
 
+async function roomPicture(room){
+  const width = 1278, height = 1056;
+  const svg = cssVars(homeSVG(room,true)).replace('<svg ',`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" `);
+  const svgUrl = URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+  try {
+    const image = await new Promise((resolve,reject)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = reject;
+      img.src = svgUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--soft').trim() || '#f0ede4';
+    ctx.fillRect(0,0,width,height);
+    ctx.drawImage(image,0,0,width,height);
+    return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('PNG')),'image/png'));
+  } finally { URL.revokeObjectURL(svgUrl); }
+}
+async function openRoomSnapshot(room){
+  const selected = HOME.rooms.find(r=>r.id===room);
+  if (!selected || room==='faith' || !homeOpen(room) || $('#roomSnapshot')) return;
+  const dialog = document.createElement('dialog');
+  dialog.id = 'roomSnapshot';
+  dialog.className = 'room-snapshot';
+  dialog.setAttribute('aria-labelledby','roomSnapshotTitle');
+  dialog.innerHTML = `<div class="row" style="justify-content:space-between"><h2 id="roomSnapshotTitle">${selected.n} · снимок</h2><button class="btn" type="button">Закрыть</button></div>
+    <p class="small muted">На снимке только обстановка комнаты.</p><p class="small muted" role="status">Готовлю картинку…</p>
+    <img hidden alt="Снимок комнаты «${selected.n}»"><div class="row" style="margin-top:12px"><a class="btn pri" hidden>Скачать PNG</a><button class="btn" type="button" hidden>Поделиться</button></div>`;
+  const [closeButton,shareButton] = dialog.querySelectorAll('button');
+  let pictureUrl = '';
+  closeButton.onclick = ()=>dialog.close();
+  dialog.addEventListener('close',()=>{ if (pictureUrl) URL.revokeObjectURL(pictureUrl); dialog.remove(); },{once:true});
+  document.body.append(dialog); dialog.showModal();
+  const status = dialog.querySelector('[role=status]');
+  try {
+    const blob = await roomPicture(room);
+    if (!dialog.open) return;
+    const name = `ihsan-${room}-${key(today())}.png`;
+    pictureUrl = URL.createObjectURL(blob);
+    const image = dialog.querySelector('img'), download = dialog.querySelector('a');
+    image.src = pictureUrl; image.hidden = false;
+    download.href = pictureUrl; download.download = name; download.hidden = false;
+    status.hidden = true;
+    const file = new File([blob],name,{type:'image/png'});
+    if (navigator.share && navigator.canShare?.({files:[file]})){
+      shareButton.hidden = false;
+      shareButton.onclick = async ()=>{
+        try { await navigator.share({files:[file],title:selected.n+' · Ихсан'}); }
+        catch(err){ if (err.name!=='AbortError') { status.textContent='Не удалось открыть меню. Картинку можно скачать.'; status.hidden=false; } }
+      };
+    }
+  } catch {
+    status.textContent = 'Не получилось подготовить снимок. Попробуй снова.';
+  }
+}
 function homeShelf(){
   const books = S.books.map((book,index)=>({book,index}));
   const read = books.filter(({book})=>book.s===2).length;
@@ -4261,7 +4325,8 @@ function vHome(){
   h += `<div class="tabs">${HOME.rooms.map(r=>`<button class="${r.id===room?'on':''}" data-act="hroom" data-r="${r.id}">${homeOpen(r.id) ? '' : ic('lock')}${r.n}</button>`).join('')}</div>`;
   if (!open) return h + `<div class="card lock"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">${R.n} ещё не построена</h2><div class="muted small" style="margin-bottom:12px">${room === 'faith' ? 'Молельная — это мечеть на твоём участке. Она строится за монеты на участке: фундамент, стены и купол.' : room === 'guest' ? 'Гостиная — в гостевом доме на соседнем участке. Купи участок и построй дом: «Участок» → «Участок побольше».' : `Комната появится, когда у дома будет крыша, а силы «${AX[R.ax].n}» наберётся ${ECON.room.open} очков.`}</div><a class="btn pri" href="#plot">Перейти на участок</a></div>`;
   h += `<div class="homegrid"><div><div class="card axis-${R.ax}" style="padding:8px"><div class="home">${homeSVG(room)}</div>
-    <div class="tiny muted" style="margin:6px 6px 2px">Золотые точки — быстрые кнопки: нажми на вещь, и откроется нужный раздел. ${PHASE_N[curPhase()]} за окном — как в городе.</div></div>`;
+    <div class="tiny muted" style="margin:6px 6px 2px">Золотые точки — быстрые кнопки: нажми на вещь, и откроется нужный раздел. ${PHASE_N[curPhase()]} за окном — как в городе.</div>
+    ${room!=='faith' ? `<button class="btn" style="margin:6px" data-act="roomSnapshot" data-r="${room}">${ic('camera')} Снимок комнаты</button>` : ''}</div>`;
   // что поменять: слоты и варианты
   h += `<div class="card"><div class="rhead"><b style="font-size:17px">Обстановка</b><span class="rst">нажми, что поменять</span></div><div class="chips" style="margin-top:10px">${Object.entries(HOME.slots).map(([k,s])=>`<button class="chip btn ${homeSlot===k?'on':''}" data-act="hslot" data-s="${k}">${s.n}</button>`).join('')}</div>`;
   if (homeSlot && HOME.slots[homeSlot]){ const opts = homeOpts(room, homeSlot), cur = homePick(room, homeSlot), tv = homeTry && homeTry.room === room && homeTry.slot === homeSlot ? homeTry.v : '';
@@ -4509,6 +4574,7 @@ document.addEventListener('click', async e => {
     case 'gift': { const t = el.dataset.t; if (!giftAvail() || !giftOffer().includes(t) || !trinkFree(t)) return; const msg = trinkAdd(t); S.gift.p = key(addD(giftBase(), 1)); save(); toast('Подарок: ' + msg); break; }
     case 'tbuy': { const t = el.dataset.t, o = TRINK[t]; if (!o || !trinkFree(t)) return; if (!buy(o.p, `Мелочь: ${o.n.toLowerCase()}`)) return; const msg = trinkAdd(t); save(); toast(msg + ' ✓'); break; }
     case 'hroom': S.home.room = el.dataset.r; homeSlot = ''; homeTry = null; save(); break;
+    case 'roomSnapshot': await openRoomSnapshot(el.dataset.r); return;
     case 'hslot': homeSlot = homeSlot === el.dataset.s ? '' : el.dataset.s; homeTry = null; break;
     case 'hundo': homeTry = null; break;
     case 'hpick': { const room = S.home.room, v = el.dataset.v, c = homeCan(room, homeSlot, v); if (c.no) return;
