@@ -1531,12 +1531,12 @@ function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T 
 // Инструменты — прежние страницы (#tools, #path, #diary); сверху у них «‹ Раздел» и вкладки только этого раздела.
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
-const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['sadaqa','path','sadaqa','heart','Садака'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
+const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['sadaqa','path','sadaqa','heart','Садака'],['zakat','path','zakat','list','Закят'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
   mind:[['books','path','books','book','Книги'],['studies','path','studies','list','Обучение'],['savings','path','savings','target','Накопления'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', sadaqa:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', savings:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', sadaqa:'Садака', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', savings:'Накопления', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', sadaqa:'faith', zakat:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', savings:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', sadaqa:'Садака', zakat:'Закят', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', savings:'Накопления', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1549,6 +1549,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'studies') return S.studies.length ? `завершено ${S.studies.filter(s=>s?.status==='done').length} из ${S.studies.length}` : 'курсы, учёба и сертификаты';
   if (id === 'savings') return S.savings.target ? S.savings.title : 'поставить цель';
   if (id === 'sadaqa') return 'добровольные пожертвования';
+  if (id === 'zakat') return 'расчёт с денежных средств';
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
   if (id === 'wellbeing') return 'тревога, приступы, что помогло';
   if (id === 'people') return peopleDue(tk).length ? `напоминаний: ${peopleDue(tk).length}` : 'семья, родные и друзья';
@@ -1880,9 +1881,9 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['sadaqa','Садака'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['savings','Накопления'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['sadaqa','Садака'],['zakat','Закят'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['savings','Накопления'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, sadaqa:pSadaqa, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, savings:pSavings, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, sadaqa:pSadaqa, zakat:pZakat, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, savings:pSavings, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
 const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
@@ -2027,7 +2028,7 @@ const MONEY_CURRENCIES = {RUB:'Рубли', USD:'Доллары США', EUR:'Е
 const MONEY_LIMIT = 99_999_999_999;
 function moneyAmount(value){
   const raw = String(value || '').trim().replace(',','.');
-  if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(raw)) return 0;
+  if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(raw)) return null;
   const [whole, fraction=''] = raw.split('.');
   return Number(whole)*100 + Number(fraction.padEnd(2,'0'));
 }
@@ -2062,6 +2063,35 @@ function pSavings(){
     </form></section>` : '') + (history.length ? `<section class="card"><h2>История накоплений</h2>
       ${history.map(e=>`<div class="saving-line"><span class="small muted">${fmtD(parse(e.date))} ${parse(e.date).getFullYear()} · ${e.amount>0?'Пополнение':'Снятие'}</span><b>${e.amount>0?'+':'−'}${money(Math.abs(e.amount))}</b></div>`).join('')}
     </section>` : '');
+}
+function pZakat(){
+  return `<section class="card"><h2>${ic('list')} Закят с денег</h2>
+    <p class="small muted">Возьми актуальный нисаб для денег у своего муфтията. Введи его и сумму денежных средств, с которых считаешь закят, в одной валюте.</p>
+    <form class="saving-form" data-form="zakat" autocomplete="off">
+      <label class="f">Валюта<select class="in" name="currency">${Object.entries(MONEY_CURRENCIES).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
+      <label class="f">Денежные средства<input class="in" name="amount" inputmode="decimal" maxlength="12" required placeholder="0"></label>
+      <label class="f">Актуальный нисаб<input class="in" name="nisab" inputmode="decimal" maxlength="12" required placeholder="Сумма в той же валюте"></label>
+      <label class="f">Сумма держалась на уровне нисаба или выше полный лунный год?<select class="in" name="hawl"><option value="">Выбери ответ</option><option value="yes">Да</option><option value="no">Нет, год ещё не прошёл</option><option value="unsure">Не уверен</option></select></label>
+      <button class="btn pri">Рассчитать</button>
+      <div id="zakatResult" class="banner" role="status" hidden></div>
+    </form>
+  </section><section class="card"><h2>Что учитывает расчёт</h2>
+    <p class="small">Если достигнут нисаб и прошёл полный лунный год, расчёт берёт 2,5% от всей введённой суммы. Для активов бизнеса, украшений, долгов и закята аль-Фитр действуют отдельные правила. Если сумма опускалась ниже нисаба, уточни дату начала отсчёта в муфтияте.</p>
+    <div class="row"><a class="btn" href="https://dumchr.ru/zakat/" target="_blank" rel="noopener noreferrer">Разъяснение ДУМ ЧР</a><a class="btn" href="https://zatca.gov.sa/en/HelpCenter/guidelines/Documents/Zakat_Individual.pdf#page=16" target="_blank" rel="noopener noreferrer">Ставка для денег</a></div>
+  </section>`;
+}
+function calculateZakat(form,fields){
+  const amount = moneyAmount(fields.get('amount')), nisab = moneyAmount(fields.get('nisab'));
+  const currency = fields.get('currency'), hawl = fields.get('hawl');
+  const result = form.querySelector('#zakatResult');
+  let message;
+  if (amount === null || !nisab || !Object.hasOwn(MONEY_CURRENCIES,currency)) message = 'Проверь суммы. Нисаб должен быть больше нуля.';
+  else if (amount < nisab) message = 'Введённая сумма ниже указанного нисаба.';
+  else if (hawl === 'yes') message = `Расчёт закята · ${moneyLabel(Math.round(amount/40),currency)}`;
+  else if (hawl === 'no') message = 'Нисаб достигнут. Условие полного лунного года пока не выполнено.';
+  else message = 'Нисаб достигнут. Для расчёта уточни, прошёл ли полный лунный год.';
+  result.textContent = message;
+  result.hidden = false;
 }
 function pSadaqa(){
   const s = S.sadaqa, now = key(today());
@@ -4508,6 +4538,7 @@ document.addEventListener('change', e => { const t = e.target; if (t && t.id ===
 document.addEventListener('input', e => {
   lastAct = Date.now();
   const t = e.target;
+  if (t.form?.dataset.form === 'zakat') t.form.querySelector('#zakatResult').hidden = true;
   if (t.id === 'onbname'){ onbInit().name = t.value; return; }
   if (t.id === 'evline') evLine = t.value; if (t.id === 'evpass') evPass = t.value;
   if (t.dataset.bind){ let v = t.value; if (t.dataset.type==='num') v = v===''? '' : +v; setPath(t.dataset.bind, v); save(); }
@@ -4530,6 +4561,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'zakat'){ calculateZakat(f,fd); return; }
     if (f.dataset.form === 'sadaqaGoals'){
       const monthText = String(fd.get('month') || '').trim(), yearText = String(fd.get('year') || '').trim();
       const month = moneyAmount(monthText), year = moneyAmount(yearText);
