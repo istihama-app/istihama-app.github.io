@@ -494,9 +494,12 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .people-list article{padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
 .person-form{display:grid;gap:8px;margin:8px 0}
 .person-form .in{min-width:0}
-.study-form{display:grid;gap:10px;margin-top:10px}
-.study-form .f{margin:0;min-width:0}
+.study-form,.saving-form{display:grid;gap:10px;margin-top:10px}
+.study-form .f,.saving-form .f{margin:0;min-width:0}
 .study-card h2,.study-card .study-provider{overflow-wrap:anywhere}
+.saving-title{overflow-wrap:anywhere;margin:4px 0 8px}
+.saving-amount{font-size:clamp(21px,5vw,30px);font-weight:750;line-height:1.25}
+.saving-line{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
 .people-list h2{scroll-margin-top:12px}
 .family-level{position:relative;display:grid;justify-items:center;gap:6px;padding:12px 8px}
 .family-level + .family-level{border-top:1px solid var(--line)}
@@ -672,6 +675,7 @@ function defaults(){
     build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
     home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[], studies:[],
+    savings:{title:'Умра / Хадж', target:0, currency:'RUB', entries:[]},
     gift:{p:'', got:[]}};
 }
 let S;
@@ -687,6 +691,7 @@ function migrate(){ const d = defaults();
     if (bad){ (S._bad = S._bad || {})[k] = v; S[k] = JSON.parse(JSON.stringify(a)); } }
   for (const k in S.days){ const x = S.days[k]; if (!x || typeof x !== 'object' || Array.isArray(x) || !/^\d{4}-\d\d-\d\d$/.test(k)){ delete S.days[k]; continue; } if (!x.c || typeof x.c !== 'object') x.c = {}; if (!Array.isArray(x.p)) x.p = [0,0,0,0,0]; if (!x.n || typeof x.n !== 'object') x.n = {}; }
   for (const k in d) if (S[k] === undefined) S[k] = d[k];
+  if (!Array.isArray(S.savings.entries)) S.savings.entries = [];
   for (const k of Object.keys(S.cycleDays)) if (!/^\d{4}-\d\d-\d\d$/.test(k) || !Number.isInteger(S.cycleDays[k]) || S.cycleDays[k] < 1 || S.cycleDays[k] > 31) delete S.cycleDays[k];
   if (!S.settings.profile){ S.settings.profile = FRESH && !AUTO ? 'basic' : 'owner'; if (FRESH && !AUTO) S.settings.onb = 1; }
   if (!Array.isArray(S.items) || !S.items.length) S.items = ITEMS.map(i => ({id:i.id, ax:i.ax, t:i.t, from:'', to:''}));   // v32: свои пункты
@@ -1525,11 +1530,11 @@ function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T 
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
 const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
-  mind:[['books','path','books','book','Книги'],['studies','path','studies','list','Обучение'],['timer','tools','timer','timer','Таймеры']],
+  mind:[['books','path','books','book','Книги'],['studies','path','studies','list','Обучение'],['savings','path','savings','target','Накопления'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', savings:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', savings:'Накопления', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1540,6 +1545,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'suras'){ const n = S.suras.filter(x => x.s >= 2).length, d = hifzDue().length; return `${n} выучено${d ? ` · повторить ${d}` : ''}`; }
   if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
   if (id === 'studies') return S.studies.length ? `завершено ${S.studies.filter(s=>s?.status==='done').length} из ${S.studies.length}` : 'курсы, учёба и сертификаты';
+  if (id === 'savings') return S.savings.target ? S.savings.title : 'поставить цель';
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
   if (id === 'wellbeing') return 'тревога, приступы, что помогло';
   if (id === 'people') return peopleDue(tk).length ? `напоминаний: ${peopleDue(tk).length}` : 'семья, родные и друзья';
@@ -1871,9 +1877,9 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['savings','Накопления'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, savings:pSavings, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
 const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
@@ -2013,6 +2019,43 @@ function pFears(){
     h += `<div class="step"><span class="lv" style="${fs.length&&fs.every(x=>x.f.done)?'background:var(--good);color:#fff':''}">${lv}</span><div class="grow">${fs.length?fs.map(({f,i})=>`<div style="margin-bottom:8px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><button class="mark ${f.done?'full':''} axis-spirit" style="width:26px;height:26px;background:${f.done?'var(--good)':'none'};border-color:${f.done?'var(--good)':'var(--line)'};color:#fff" data-act="fdone" data-i="${i}">${f.done?'✓':''}</button><div class="grow"><span class="${f.done?'done':''}">${esc(f.t)}</span>${f.done&&f.date?` <span class="muted tiny">· ${fmtD(parse(f.date))}</span>`:''}
       <input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|step" placeholder="Какой шаг сделаю?" value="${esc(f.step||'')}">${f.done?`<div class="tiny muted" style="margin:6px 0 4px">Насколько страшно теперь? (было ${f.s})</div><div class="fafter">${[...Array(11)].map((_, v) => `<button class="chip btn ${f.after === v ? 'on' : ''}" data-act="fafter" data-i="${i}" data-v="${v}">${v}</button>`).join('')}</div>`:''}${f.done?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|felt" placeholder="Что почувствовал после?" value="${esc(f.felt||'')}">`:''}</div><button class="btn danger" style="padding:3px 8px" data-act="fdel" data-i="${i}">✕</button></div></div>`).join(''):'<span class="muted small">—</span>'}</div></div>`; }
   return h + `</div>`;
+}
+const SAVING_CURRENCIES = {RUB:'Рубли', USD:'Доллары США', EUR:'Евро', SAR:'Саудовские риялы', KZT:'Тенге'};
+const SAVING_LIMIT = 999_999_999_99;
+function savingAmount(value){
+  const raw = String(value || '').trim().replace(',','.');
+  if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(raw)) return 0;
+  const [whole, fraction=''] = raw.split('.');
+  return Number(whole)*100 + Number(fraction.padEnd(2,'0'));
+}
+function savingTotal(){
+  return S.savings.entries.reduce((sum,e)=>sum + (Number.isSafeInteger(e?.amount) ? e.amount : 0),0);
+}
+function pSavings(){
+  const s = S.savings, balance = savingTotal(), target = Number.isSafeInteger(s.target) && s.target > 0 ? s.target : 0;
+  const title = typeof s.title === 'string' && s.title ? s.title : 'Умра / Хадж';
+  const currency = Object.hasOwn(SAVING_CURRENCIES,s.currency) ? s.currency : 'RUB';
+  const money = amount => (amount/100).toLocaleString('ru-RU',{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:2});
+  const progress = target ? Math.min(100,Math.floor(balance/target*100)) : 0;
+  const goalForm = `<form class="saving-form" data-form="savingGoal">
+    <label class="f">Название цели<input class="in" name="title" maxlength="80" required value="${esc(title)}"></label>
+    <label class="f">Целевая сумма<input class="in" name="target" inputmode="decimal" maxlength="12" required value="${target ? String(target/100).replace('.',',') : ''}" placeholder="0"></label>
+    ${s.entries.length ? `<div class="small muted">Валюта · ${SAVING_CURRENCIES[currency]}</div>` : `<label class="f">Валюта<select class="in" name="currency">${Object.entries(SAVING_CURRENCIES).map(([code,label])=>`<option value="${code}" ${code===currency?'selected':''}>${label}</option>`).join('')}</select></label>`}
+    <button class="btn pri">Сохранить цель</button>
+  </form>`;
+  const history = s.entries.filter(e=>Number.isSafeInteger(e?.amount) && personDate(e.date)).slice().reverse();
+  return `<section class="card axis-mind">
+    <div class="small muted">Цель накоплений</div><h2 class="saving-title">${esc(title)}</h2>
+    ${target ? `<div class="saving-amount">${money(balance)}</div><p class="small muted">из ${money(target)} · ${progress}%</p>
+      <div class="bar" role="progressbar" aria-label="Накоплено" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div>
+      <p class="small">${balance >= target ? 'Цель достигнута' : `Осталось ${money(target-balance)}`}</p><details><summary>Изменить цель</summary>${goalForm}</details>` : goalForm}
+  </section>` + (target ? `<section class="card"><h2>Записать сумму</h2>
+    <form class="saving-form" data-form="savingEntry">
+      <label class="f">Сумма<input class="in" name="amount" inputmode="decimal" maxlength="12" required placeholder="0"></label>
+      <div class="row"><button class="btn pri" name="operation" value="add">Отложил</button><button class="btn" name="operation" value="withdraw" ${balance>0?'':'disabled'}>Снял</button></div>
+    </form></section>` : '') + (history.length ? `<section class="card"><h2>История накоплений</h2>
+      ${history.map(e=>`<div class="saving-line"><span class="small muted">${fmtD(parse(e.date))} ${parse(e.date).getFullYear()} · ${e.amount>0?'Пополнение':'Снятие'}</span><b>${e.amount>0?'+':'−'}${money(Math.abs(e.amount))}</b></div>`).join('')}
+    </section>` : '');
 }
 const STUDY_STATUS = {planned:'В планах', active:'Учусь', done:'Завершено'};
 function studyCertificate(value){
@@ -4447,6 +4490,23 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'savingGoal'){
+      const title = String(fd.get('title') || '').trim().slice(0,80);
+      const target = savingAmount(fd.get('target'));
+      const currency = S.savings.entries.length ? S.savings.currency : fd.get('currency');
+      if (!title || !target || !Object.hasOwn(SAVING_CURRENCIES,currency)) return toast('Укажи название, валюту и сумму больше нуля');
+      Object.assign(S.savings,{title,target,currency});
+      save(true); render(); toast('Цель сохранена'); return;
+    }
+    if (f.dataset.form === 'savingEntry'){
+      const amount = savingAmount(fd.get('amount')), withdraw = e.submitter?.value === 'withdraw';
+      if (!amount || !(S.savings.target > 0)) return toast('Введи сумму больше нуля');
+      const balance = savingTotal();
+      if (withdraw && amount > balance) return toast('В накоплениях меньше этой суммы');
+      if (!withdraw && balance + amount > SAVING_LIMIT) return toast('Сумма накоплений слишком велика');
+      S.savings.entries.push({date:key(today()), amount:withdraw ? -amount : amount});
+      save(true); render(); toast('Сумма записана'); return;
+    }
     if (f.dataset.form === 'study'){
       const title = String(fd.get('title') || '').trim().slice(0,120);
       const provider = String(fd.get('provider') || '').trim().slice(0,100);
