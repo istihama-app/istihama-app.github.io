@@ -547,7 +547,8 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 "use strict";
 /* ================== КОНСТАНТЫ ================== */
 const LS = 'chetyre-sily-v1';
-const NEW_HOME = 'https://ihsan-day.github.io/', isOldHome = () => !!window._oldHome || location.hostname === 'istihama-app.github.io';
+const PUBLISHED_HOME = 'https://istihama-app.github.io/';
+const isTransferPage = () => location.hostname === 'ihsan-day.github.io' && new URLSearchParams(location.search).get('transfer') === '1';
 const AXO = ['faith','mind','spirit','body'];
 const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Дух',e:'🔥'}, body:{n:'Тело',e:'💪'}};
 const ITEMS = [
@@ -740,7 +741,7 @@ function migrate(){ const d = defaults();
 migrate();
 let saveT = null, storageWarned = false;
 function save(now){
-  if (isOldHome()) return;
+  if (isTransferPage()) return;
   clearTimeout(saveT);
   const w = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) { if (!storageWarned){ storageWarned = true; toast('Не удалось сохранить — сделай резервную копию'); } } };
   if (now) w(); else saveT = setTimeout(w, 250);
@@ -873,7 +874,7 @@ function renderNav(){
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1>${planOn() ? '' : '<!--'}<a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a>${planOn() ? '' : '-->'}<a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
 function render(){
-  if (isOldHome()){ document.body.classList.add('transfer-page'); $('#main').innerHTML = moveCard(); return; }
+  if (isTransferPage()){ document.body.classList.add('transfer-page'); $('#main').innerHTML = moveCard(); return; }
   if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); }
   if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; }
   renderNav();
@@ -882,7 +883,7 @@ function render(){
   if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; }
   $('#main').innerHTML = html; after(); evSync(); onbSync();
 }
-// Старый адрес служит для переноса. Данные выгружаются с этого адреса, импорт выполняется на основном.
+// Отдельный экран переноса включается ссылкой. Обычный вход оставляет доступ к записям.
 let photosLoaded = false;
 function transferState(){
   try {
@@ -894,12 +895,12 @@ function moveCard(){
   const hasBackup = photosLoaded && (!!transferState() || !!PH.before || !!PH.after);
   return `<div class="top"><h1>Ихсан <span class="brandar" lang="ar">إحسان</span></h1></div>
     <div class="card movecard"><h2>«Ихсан» переехал</h2>
-    <p>Основной адрес теперь <b>ihsan-day.github.io</b>. Если ты вёл записи здесь, их можно перенести с помощью резервной копии.</p>
+    <p>Рабочий адрес для обновлений <b>istihama-app.github.io</b>. Если ты вёл записи здесь, их можно перенести с помощью резервной копии.</p>
     ${hasBackup ? `<ol class="small"><li>Скачай копию на этом устройстве.</li><li>Открой «Ихсан» по основному адресу.</li><li>В настройках выбери «Загрузить из файла». При первом входе есть кнопка «У меня есть копия».</li></ol>
     <p class="small muted">Если на основном адресе уже есть записи, сначала сохрани и их копию. Импорт заменяет данные на том адресе, где ты загружаешь файл.</p>`
-    : `<p class="small muted">${photosLoaded ? 'В этом браузере на старом адресе не нашлось сохранённых записей. Если ты пользовался старым приложением с экрана «Домой», открой его там и скачай копию.' : 'Проверяю сохранённые записи…'}</p>`}
+    : `<p class="small muted">${photosLoaded ? 'В этом браузере по этому адресу не нашлось сохранённых записей. Если ты пользовался приложением с экрана «Домой», открой его там и скачай копию.' : 'Проверяю сохранённые записи…'}</p>`}
     <div class="chips">${hasBackup ? `<button class="btn pri" data-act="export">${ic('down')}Скачать копию</button><button class="btn" data-act="copyexp">Скопировать копию</button>` : ''}
-      <a class="btn ${hasBackup ? '' : 'pri'}" href="${NEW_HOME}">Открыть «Ихсан»</a></div></div>`;
+      <a class="btn ${hasBackup ? '' : 'pri'}" href="${PUBLISHED_HOME}">Открыть «Ихсан»</a></div></div>`;
 }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
@@ -1324,7 +1325,7 @@ function tCal(){ const t = today(), h0 = hijri(t);
 
 // ---- напоминания: в приложении и файлом календаря ----
 const prDone = {};
-function prTick(){ if (isOldHome() || !S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9 && !cycleExempt(dk,'saum'), list = prayerSlots(dk).map(j => { const id = PR5[j]; return [id, P[id], `Время намаза: ${PR_N[id]}`]; });
+function prTick(){ if (isTransferPage() || !S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9 && !cycleExempt(dk,'saum'), list = prayerSlots(dk).map(j => { const id = PR5[j]; return [id, P[id], `Время намаза: ${PR_N[id]}`]; });
   if (ram){ list.push(['iftar', P.maghrib, 'Время ифтара — разговляйся']); list.push(['iftar10', new Date(P.maghrib - 600000), 'Через 10 минут ифтар']); list.push(['imsak', P.imsak, 'Имсак — сухур заканчивается']); list.push(['imsak15', new Date(P.imsak - 900000), 'Через 15 минут конец сухура']); }
   list.forEach(([id, at, txt]) => { const k = dk + id; if (prDone[k] || now < at || now - at > 120000) return; prDone[k] = 1; toast(txt); try { beep(); } catch(e){} vib([200, 100, 200]);
     try { if (window.Notification && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r => r.showNotification('Ихсан', {body:txt, icon:'icon-192.png', tag:k})); } catch(e){} }); }
@@ -2408,7 +2409,7 @@ function tFinish(id){
   (S.timers.log[day] ||= []).push({id, t:p.t, min, at:Date.now()});
   return p; }
 function tCheck(){
-  if (isOldHome()) return;
+  if (isTransferPage()) return;
   const done = []; for (const id of Object.keys(S.timers.run)){ const r = S.timers.run[id]; if (r && r.st && tRem(r) <= 0) done.push(tFinish(id)); }
   if (!done.length) return false;
   save(true); beep(); vib([250,120,250]); toast(`Время вышло ✓ ${done.map(p => tItem(p) ? `«${tItem(p).t}» отмечено` : p.t).join(', ')}`);
@@ -4726,11 +4727,11 @@ document.addEventListener('submit', async e => {
   } catch(err){ toast('Ошибка шифрования в этом браузере'); }
   render();
 });
-async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:isOldHome() ? transferState() || S : S, photos:{before:PH.before, after:PH.after}}); }
+async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:isTransferPage() ? transferState() || S : S, photos:{before:PH.before, after:PH.after}}); }
 const isPhone = () => matchMedia('(pointer: coarse)').matches;
 async function shareFile(txt, name, type){ try { const f = new File([txt], name, {type}); if (isPhone() && navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return 'shared'; } } catch(e){ if (e && e.name === 'AbortError') return 'cancel'; } return ''; }
 async function doExport(){
-  const filename = `ihsan-${isOldHome() ? 'perenos-' : ''}${key(today())}.json`;
+  const filename = `ihsan-${isTransferPage() ? 'perenos-' : ''}${key(today())}.json`;
   const txt0 = await exportText(), sh = await shareFile(txt0, filename, 'application/json');
   if (sh === 'shared'){ S.lastExport = Date.now(); save(); toast('Копия готова — сохрани её в «Файлы» или отправь себе'); return; } if (sh === 'cancel') return;
   try { const blob = new Blob([txt0], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -4751,7 +4752,7 @@ setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   PH.before = await idbGet('photo_before'); PH.after = await idbGet('photo_after');
   photosLoaded = true;
-  if (isOldHome() || view === 'path') render();
+  if (isTransferPage() || view === 'path') render();
 })();
 </script>
 </body>
