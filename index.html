@@ -495,6 +495,25 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .person-form{display:grid;gap:8px;margin:8px 0}
 .person-form .in{min-width:0}
 .people-list h2{scroll-margin-top:12px}
+.family-level{position:relative;display:grid;justify-items:center;gap:6px;padding:12px 8px}
+.family-level + .family-level{border-top:1px solid var(--line)}
+.family-level .chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-height:40px}
+.family-level .chips{justify-content:center}
+.family-focus{display:grid;justify-items:center;padding:12px;border-block:1px solid var(--line);background:var(--soft);overflow-wrap:anywhere}
+.family-link{border-top:1px solid var(--line);padding:8px 0;overflow-wrap:anywhere}
+.life-wheel{display:grid;justify-items:center;gap:12px;text-align:center}
+.life-dial{position:relative;width:min(100%,252px);aspect-ratio:1;border-radius:50%;touch-action:none;cursor:grab}
+.life-dial:focus-visible{outline:2px solid var(--pri);outline-offset:3px}
+.life-dial::after{content:"";position:absolute;top:-5px;left:calc(50% - 7px);width:0;height:0;border:7px solid transparent;border-top:13px solid var(--pri);pointer-events:none}
+.life-face{position:absolute;inset:0;border-radius:50%;border:2px solid var(--line);transform:rotate(var(--turn));transition:transform .22s ease;
+  background:conic-gradient(from -30deg,var(--faith-s) 0 60deg,var(--mind-s) 60deg 120deg,var(--spirit-s) 120deg 180deg,var(--body-s) 180deg 240deg,var(--tint) 240deg 300deg,var(--soft) 300deg)}
+.life-face::before{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from -30deg,var(--line) 0 1deg,transparent 1deg 60deg)}
+.life-mark{position:absolute;inset:0;display:grid;justify-items:center;align-items:start;padding-top:18px;transform:rotate(var(--sector));pointer-events:none}
+.life-mark .ic{width:25px;height:25px;transform:rotate(calc(0deg - var(--sector) - var(--turn)));transition:transform .22s ease}
+.life-center{position:absolute;inset:33%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);border-radius:50%;color:var(--pri);pointer-events:none}
+.life-center .ic{width:30px;height:30px}
+.life-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(100%,360px)}
+@media(prefers-reduced-motion:reduce){.life-face,.life-mark .ic{transition:none}}
 .transfer-page #side,.transfer-page #bnav{display:none}
 .transfer-page .app{display:block}
 .transfer-page main{max-width:600px;margin:0 auto;padding:28px 16px}
@@ -649,7 +668,7 @@ function defaults(){
     bigCh:BIG0.map(t=>({t, done:false, date:''})),
     build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
-    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[],
+    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[],
     gift:{p:'', got:[]}};
 }
 let S;
@@ -1506,8 +1525,8 @@ const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','pa
   mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1530,6 +1549,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
 function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day = getDay(tk), its = itemsOn(tk).filter(i => i.ax === a), nd = its.filter(i => itemVal(day, i.id) >= 1).length;
   const goal = isOwner() ? OWNER_GOALS[a] : (S.myplan && S.myplan.goals && S.myplan.goals[a]) || '';
   let h = topbar('Путь');
+  h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px"><button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button></div>`;
   h += `<div class="waytabs">${AXO.map(x => `<button class="wt axis-${x} ${x === a ? 'on' : ''}" data-act="wayax" data-a="${x}"><span class="axb">${ic(AXI[x])}</span>${AX[x].n}</button>`).join('')}</div>`;
   h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}</b><span class="rst">${({faith:'Коран, намаз, иман', mind:'учёба и чтение', spirit:'страхи, мухасаба, характер', body:'тело и здоровье'})[a]}</span></div>
     ${goal ? `<div class="small" style="margin-top:6px"><span class="muted">Цель года:</span> ${esc(goal)}</div>` : `<div class="tiny muted" style="margin-top:6px">${planOn() ? 'Цель года можно записать в «Плане».' : 'Цель года можно записать, если включить «План года» в настройках.'}</div>`}
@@ -1539,6 +1559,57 @@ function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day
   const tm = S.timers.list.filter(p => tItem(p) && tItem(p).ax === a);
   if (tm.length) h += `<div class="card"><h2>${ic('timer')} Таймеры раздела</h2><div class="chips">${tm.map(tChip).join('')}</div><div class="tiny muted" style="margin-top:6px">Таймер закончился — пункт дня отмечается сам. Сделал без таймера — отметь пункт на «Сегодня» вручную.</div></div>`;
   return h; }
+const WHEEL_AREAS = [
+  ['Вера','mosque','faith'],['Разум','book','mind'],['Дух','compass','spirit'],
+  ['Тело','dumb','body'],['Близкие','user','people'],['Самочувствие','heart','wellbeing']
+];
+let wayWheelOpen = false, wheelStep = 0;
+const wheelArea = () => WHEEL_AREAS[((wheelStep % WHEEL_AREAS.length) + WHEEL_AREAS.length) % WHEEL_AREAS.length];
+function wayWheel(){
+  afterFns.push(()=>{
+    const dial = $('#lifeDial');
+    let start = null;
+    const angle = e => { const b = dial.getBoundingClientRect(); return Math.atan2(e.clientY - b.top - b.height/2,e.clientX - b.left - b.width/2); };
+    dial.addEventListener('pointerdown',e=>{
+      if (!e.isPrimary || e.button !== 0) return;
+      start = angle(e);
+      dial.setPointerCapture(e.pointerId);
+    });
+    dial.addEventListener('pointerup',e=>{
+      if (start === null) return;
+      const raw = angle(e) - start, delta = Math.atan2(Math.sin(raw),Math.cos(raw));
+      start = null;
+      if (Math.abs(delta) >= .22) wheelShift(-Math.sign(delta)*Math.max(1,Math.round(Math.abs(delta)/(Math.PI/3))));
+    });
+    dial.addEventListener('pointercancel',()=>{ start = null; });
+    dial.addEventListener('keydown',e=>{
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault(); wheelShift(e.key === 'ArrowLeft' ? -1 : 1);
+    });
+  });
+  return `<div class="card life-wheel"><div class="row" style="width:100%"><h2 class="grow" style="margin:0">Колесо жизни</h2><button class="navbtn" data-act="wheelToggle" aria-label="Закрыть колесо">✕</button></div>
+    <div class="life-dial" id="lifeDial" tabindex="0" aria-label="Колесо жизни, можно вращать или использовать стрелки">
+      <div class="life-face" id="lifeFace" style="--turn:${wheelStep * -60}deg" aria-hidden="true">${WHEEL_AREAS.map(([,icon],j)=>`<span class="life-mark" style="--sector:${j*60}deg">${ic(icon)}</span>`).join('')}</div>
+      <span class="life-center" aria-hidden="true">${ic('compass')}</span>
+    </div>
+    <div class="life-controls"><button class="navbtn" data-act="wheelStep" data-v="-1" aria-label="Предыдущая сфера">‹</button>
+      <b id="wheelArea" aria-live="polite">${wheelArea()[0]}</b><button class="navbtn" data-act="wheelStep" data-v="1" aria-label="Следующая сфера">›</button></div>
+    <div class="chips"><button class="btn pri" data-act="wheelGo">Открыть</button><button class="chip btn ${S.settings.wheelSound?'on':''}" data-act="wheelSound" aria-pressed="${!!S.settings.wheelSound}">Щелчок</button></div></div>`;
+}
+function wheelShift(delta){
+  wheelStep += delta;
+  $('#lifeFace')?.style.setProperty('--turn',wheelStep * -60 + 'deg');
+  const label = $('#wheelArea'); if (label) label.textContent = wheelArea()[0];
+  if (!S.settings.wheelSound) return;
+  vib(12);
+  try {
+    audioUnlock(); if (!AC) return;
+    const wave = AC.createOscillator(), volume = AC.createGain(), now = AC.currentTime;
+    wave.type = 'triangle'; wave.frequency.value = 660;
+    volume.gain.setValueAtTime(.035,now); volume.gain.exponentialRampToValueAtTime(.001,now+.04);
+    wave.connect(volume); volume.connect(AC.destination); wave.start(now); wave.stop(now+.04);
+  } catch(e){}
+}
 const backTo = a => a ? `<a class="chip btn backc" href="#way" data-act="wayax" data-a="${a}">‹ ${AX[a].n}</a>` : `<a class="chip btn backc" href="#way">‹ Путь</a>`;
 
 /* ================== ВЕЧЕРНИЙ ИТОГ ================== */
@@ -1798,7 +1869,7 @@ function vPath(){
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
   const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
 const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
@@ -1827,7 +1898,7 @@ function pPeople(){
   return `<div class="card"><h2>${ic('user')} Карта близких</h2>
     <div class="people-map"><span class="people-self">Я</span><div class="people-branches">
       ${Object.entries(PEOPLE_GROUPS).map(([id,n])=>`<a class="btn" href="#path" data-act="peopleBranch" data-t="${id}"><b>${n}</b><span class="tiny muted">${people.filter(p=>p.group===id).length}</span></a>`).join('')}
-    </div></div></div>
+    </div></div><button class="btn" style="margin-top:12px" data-act="ptab" data-t="familyTree">${ic('tree')} Древо семьи</button></div>
     ${due.length ? `<div class="card"><h2>${ic('cal')} Пора связаться</h2>
       ${due.map(p=>`<div class="row" style="margin-top:8px"><span class="grow"><b>${esc(p.name)}</b><br><span class="muted small">${esc(p.prompt || 'Узнать, как дела')} · ${dateText(p.remind)}</span></span>
       <button class="chip btn" data-act="personContact" data-id="${esc(p.id)}">Отметить общение</button></div>`).join('')}</div>` : ''}
@@ -1839,6 +1910,45 @@ function pPeople(){
         <div class="chips" style="margin-top:8px"><button class="chip btn" data-act="personContact" data-id="${esc(p.id)}">Отметить общение</button>
         ${p.remind ? `<button class="chip btn" data-act="personClear" data-id="${esc(p.id)}">Снять напоминание</button>` : ''}</div>
         <details class="dfold"><summary>Изменить карточку</summary>${personForm(p)}</details></article>`).join('') || '<p class="small muted">Пока пусто.</p>'}</section>`).join('')}`;
+}
+const FAMILY_SELF = '@self';
+let familyFocus = FAMILY_SELF;
+const familyNames = () => new Map([[FAMILY_SELF,'Я'], ...S.people.filter(p=>typeof p?.id === 'string' && p.id !== FAMILY_SELF && p.name).map(p=>[p.id,p.name])]);
+const familyEdges = names => S.familyLinks.filter(p=>Array.isArray(p) && names.has(p[0]) && names.has(p[1]) && p[0] !== p[1]);
+function familyLevels(edges, start, direction){
+  const seen = new Set([start]), levels = [];
+  let generation = [start];
+  while (generation.length){
+    const current = new Set(generation);
+    generation = [];
+    for (const link of edges){
+      const next = link[1-direction];
+      if (!current.has(link[direction]) || seen.has(next)) continue;
+      seen.add(next); generation.push(next);
+    }
+    if (generation.length) levels.push(generation);
+  }
+  return levels;
+}
+function pFamilyTree(){
+  const names = familyNames(), edges = familyEdges(names);
+  if (!names.has(familyFocus)) familyFocus = FAMILY_SELF;
+  const parents = familyLevels(edges,familyFocus,1), children = familyLevels(edges,familyFocus,0);
+  const node = id => `<button class="chip btn" data-act="familyFocus" data-id="${esc(id)}">${esc(names.get(id))}</button>`;
+  const row = (level,n) => `<div class="family-level"><span class="small muted">${n}</span><div class="chips">${level.map(node).join('')}</div></div>`;
+  const options = selected => [...names].map(([id,name])=>`<option value="${esc(id)}" ${id===selected?'selected':''}>${esc(name)}</option>`).join('');
+  return `<div class="card"><div class="chips"><button class="btn" data-act="ptab" data-t="people">‹ Карта близких</button>${familyFocus !== FAMILY_SELF ? node(FAMILY_SELF) : ''}</div>
+    ${parents.map((ids,i)=>row(ids,['Родители','Бабушки и дедушки','Прабабушки и прадедушки'][i] || `Предки · поколение ${i+1}`)).reverse().join('')}
+    <div class="family-focus"><b>${esc(names.get(familyFocus))}</b></div>
+    ${children.map((ids,i)=>row(ids,['Дети','Внуки','Правнуки'][i] || `Потомки · поколение ${i+1}`)).join('')}
+    ${parents.length || children.length ? '<p class="small muted">Нажми на имя, чтобы посмотреть его ветку.</p>' : '<p class="small muted">Чтобы появилась ветка, добавь родственную связь.</p>'}</div>
+    ${names.size > 1 ? `<div class="card"><h2>Добавить связь</h2><form class="person-form" data-form="familyLink">
+      <div class="nums"><label class="f">Родитель<select name="parent" class="in" required><option value="">Выбрать</option>${options('')}</select></label>
+      <label class="f">Ребёнок<select name="child" class="in" required>${options(familyFocus)}</select></label></div>
+      <button class="btn pri">Связать</button></form></div>` : '<div class="card"><p class="small">Сначала добавь человека в «Близкие».</p><button class="btn" data-act="ptab" data-t="people">Открыть «Близкие»</button></div>'}
+    ${edges.length ? `<div class="card"><details class="dfold"><summary>Все родственные связи</summary>
+      ${edges.map(([parent,child])=>`<div class="row family-link"><span class="grow small">${esc(names.get(parent))} → ${esc(names.get(child))}</span>
+       <button class="chip btn" data-act="familyUnlink" data-parent="${esc(parent)}" data-child="${esc(child)}">Убрать связь</button></div>`).join('')}</details></div>` : ''}`;
 }
 function pWellbeing(){
   return `<div class="card"><h2>${ic('lock')} Личные отметки</h2>
@@ -3989,6 +4099,27 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, k = key(viewDate);
   switch(a){
+    case 'wheelToggle':
+      wayWheelOpen = !wayWheelOpen;
+      if (wayWheelOpen) afterFns.push(()=>$('#lifeDial')?.focus({preventScroll:true}));
+      break;
+    case 'wheelStep': wheelShift(+el.dataset.v); return;
+    case 'wheelSound':
+      S.settings.wheelSound = !S.settings.wheelSound;
+      el.setAttribute('aria-pressed',String(S.settings.wheelSound)); el.classList.toggle('on',S.settings.wheelSound);
+      save(); return;
+    case 'wheelGo': {
+      const area = wheelArea()[2];
+      wayWheelOpen = false;
+      if (Object.hasOwn(AX,area)){ wayTab = area; break; }
+      pathTab = area; location.hash = '#path'; return;
+    }
+    case 'familyFocus': familyFocus = el.dataset.id; break;
+    case 'familyUnlink': {
+      const {parent,child} = el.dataset;
+      S.familyLinks = S.familyLinks.filter(link=>link?.[0] !== parent || link?.[1] !== child);
+      save(true); break;
+    }
     case 'peopleBranch':
       e.preventDefault();
       document.getElementById('people-' + el.dataset.t)?.scrollIntoView({block:'start'});
@@ -4010,7 +4141,9 @@ document.addEventListener('click', async e => {
     case 'personDelete': {
       const p = personById(el.dataset.id);
       if (!p || !await ask(`Удалить карточку «${esc(p.name)}»?`,'Удалить')) return;
-      S.people = S.people.filter(person=>person !== p); save(true); break;
+      S.people = S.people.filter(person=>person !== p);
+      S.familyLinks = S.familyLinks.filter(link=>link?.[0] !== p.id && link?.[1] !== p.id);
+      save(true); break;
     }
     case 'report': openReport(); return;
     case 'ysel': yearSel = +el.dataset.n; break;
@@ -4276,6 +4409,14 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'familyLink'){
+      const parent = fd.get('parent'), child = fd.get('child'), names = familyNames();
+      if (!names.has(parent) || !names.has(child) || parent === child) return toast('Выбери двух разных людей');
+      const edges = familyEdges(names);
+      if (edges.some(([p,c])=>p===parent && c===child)) return toast('Такая связь уже есть');
+      if (familyLevels(edges,child,0).some(level=>level.includes(parent))) return toast('Эта связь замкнёт древо');
+      S.familyLinks.push([parent,child]); familyFocus = child; save(true); render(); return;
+    }
     if (f.dataset.form === 'person'){
       const name = String(fd.get('name') || '').trim().slice(0,60), group = fd.get('group');
       if (!name || !Object.hasOwn(PEOPLE_GROUPS,group)) return toast('Укажи имя и ветку');
