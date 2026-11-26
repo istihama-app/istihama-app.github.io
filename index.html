@@ -676,6 +676,7 @@ function defaults(){
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
     home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[], studies:[],
     savings:{title:'Умра / Хадж', target:0, currency:'RUB', entries:[]},
+    sadaqa:{month:0, year:0, currency:'RUB', entries:[]},
     gift:{p:'', got:[]}};
 }
 let S;
@@ -692,6 +693,7 @@ function migrate(){ const d = defaults();
   for (const k in S.days){ const x = S.days[k]; if (!x || typeof x !== 'object' || Array.isArray(x) || !/^\d{4}-\d\d-\d\d$/.test(k)){ delete S.days[k]; continue; } if (!x.c || typeof x.c !== 'object') x.c = {}; if (!Array.isArray(x.p)) x.p = [0,0,0,0,0]; if (!x.n || typeof x.n !== 'object') x.n = {}; }
   for (const k in d) if (S[k] === undefined) S[k] = d[k];
   if (!Array.isArray(S.savings.entries)) S.savings.entries = [];
+  if (!Array.isArray(S.sadaqa.entries)) S.sadaqa.entries = [];
   for (const k of Object.keys(S.cycleDays)) if (!/^\d{4}-\d\d-\d\d$/.test(k) || !Number.isInteger(S.cycleDays[k]) || S.cycleDays[k] < 1 || S.cycleDays[k] > 31) delete S.cycleDays[k];
   if (!S.settings.profile){ S.settings.profile = FRESH && !AUTO ? 'basic' : 'owner'; if (FRESH && !AUTO) S.settings.onb = 1; }
   if (!Array.isArray(S.items) || !S.items.length) S.items = ITEMS.map(i => ({id:i.id, ax:i.ax, t:i.t, from:'', to:''}));   // v32: свои пункты
@@ -1529,12 +1531,12 @@ function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T 
 // Инструменты — прежние страницы (#tools, #path, #diary); сверху у них «‹ Раздел» и вкладки только этого раздела.
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
-const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
+const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['sadaqa','path','sadaqa','heart','Садака'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
   mind:[['books','path','books','book','Книги'],['studies','path','studies','list','Обучение'],['savings','path','savings','target','Накопления'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', savings:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', savings:'Накопления', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', sadaqa:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', savings:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', sadaqa:'Садака', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', savings:'Накопления', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1546,6 +1548,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
   if (id === 'studies') return S.studies.length ? `завершено ${S.studies.filter(s=>s?.status==='done').length} из ${S.studies.length}` : 'курсы, учёба и сертификаты';
   if (id === 'savings') return S.savings.target ? S.savings.title : 'поставить цель';
+  if (id === 'sadaqa') return 'добровольные пожертвования';
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
   if (id === 'wellbeing') return 'тревога, приступы, что помогло';
   if (id === 'people') return peopleDue(tk).length ? `напоминаний: ${peopleDue(tk).length}` : 'семья, родные и друзья';
@@ -1877,9 +1880,9 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['savings','Накопления'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['sadaqa','Садака'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['savings','Накопления'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, savings:pSavings, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, sadaqa:pSadaqa, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, savings:pSavings, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
 const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
@@ -2020,13 +2023,16 @@ function pFears(){
       <input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|step" placeholder="Какой шаг сделаю?" value="${esc(f.step||'')}">${f.done?`<div class="tiny muted" style="margin:6px 0 4px">Насколько страшно теперь? (было ${f.s})</div><div class="fafter">${[...Array(11)].map((_, v) => `<button class="chip btn ${f.after === v ? 'on' : ''}" data-act="fafter" data-i="${i}" data-v="${v}">${v}</button>`).join('')}</div>`:''}${f.done?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|felt" placeholder="Что почувствовал после?" value="${esc(f.felt||'')}">`:''}</div><button class="btn danger" style="padding:3px 8px" data-act="fdel" data-i="${i}">✕</button></div></div>`).join(''):'<span class="muted small">—</span>'}</div></div>`; }
   return h + `</div>`;
 }
-const SAVING_CURRENCIES = {RUB:'Рубли', USD:'Доллары США', EUR:'Евро', SAR:'Саудовские риялы', KZT:'Тенге'};
-const SAVING_LIMIT = 999_999_999_99;
-function savingAmount(value){
+const MONEY_CURRENCIES = {RUB:'Рубли', USD:'Доллары США', EUR:'Евро', SAR:'Саудовские риялы', KZT:'Тенге'};
+const MONEY_LIMIT = 99_999_999_999;
+function moneyAmount(value){
   const raw = String(value || '').trim().replace(',','.');
   if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(raw)) return 0;
   const [whole, fraction=''] = raw.split('.');
   return Number(whole)*100 + Number(fraction.padEnd(2,'0'));
+}
+function moneyLabel(amount,currency){
+  return (amount/100).toLocaleString('ru-RU',{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:2});
 }
 function savingTotal(){
   return S.savings.entries.reduce((sum,e)=>sum + (Number.isSafeInteger(e?.amount) ? e.amount : 0),0);
@@ -2034,13 +2040,13 @@ function savingTotal(){
 function pSavings(){
   const s = S.savings, balance = savingTotal(), target = Number.isSafeInteger(s.target) && s.target > 0 ? s.target : 0;
   const title = typeof s.title === 'string' && s.title ? s.title : 'Умра / Хадж';
-  const currency = Object.hasOwn(SAVING_CURRENCIES,s.currency) ? s.currency : 'RUB';
-  const money = amount => (amount/100).toLocaleString('ru-RU',{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:2});
+  const currency = Object.hasOwn(MONEY_CURRENCIES,s.currency) ? s.currency : 'RUB';
+  const money = amount => moneyLabel(amount,currency);
   const progress = target ? Math.min(100,Math.floor(balance/target*100)) : 0;
   const goalForm = `<form class="saving-form" data-form="savingGoal">
     <label class="f">Название цели<input class="in" name="title" maxlength="80" required value="${esc(title)}"></label>
     <label class="f">Целевая сумма<input class="in" name="target" inputmode="decimal" maxlength="12" required value="${target ? String(target/100).replace('.',',') : ''}" placeholder="0"></label>
-    ${s.entries.length ? `<div class="small muted">Валюта · ${SAVING_CURRENCIES[currency]}</div>` : `<label class="f">Валюта<select class="in" name="currency">${Object.entries(SAVING_CURRENCIES).map(([code,label])=>`<option value="${code}" ${code===currency?'selected':''}>${label}</option>`).join('')}</select></label>`}
+    ${s.entries.length ? `<div class="small muted">Валюта · ${MONEY_CURRENCIES[currency]}</div>` : `<label class="f">Валюта<select class="in" name="currency">${Object.entries(MONEY_CURRENCIES).map(([code,label])=>`<option value="${code}" ${code===currency?'selected':''}>${label}</option>`).join('')}</select></label>`}
     <button class="btn pri">Сохранить цель</button>
   </form>`;
   const history = s.entries.filter(e=>Number.isSafeInteger(e?.amount) && personDate(e.date)).slice().reverse();
@@ -2056,6 +2062,33 @@ function pSavings(){
     </form></section>` : '') + (history.length ? `<section class="card"><h2>История накоплений</h2>
       ${history.map(e=>`<div class="saving-line"><span class="small muted">${fmtD(parse(e.date))} ${parse(e.date).getFullYear()} · ${e.amount>0?'Пополнение':'Снятие'}</span><b>${e.amount>0?'+':'−'}${money(Math.abs(e.amount))}</b></div>`).join('')}
     </section>` : '');
+}
+function pSadaqa(){
+  const s = S.sadaqa, now = key(today());
+  const currency = Object.hasOwn(MONEY_CURRENCIES,s.currency) ? s.currency : 'RUB';
+  const money = amount => moneyLabel(amount,currency);
+  const records = s.entries.map((e,index)=>({e,index})).filter(({e})=>personDate(e?.date) && Number.isSafeInteger(e.amount) && e.amount > 0);
+  const summaries = [['month','За этот месяц',now.slice(0,7)],['year','За этот год',now.slice(0,4)]].map(([period,label,prefix])=>{
+    const total = records.reduce((sum,{e})=>e.date.startsWith(prefix) ? sum+e.amount : sum,0);
+    const target = s[period];
+    return `<div class="saving-line"><div><b>${label}</b>${target>0?`<div class="small muted">Цель · ${money(target)}</div>`:''}</div><strong>${money(total)}</strong></div>`;
+  }).join('');
+  return `<section class="card"><h2>${ic('heart')} Добровольная садака</h2>${summaries}
+    <details><summary>Настроить цели</summary><form class="saving-form" data-form="sadaqaGoals">
+      <label class="f">Цель на месяц<input class="in" name="month" inputmode="decimal" maxlength="12" value="${s.month>0?esc(s.month/100):''}" placeholder="По желанию"></label>
+      <label class="f">Цель на год<input class="in" name="year" inputmode="decimal" maxlength="12" value="${s.year>0?esc(s.year/100):''}" placeholder="По желанию"></label>
+      ${s.entries.length ? `<div class="small muted">Валюта · ${MONEY_CURRENCIES[currency]}</div>` : `<label class="f">Валюта<select class="in" name="currency">${Object.entries(MONEY_CURRENCIES).map(([code,label])=>`<option value="${code}" ${code===currency?'selected':''}>${label}</option>`).join('')}</select></label>`}
+      <button class="btn pri">Сохранить цели</button>
+    </form></details></section>
+    <section class="card"><h2>Записать пожертвование</h2><form class="saving-form" data-form="sadaqaEntry">
+      <div class="nums"><label class="f">Сумма<input class="in" name="amount" inputmode="decimal" maxlength="12" required placeholder="0"></label>
+      <label class="f">Дата<input class="in" name="date" type="date" value="${now}" max="${now}" required></label></div>
+      <button class="btn pri">Записать садаку</button>
+    </form></section>` + (records.length ? `<section class="card"><h2>История садаки</h2>
+      ${records.reverse().sort((a,b)=>b.e.date.localeCompare(a.e.date)).map(({e,index})=>`<div class="saving-line">
+        <span class="small muted">${fmtD(parse(e.date))} ${parse(e.date).getFullYear()}</span><b>${money(e.amount)}</b>
+        <button class="btn danger" data-act="sadaqaDelete" data-index="${index}" aria-label="Удалить запись за ${fmtD(parse(e.date))}">Удалить</button>
+      </div>`).join('')}</section>` : '');
 }
 const STUDY_STATUS = {planned:'В планах', active:'Учусь', done:'Завершено'};
 function studyCertificate(value){
@@ -4212,6 +4245,13 @@ document.addEventListener('click', async e => {
       if (!p) return;
       p.remind = ''; p.repeat = 0; save(true); break;
     }
+    case 'sadaqaDelete': {
+      const entry = S.sadaqa.entries[+el.dataset.index];
+      if (!entry || !await ask('Удалить запись о садаке?','Удалить')) return;
+      const index = S.sadaqa.entries.indexOf(entry);
+      if (index < 0) return;
+      S.sadaqa.entries.splice(index,1); save(true); break;
+    }
     case 'studyDelete': {
       const entry = S.studies[+el.dataset.index];
       if (!entry || !await ask('Удалить запись об обучении?','Удалить')) return;
@@ -4490,20 +4530,34 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'sadaqaGoals'){
+      const monthText = String(fd.get('month') || '').trim(), yearText = String(fd.get('year') || '').trim();
+      const month = moneyAmount(monthText), year = moneyAmount(yearText);
+      const currency = S.sadaqa.entries.length ? S.sadaqa.currency : fd.get('currency');
+      if ((monthText && !month) || (yearText && !year) || !Object.hasOwn(MONEY_CURRENCIES,currency)) return toast('Введи сумму больше нуля или оставь поле пустым');
+      Object.assign(S.sadaqa,{month,year,currency});
+      save(true); render(); toast('Цели сохранены'); return;
+    }
+    if (f.dataset.form === 'sadaqaEntry'){
+      const amount = moneyAmount(fd.get('amount')), date = personDate(fd.get('date'));
+      if (!amount || !date || date > key(today())) return toast('Проверь сумму и дату');
+      S.sadaqa.entries.push({date,amount});
+      save(true); render(); toast('Садака записана'); return;
+    }
     if (f.dataset.form === 'savingGoal'){
       const title = String(fd.get('title') || '').trim().slice(0,80);
-      const target = savingAmount(fd.get('target'));
+      const target = moneyAmount(fd.get('target'));
       const currency = S.savings.entries.length ? S.savings.currency : fd.get('currency');
-      if (!title || !target || !Object.hasOwn(SAVING_CURRENCIES,currency)) return toast('Укажи название, валюту и сумму больше нуля');
+      if (!title || !target || !Object.hasOwn(MONEY_CURRENCIES,currency)) return toast('Укажи название, валюту и сумму больше нуля');
       Object.assign(S.savings,{title,target,currency});
       save(true); render(); toast('Цель сохранена'); return;
     }
     if (f.dataset.form === 'savingEntry'){
-      const amount = savingAmount(fd.get('amount')), withdraw = e.submitter?.value === 'withdraw';
+      const amount = moneyAmount(fd.get('amount')), withdraw = e.submitter?.value === 'withdraw';
       if (!amount || !(S.savings.target > 0)) return toast('Введи сумму больше нуля');
       const balance = savingTotal();
       if (withdraw && amount > balance) return toast('В накоплениях меньше этой суммы');
-      if (!withdraw && balance + amount > SAVING_LIMIT) return toast('Сумма накоплений слишком велика');
+      if (!withdraw && balance + amount > MONEY_LIMIT) return toast('Сумма накоплений слишком велика');
       S.savings.entries.push({date:key(today()), amount:withdraw ? -amount : amount});
       save(true); render(); toast('Сумма записана'); return;
     }
