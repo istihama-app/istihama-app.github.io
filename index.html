@@ -756,18 +756,15 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) save(
 
 // Постепенное открытие (v36): новый человек видит приложение по шагам — по числу дней, в которые он что-то отметил.
 // Владелец и кто нажал «Открыть всё сразу» (settings.allOpen) видят всё. settings.unlSeen — какой шаг уже показан с поздравлением.
-const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дерево года и подарок дня'}, {n:4, need:14, t:'Свой квартал и страница года'}];
+const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал и страница года'}];
 let actC = null; const actDays = () => { if (actC && actC.v === S.days) return actC.n; let n = 0; for (const k in S.days){ const d = S.days[k]; if (d && ((d.p || []).some(Boolean) || Object.values(d.c || {}).some(v => v > 0) || (d.own || []).some(o => o && o.d))) n++; } actC = {v:S.days, n}; return n; };
 const unl = () => (!S || isOwner() || S.settings.allOpen) ? 4 : UNL.filter(u => actDays() >= u.need).length;
-const VIEW_UNL = {stats:2, week:2, tree:3, year:4};   // дом, участок и записи открыты сразу
+const VIEW_UNL = {stats:2, week:2, home:3, tree:3, year:4};   // участок и записи открыты сразу
 const viewOpen = v => unl() >= (VIEW_UNL[v] || 1);
 function lockView(v){ const need = UNL[(VIEW_UNL[v] || 1) - 1].need, left = Math.max(0, need - actDays());
   return topbar(VIEWS.find(x => x.id === v)?.n || '') + `<div class="card lock" style="text-align:center"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">Откроется скоро</h2><p class="small">Этот раздел откроется, когда наберётся <b>${need}</b> ${plural(need,'день','дня','дней')} с отметками. Осталось: <b>${left}</b>.</p><p class="tiny muted">Так приложение открывается постепенно, чтобы было проще разобраться. Не хочется ждать — в настройках есть «Открыть всё сразу».</p><a class="btn pri" href="#today">Отметить сегодняшние дела</a></div>`; }
 function unlCard(){ if (isOwner() || S.settings.allOpen) return ''; const u = unl(), seen = S.settings.unlSeen || 1, nx = UNL[u], ad = actDays();
-  if (u > seen){
-    const [page,label] = u===4 ? ['year','Открыть страницу года'] : u===3 ? ['tree','Посмотреть дерево'] : ['stats','Посмотреть итоги'];
-    return `<div class="card unlcard"><b>Открыто новое!</b><div class="small" style="margin-top:4px">${UNL[u-1].t}.</div><div class="row" style="gap:8px;margin-top:10px"><a class="btn pri" href="#${page}" data-act="unlok">${label}</a><button class="btn" data-act="unlok">Хорошо</button></div></div>`;
-  }
+  if (u > seen) return `<div class="card unlcard"><b>Открыто новое!</b><div class="small" style="margin-top:4px">${UNL[u-1].t}.</div><div class="row" style="gap:8px;margin-top:10px">${u >= 3 ? '<a class="btn pri" href="#home" data-act="unlok">Посмотреть дом</a>' : '<a class="btn pri" href="#stats" data-act="unlok">Посмотреть итоги</a>'}<button class="btn" data-act="unlok">Хорошо</button></div></div>`;
   if (!nx) return '';
   const prev = UNL[u-1].need; return `<div class="card nextunl"><div class="row" style="flex-wrap:nowrap;gap:8px;align-items:baseline"><span class="small grow"><b>Дальше откроется:</b> ${nx.t.charAt(0).toLowerCase() + nx.t.slice(1)}</span><span class="tiny muted">${ad} из ${nx.need}</span></div><div class="bar" style="margin-top:6px"><i style="width:${pct((ad - prev)/(nx.need - prev))}%;background:var(--pri,var(--gold))"></i></div><div class="tiny muted" style="margin-top:4px">Считаются дни, в которые ты что-то отметил.</div></div>`; }
 const planOn = () => isOwner() || !!(S && S.settings && S.settings.plan);
