@@ -672,7 +672,7 @@ function defaults(){
     tasbih:{cur:0, list:DHIKR0.map(x=>({...x, c:0, l:0})), day:{}},
     qibla:{...GROZNY},
     bigCh:BIG0.map(t=>({t, done:false, date:''})),
-    build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
+    build:{clear:'', starter:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
     home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[], studies:[],
     savings:{title:'Умра / Хадж', target:0, currency:'RUB', entries:[]},
@@ -746,10 +746,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) save(
 
 // Постепенное открытие (v36): новый человек видит приложение по шагам — по числу дней, в которые он что-то отметил.
 // Владелец и кто нажал «Открыть всё сразу» (settings.allOpen) видят всё. settings.unlSeen — какой шаг уже показан с поздравлением.
-const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом, участок и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал и страница года'}];
+const UNL = [{n:1, need:0}, {n:2, need:3, t:'Итоги и неделя, календарь и таймер, газета и жители города'}, {n:3, need:7, t:'Дом и дерево года, подарок дня'}, {n:4, need:14, t:'Свой квартал и страница года'}];
 let actC = null; const actDays = () => { if (actC && actC.v === S.days) return actC.n; let n = 0; for (const k in S.days){ const d = S.days[k]; if (d && ((d.p || []).some(Boolean) || Object.values(d.c || {}).some(v => v > 0) || (d.own || []).some(o => o && o.d))) n++; } actC = {v:S.days, n}; return n; };
 const unl = () => (!S || isOwner() || S.settings.allOpen) ? 4 : UNL.filter(u => actDays() >= u.need).length;
-const VIEW_UNL = {stats:2, week:2, home:3, plot:3, tree:3, year:4};   // записи («Путь»: суры, книги, тренировки…) открыты сразу — закрыто только игровое и сводки
+const VIEW_UNL = {stats:2, week:2, home:3, tree:3, year:4};   // участок и записи открыты сразу
 const viewOpen = v => unl() >= (VIEW_UNL[v] || 1);
 function lockView(v){ const need = UNL[(VIEW_UNL[v] || 1) - 1].need, left = Math.max(0, need - actDays());
   return topbar(VIEWS.find(x => x.id === v)?.n || '') + `<div class="card lock" style="text-align:center"><div class="lockico">${ic('lock')}</div><h2 style="justify-content:center">Откроется скоро</h2><p class="small">Этот раздел откроется, когда наберётся <b>${need}</b> ${plural(need,'день','дня','дней')} с отметками. Осталось: <b>${left}</b>.</p><p class="tiny muted">Так приложение открывается постепенно, чтобы было проще разобраться. Не хочется ждать — в настройках есть «Открыть всё сразу».</p><a class="btn pri" href="#today">Отметить сегодняшние дела</a></div>`; }
@@ -3288,7 +3288,7 @@ function houseCard(X){
   const I = stageInfo('house', s, X), sg = ECON.stage[s];
   if (I.lock) return h + `<div class="small muted">${I.lock}.</div></div>`;
   h += `<div class="needs">${Object.entries(sg.need).map(([m,q])=>{ const have = Math.min(q, S.build.inv[m]||0); return `<span class="need ${have>=q?'have':''}" title="${ECON.mat[m].n}">${ico(m)}<span>${ECON.mat[m].n}</span><b>${have?have+'/':''}${q}</b></span>`; }).join('')}${I.tools.map(toolBtn).join('')}</div>`;
-  const can = I.ok && I.cost <= X.C.bal;
+  const can = I.ok && (!I.cost || I.cost <= X.C.bal);
   h += `<button class="btn wide ${can?'pri':''}" data-act="pbuild" data-r="house" data-s="${s}" ${can?'':'disabled'}>${sg.n}: ${I.cost?`построить за ${nf(I.cost)}${CO}`:'построить из запасов'}</button>`;
   const why = I.tools.length ? 'Сначала купи инструмент — кнопка выше.' : !can ? `Не хватает ${nf(I.cost - Math.max(0,X.C.bal))} монет.` : '';
   return h + (why ? `<div class="tiny muted" style="margin-top:5px">${why}</div>` : '') + `</div>`; }
@@ -3332,19 +3332,44 @@ function yardCard(X){
   return `<div class="card" id="yardCard"><div class="rhead"><b style="font-size:17px">Двор и сад</b><span class="rst">${Object.keys(ECON.yard).filter(k=>B.yard[k]).length} из ${Object.keys(ECON.yard).length}</span></div><div class="shop">` +
     Object.entries(ECON.yard).map(([k,o])=>{ const lock = !B.clear ? 'после расчистки' : o.roof && !B.house.roof ? 'после крыши дома' : '';
       return `<div class="sitem">${ico(k)}<div class="sn"><b>${o.n}</b><span class="tiny muted">${lock || o.d}</span></div><div class="sbtn">${B.yard[k] ? '<span class="chip have">✓ есть</span>' : `<button class="chip btn" data-act="pyard" data-k="${k}" ${lock || o.p > X.C.bal ? 'disabled' : ''}>${nf(o.p)}${CO}</button>`}</div></div>`; }).join('') + `</div></div>`; }
+function plotStarterAvailable(){
+  return !S.build.starter && !S.build.house.found;
+}
+function plotStarterCard(){
+  const cleared = S.build.clear;
+  const tools = [...(cleared ? [] : ECON.clear.tools), ...ECON.stage.found.tools];
+  const items = tools.filter(t=>!S.build.tools[t]).map(t=>ECON.tool[t].n.toLowerCase());
+  if (Object.entries(ECON.stage.found.need).some(([m,q])=>(S.build.inv[m]||0)<q)) items.push('недостающие материалы на фундамент');
+  if (!cleared) items.push('оплата расчистки');
+  if (!items.length) return '';
+  return `<section class="card" id="plotStarter"><h2>${ico('brick')} Стартовый набор</h2>
+    <p class="small">В наборе ${items.join(', ')}.</p>
+    <button class="btn pri wide" data-act="pstarter">Получить набор</button></section>`;
+}
+function claimPlotStarter(){
+  if (!plotStarterAvailable()) return;
+  const B = S.build, date = key(today());
+  const tools = [...(B.clear ? [] : ECON.clear.tools), ...ECON.stage.found.tools];
+  tools.forEach(t=>{ if (!B.tools[t]) B.tools[t] = date; });
+  for (const [m,q] of Object.entries(ECON.stage.found.need)) B.inv[m] = Math.max(B.inv[m]||0,q);
+  B.starter = date;
+  save(true);
+  toast(B.clear ? 'Набор получен. Можно заложить фундамент.' : 'Набор получен. Можно расчистить участок.');
+}
 function vPlot(){
   const X = plotCtx(), C = X.C, B = S.build, before = today() < startDate();
   let h = `<div class="top"><h1>Мой участок</h1><a class="icon-btn" href="#town">← Город</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
-  if (!C.earned && !B.log.length) h += `<div class="banner">${before?`План стартует ${fmtD(startDate())}. `:''}Отмечай пункты дня на экране «Сегодня» — за них капают монеты${CO}. На монеты покупаешь материалы и строишь дом. Мечеть на участке тоже строится за монеты.</div>`;
+  if (!C.earned && !B.log.length) h += `<div class="banner">${before?`План стартует ${fmtD(startDate())}. `:''}Отмечай дела Разума, Духа и Тела на экране «Сегодня», чтобы заработать монеты${CO} на стройку.</div>`;
   h += `<div class="kpis pk"><div class="kpi"><div class="v" id="coinBal">${nf(Math.max(0,C.bal))}${CO}</div><div class="l">Монет сейчас</div></div>
     <div class="kpi"><div class="v">+${nf(C.today)}</div><div class="l">Сегодня</div></div>
     <div class="kpi"><div class="v">${nf(C.earned)}</div><div class="l">Заработано за всё время</div></div></div>`;
   h += `<div class="plotgrid"><div class="pg-pic"><div class="card" style="padding:8px"><div class="plot">${plotSVG(X)}</div>
     <div class="plegend">${[{id:'mosque',n:'Мечеть',ax:'faith'}, ...ROOMS.map(r=>({id:r.id, n:r.n.split('-')[0], ax:r.id}))].map(r=>`<button class="chip btn axis-${r.ax} ${plotSel===r.id?'on':''}" data-act="proom" data-r="${r.id}"><span class="dot" style="background:var(--a)"></span>${r.n}</button>`).join('')}</div></div></div><div class="pg-cards">`;
-  if (!B.clear){ const miss = ECON.clear.tools.filter(t=>!B.tools[t]), can = !miss.length && ECON.clear.work <= C.bal;
+  if (plotStarterAvailable()) h += plotStarterCard();
+  if (!B.clear){ const miss = ECON.clear.tools.filter(t=>!B.tools[t]), can = !miss.length && (B.starter || ECON.clear.work <= C.bal);
     h += `<div class="card"><div class="rhead">${ico('clear')}<b>Шаг 1 · Расчистка</b></div><div class="small muted" style="margin:4px 0 2px">Убрать пни, валуны и бурьян — и можно размечать дом и мечеть.</div>
       <div class="needs">${ECON.clear.tools.map(t=>B.tools[t] ? `<span class="need have">${ico(t)}<span>${ECON.tool[t].n}</span><b>✓</b></span>` : toolBtn(t)).join('')}</div>
-      <button class="btn wide ${can?'pri':''}" data-act="pclear" ${can?'':'disabled'}>Расчистить за ${nf(ECON.clear.work)}${CO}</button>
+      <button class="btn wide ${can?'pri':''}" data-act="pclear" ${can?'':'disabled'}>${B.starter?'Расчистить участок':`Расчистить за ${nf(ECON.clear.work)}${CO}`}</button>
       ${can ? '' : `<div class="tiny muted" style="margin-top:5px">${miss.length ? 'Нужны лопата и тачка.' : `Не хватает ${nf(ECON.clear.work - Math.max(0,C.bal))} монет.`}</div>`}</div>`; }
   h += (plotSel==='mosque' ? mosqueCard(X) + houseCard(X) : houseCard(X) + mosqueCard(X)) + roomsCard(X) + lookCard(X) + yardCard(X) + landCard(X);
   h += `<div class="card" id="shopCard"><div class="rhead"><b style="font-size:17px">Магазин</b><span class="rst" style="display:flex;gap:6px"><button class="chip btn ${shopTab==='mat'?'on':''}" data-act="pshop" data-t="mat">Материалы</button><button class="chip btn ${shopTab==='tool'?'on':''}" data-act="pshop" data-t="tool">Инструменты</button></span></div>`;
@@ -3368,7 +3393,7 @@ function coinsCard(C){
       <div class="g"><span>Неделя без пропусков · +${ECON.week + townBonus().week}</span><b>${nf(C.weeks)}</b></div>
       <div class="g"><span>Пройденный страх · +${ECON.fear}</span><b>${nf(C.fears)}</b></div>
       <div class="g"><span>Потрачено на стройку и город</span><b>${C.spent?'−'+nf(C.spent):'0'}</b></div></div>
-      <div class="tiny muted" style="margin-top:8px">Дела Веры монет не дают: намаз и Коран растят дерево и строят мечеть, а не кошелёк. Снял отметку — монеты за неё уходят, вернул — приходят снова. Построенное не рушится, долгов не бывает.</div></div>`; }
+      <div class="tiny muted" style="margin-top:8px">Дела Веры остаются в личном учёте. Снял отметку — монеты за неё уходят, вернул — приходят снова. Построенное не рушится.</div></div>`; }
 
 /* ================== ГОРОД ================== */
 // Главное здание — мечеть: её уровень и есть уровень города (1…7). Уровень города растёт от застройки — суммы уровней всех зданий (CITY.need);
@@ -4479,7 +4504,8 @@ document.addEventListener('click', async e => {
     case 'season': S.settings.season = el.dataset.v; save(); break;
     case 'ptool': { const t = el.dataset.t, o = ECON.tool[t]; if (!o || S.build.tools[t]) return; if (!buy(o.p, `Инструмент: ${o.n.toLowerCase()}`, 'p')) return; S.build.tools[t] = key(today()); save(); toast(`${o.n} — куплено ✓`); break; }
     case 'pmat': { const m = el.dataset.m, q = +el.dataset.q, o = ECON.mat[m]; if (!o || !q) return; if (!buy(Math.round(q*matP(m)), `${o.n}: ${q} ${o.u}`, 'p')) return; S.build.inv[m] = (S.build.inv[m]||0) + q; save(); toast(`${o.n} +${q} на складе`); break; }
-    case 'pclear': { const B = S.build; if (B.clear || ECON.clear.tools.some(t=>!B.tools[t])) return; if (!buy(ECON.clear.work, 'Расчистка участка', 'p')) return; B.clear = key(today()); save(); toast('Участок расчищен — можно размечать дом'); break; }
+    case 'pstarter': claimPlotStarter(); break;
+    case 'pclear': { const B = S.build; if (B.clear || ECON.clear.tools.some(t=>!B.tools[t])) return; if (!B.starter && !buy(ECON.clear.work, 'Расчистка участка', 'p')) return; B.clear = key(today()); save(true); toast('Участок расчищен — можно заложить фундамент'); break; }
     case 'pbuild': doBuild(el.dataset.r, el.dataset.s); break;
     case 'pland': { const B = S.build; if (B.land || !B.house.roof) return; if (!buy(ECON.land, 'Соседний участок', 'l')) return; B.land = key(today()); B.annex = B.annex || {}; plotSel = 'annex'; save(); toast('Соседний участок — твой ✓'); break; }
     case 'pannex': { const B = S.build, A = B.annex || (B.annex = {}), st = el.dataset.s, i = STG.indexOf(st); if (!B.land || A[st] || i < 0 || (i > 0 && !A[STG[i-1]])) return;
