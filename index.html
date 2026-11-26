@@ -494,6 +494,9 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .people-list article{padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
 .person-form{display:grid;gap:8px;margin:8px 0}
 .person-form .in{min-width:0}
+.study-form{display:grid;gap:10px;margin-top:10px}
+.study-form .f{margin:0;min-width:0}
+.study-card h2,.study-card .study-provider{overflow-wrap:anywhere}
 .people-list h2{scroll-margin-top:12px}
 .family-level{position:relative;display:grid;justify-items:center;gap:6px;padding:12px 8px}
 .family-level + .family-level{border-top:1px solid var(--line)}
@@ -668,7 +671,7 @@ function defaults(){
     bigCh:BIG0.map(t=>({t, done:false, date:''})),
     build:{clear:'', tools:{}, inv:{}, mosque:{}, house:{}, open:{}, furn:{}, yard:{}, look:LOOK0(), own:{}, log:[]},
     town:{lvl:1, ruz:0, nb:0, bld:{}, cr:{}, mig5:1},
-    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[],
+    home:{room:'', pick:{}, own:{}}, cycleDays:{}, cycleQada:{}, people:[], familyLinks:[], studies:[],
     gift:{p:'', got:[]}};
 }
 let S;
@@ -1522,11 +1525,11 @@ function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T 
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
 const WAY = {faith:[['namaz','tools','namaz','mosque','Намаз'],['khatm','path','khatm','book','Хатм Корана'],['suras','path','suras','book','Суры наизусть'],['qada','path','qada','list','Восполнение (каза)'],['tasbih','tools','tasbih','beads','Чётки'],['cal','tools','cal','cal','Календарь'],['qibla','tools','qibla','compass','Кибла']],
-  mind:[['books','path','books','book','Книги'],['timer','tools','timer','timer','Таймеры']],
+  mind:[['books','path','books','book','Книги'],['studies','path','studies','list','Обучение'],['timer','tools','timer','timer','Таймеры']],
   spirit:[['fears','path','fears','ladder','Лестница страхов'],['wellbeing','path','wellbeing','heart','Самочувствие'],['people','path','people','user','Близкие'],['diary','diary','','lock','Дневник и мухасаба'],['capsule','path','capsule','mail','Письмо себе']],
   body:[['gym','path','gym','dumb','Тренировки'],['measures','path','measures','scale','Замеры и вес'],['ba','path','ba','camera','До / После'],['timer','tools','timer','timer','Таймеры']]};
-const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
-const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
+const TOOL_AX = {khatm:'faith', qada:'faith', namaz:'faith', cal:'faith', tasbih:'faith', qibla:'faith', timer:'', suras:'faith', books:'mind', studies:'mind', fears:'spirit', wellbeing:'spirit', people:'spirit', familyTree:'spirit', capsule:'spirit', gym:'body', measures:'body', ba:'body'};
+const TOOL_N = {khatm:'Хатм Корана', qada:'Восполнение (каза)', namaz:'Намаз', cal:'Исламский календарь', tasbih:'Чётки', qibla:'Кибла', timer:'Таймеры', suras:'Суры наизусть', books:'Книги', studies:'Обучение', fears:'Лестница страхов', wellbeing:'Самочувствие', people:'Близкие', familyTree:'Древо семьи', capsule:'Письмо себе', gym:'Тренировки', measures:'Замеры и вес', ba:'До / После'};
 function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'namaz'){ const nx = prNext(); return `следующий — ${PR_N[nx.id]} ${hm(nx.at)}`; }
   if (id === 'cal') return hijTxt(t);
@@ -1536,6 +1539,7 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'qibla') return `${Math.round(qiblaCalc(+S.qibla.lat, +S.qibla.lon).brg)}° · ${S.qibla.place}`;
   if (id === 'suras'){ const n = S.suras.filter(x => x.s >= 2).length, d = hifzDue().length; return `${n} выучено${d ? ` · повторить ${d}` : ''}`; }
   if (id === 'books'){ const r = S.books.filter(b => b.s === 2).length, c = S.books.filter(b => b.s === 1).length; return `${r} прочитано${c ? ` · читаю ${c}` : ''}`; }
+  if (id === 'studies') return S.studies.length ? `завершено ${S.studies.filter(s=>s?.status==='done').length} из ${S.studies.length}` : 'курсы, учёба и сертификаты';
   if (id === 'fears') return `${S.fears.filter(f => f.done).length} пройдено из ${S.fears.length}`;
   if (id === 'wellbeing') return 'тревога, приступы, что помогло';
   if (id === 'people') return peopleDue(tk).length ? `напоминаний: ${peopleDue(tk).length}` : 'семья, родные и друзья';
@@ -1867,9 +1871,9 @@ function baField(side, f){
 function vPath(){
   const pa = TOOL_AX[pathTab] || 'body';
   let h = topbar(TOOL_N[pathTab] || 'Путь') + backTo(pa);
-  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['capsule','Письмо в будущее']];
+  const tabs = [['khatm','Хатм'],['suras','Суры'],['qada','Каза'],['ba','До / После'],['gym','Тренировки'],['measures','Замеры'],['fears','Лестница страхов'],['wellbeing','Самочувствие'],['people','Близкие'],['books','Книги'],['studies','Обучение'],['capsule','Письмо в будущее']];
   const tb = tabs.filter(([k]) => TOOL_AX[k] === pa); if (tb.length > 1) h += `<div class="tabs">${tb.map(([k,n])=>`<button class="${pathTab===k?'on':''}" data-act="ptab" data-t="${k}">${n}</button>`).join('')}</div>`;
-  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, suras:pSuras, capsule:pCapsule}[pathTab])();
+  return h + ({khatm:pKhatm, qada:pQada, ba:pBA, gym:pGym, measures:pMeasures, fears:pFears, wellbeing:pWellbeing, people:pPeople, familyTree:pFamilyTree, books:pBooks, studies:pStudies, suras:pSuras, capsule:pCapsule}[pathTab])();
 }
 const PEOPLE_GROUPS = {family:'Семья', relatives:'Родные', friends:'Друзья'};
 const PEOPLE_REPEAT = [[0,'Один раз'],[7,'Раз в 7 дней'],[14,'Раз в 14 дней'],[30,'Раз в 30 дней']];
@@ -2009,6 +2013,33 @@ function pFears(){
     h += `<div class="step"><span class="lv" style="${fs.length&&fs.every(x=>x.f.done)?'background:var(--good);color:#fff':''}">${lv}</span><div class="grow">${fs.length?fs.map(({f,i})=>`<div style="margin-bottom:8px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><button class="mark ${f.done?'full':''} axis-spirit" style="width:26px;height:26px;background:${f.done?'var(--good)':'none'};border-color:${f.done?'var(--good)':'var(--line)'};color:#fff" data-act="fdone" data-i="${i}">${f.done?'✓':''}</button><div class="grow"><span class="${f.done?'done':''}">${esc(f.t)}</span>${f.done&&f.date?` <span class="muted tiny">· ${fmtD(parse(f.date))}</span>`:''}
       <input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|step" placeholder="Какой шаг сделаю?" value="${esc(f.step||'')}">${f.done?`<div class="tiny muted" style="margin:6px 0 4px">Насколько страшно теперь? (было ${f.s})</div><div class="fafter">${[...Array(11)].map((_, v) => `<button class="chip btn ${f.after === v ? 'on' : ''}" data-act="fafter" data-i="${i}" data-v="${v}">${v}</button>`).join('')}</div>`:''}${f.done?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="fears|${i}|felt" placeholder="Что почувствовал после?" value="${esc(f.felt||'')}">`:''}</div><button class="btn danger" style="padding:3px 8px" data-act="fdel" data-i="${i}">✕</button></div></div>`).join(''):'<span class="muted small">—</span>'}</div></div>`; }
   return h + `</div>`;
+}
+const STUDY_STATUS = {planned:'В планах', active:'Учусь', done:'Завершено'};
+function studyCertificate(value){
+  if (!/^https?:\/\//i.test(value || '')) return '';
+  try { return new URL(value).href; } catch { return ''; }
+}
+function studyForm(s={}, index=''){
+  return `<form class="study-form" data-form="study" data-index="${index}">
+    <label class="f">Название<input class="in" name="title" value="${esc(s.title || '')}" required maxlength="120" placeholder="Курс, программа или специальность"></label>
+    <label class="f">Где учусь<input class="in" name="provider" value="${esc(s.provider || '')}" maxlength="100" placeholder="Школа, вуз или платформа"></label>
+    <label class="f">Статус<select class="in" name="status">${Object.entries(STUDY_STATUS).map(([id,n])=>`<option value="${id}" ${s.status===id?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label class="f">Ссылка на сертификат<input class="in" name="certificate" type="url" value="${esc(s.certificate || '')}" maxlength="2048" placeholder="https://…" autocapitalize="none"></label>
+    <button class="btn pri">${index===''?'Добавить':'Сохранить'}</button>
+  </form>`;
+}
+function pStudies(){
+  const entries = S.studies.map((s,i)=>({s,i})).filter(({s})=>s?.title).reverse();
+  const cards = entries.map(({s,i})=>{
+    const link = studyCertificate(s.certificate);
+    return `<article class="card study-card">
+      <h2>${esc(s.title)}</h2>
+      <p class="small muted study-provider">${s.provider ? esc(s.provider)+' · ' : ''}${Object.hasOwn(STUDY_STATUS,s.status) ? STUDY_STATUS[s.status] : STUDY_STATUS.planned}</p>
+      ${link ? `<p><a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Открыть сертификат</a></p>` : ''}
+      <details><summary>Изменить запись</summary>${studyForm(s,i)}<button class="btn danger" data-act="studyDelete" data-index="${i}">Удалить запись</button></details>
+    </article>`;
+  }).join('');
+  return `<div class="card"><h2>Добавить обучение</h2>${studyForm()}</div>` + cards;
 }
 function pBooks(){
   const ST = ['не начата','читаю','прочитана ✓'];
@@ -4138,6 +4169,13 @@ document.addEventListener('click', async e => {
       if (!p) return;
       p.remind = ''; p.repeat = 0; save(true); break;
     }
+    case 'studyDelete': {
+      const entry = S.studies[+el.dataset.index];
+      if (!entry || !await ask('Удалить запись об обучении?','Удалить')) return;
+      const index = S.studies.indexOf(entry);
+      if (index < 0) return;
+      S.studies.splice(index,1); save(true); break;
+    }
     case 'personDelete': {
       const p = personById(el.dataset.id);
       if (!p || !await ask(`Удалить карточку «${esc(p.name)}»?`,'Удалить')) return;
@@ -4409,6 +4447,20 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
   try {
+    if (f.dataset.form === 'study'){
+      const title = String(fd.get('title') || '').trim().slice(0,120);
+      const provider = String(fd.get('provider') || '').trim().slice(0,100);
+      const status = fd.get('status'), url = String(fd.get('certificate') || '').trim();
+      const certificate = studyCertificate(url);
+      if (!title || !Object.hasOwn(STUDY_STATUS,status)) return toast('Укажи название и статус');
+      if (url && (!certificate || url.length > 2048)) return toast('Введи ссылку, которая начинается с https:// или http://');
+      const entry = {title,provider,status,certificate};
+      const index = f.dataset.index;
+      if (index === '') S.studies.push(entry);
+      else if (S.studies[+index]) Object.assign(S.studies[+index],entry);
+      else return;
+      save(true); render(); toast('Запись сохранена'); return;
+    }
     if (f.dataset.form === 'familyLink'){
       const parent = fd.get('parent'), child = fd.get('child'), names = familyNames();
       if (!names.has(parent) || !names.has(child) || parent === child) return toast('Выбери двух разных людей');
