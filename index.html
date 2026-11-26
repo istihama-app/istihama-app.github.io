@@ -456,6 +456,18 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .wmark{position:absolute;right:16px;bottom:10px;font:700 54px/1 IhsanAr,Tahoma,serif;color:var(--pri,var(--ink));opacity:.12;pointer-events:none;user-select:none;white-space:nowrap;z-index:0}
 .icpick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px} .icpick button{padding:3px;border-radius:16px;border:2px solid var(--line);background:var(--card);cursor:pointer} .icpick button.on{border-color:var(--pri,var(--ink))} .icpick img{width:100%;aspect-ratio:1;border-radius:12px;display:block}
 .patsw{height:38px;border-radius:9px;width:100%;border:1px solid var(--line);background-size:auto 100% !important}
+/* Темы «Тёплый Ихсан», «Личный дневник» и «Город в сумерках». */
+:root[data-theme=warm]{--bg:#f4ead8;--card:#fffaf0;--line:#ddcba6;--soft:#f0e6d1;--muted:#625b48;--ink:#193528;--tint:#e9d9ad;--pri:#28553d;--onpri:#fffaf0}
+:root[data-theme=warm][data-dark=on]{--bg:#102019;--card:#192e24;--line:#455243;--soft:#23382d;--muted:#bfbea8;--ink:#f8eed8;--tint:#354838;--pri:#e1bd7a;--onpri:#15271d}
+:root[data-theme=journal]{--bg:#f5ecde;--card:#fff8ec;--line:#ded0bc;--soft:#f0e3d3;--muted:#665b55;--ink:#25324a;--tint:#f0d3bf;--pri:#9d482f;--onpri:#fff8ec}
+:root[data-theme=journal][data-dark=on]{--bg:#201c20;--card:#30282b;--line:#534148;--soft:#3c3033;--muted:#cbb7ad;--ink:#fbede4;--tint:#52372f;--pri:#efa283;--onpri:#251b20}
+:root[data-theme=twilight]{--bg:#111629;--card:#1b2239;--line:#394361;--soft:#252e48;--muted:#b7bfd4;--ink:#faf0df;--tint:#383357;--pri:#f2ad78;--onpri:#20192a;--cur1:#ffd48f;--cur2:#ce865e}
+:root[data-theme=warm] .card.hero{background:var(--pat,none),linear-gradient(145deg,var(--tint),var(--card) 68%) !important;border-color:var(--gold)}
+:root[data-theme=journal] .card.hero{background:repeating-linear-gradient(transparent 0 27px,color-mix(in srgb,var(--line) 45%,transparent) 27px 28px),var(--card) !important;border-left:3px solid var(--pri)}
+:root[data-theme=twilight] .card.hero{background:radial-gradient(ellipse at 85% 0%,#684256 0%,transparent 65%),linear-gradient(145deg,#303a62,var(--card) 72%) !important}
+:root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .top h1,
+:root:is([data-theme=warm],[data-theme=journal],[data-theme=twilight]) .hero .hl{font-family:Georgia,serif}
+.thbtn[aria-pressed=true]{border-color:var(--pri) !important;box-shadow:inset 0 0 0 1px var(--pri);font-weight:700}
 </style>
 </head>
 <body>
@@ -1765,13 +1777,14 @@ function vSetup(){
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg> Основное</h2><div class="nums"><label class="f">Как к тебе обращаться${inp('settings|name','Имя')}</label><label class="f">Старт плана${inp('settings|start','','date')}</label></div>
     ${isOwner() ? '' : `<div class="row" style="margin-top:12px;flex-wrap:nowrap;gap:10px"><span class="small grow">Открыть всё сразу<br><span class="tiny muted">Разделы открываются постепенно: через 3, 7 и 14 дней с отметками. Можно не ждать.</span></span><button class="chip btn ${S.settings.allOpen ? 'on' : ''}" data-act="allopen">${S.settings.allOpen ? 'вкл' : 'выкл'}</button></div>`}
     ${isOwner() ? '' : `<div class="row" style="margin-top:12px;flex-wrap:nowrap;gap:10px"><span class="small grow">План года<br><span class="tiny muted">Цели на год, фокус каждого месяца, свой распорядок и правила. Кнопка «План» появится вверху.</span></span><button class="chip btn ${S.settings.plan ? 'on' : ''}" data-act="planon">${S.settings.plan ? 'вкл' : 'выкл'}</button></div>`}
-    <div class="muted small" style="margin:12px 0 6px">Оформление</div><div class="themes">${Object.entries(THEMES).map(([k,[n,a,b,c]])=>`<button class="thbtn ${(S.settings.theme||'sand')===k?'on':''}" data-act="theme" data-t="${k}"><span class="thsw"><i style="background:${a}"></i><i style="background:${b}"></i><i style="background:${c}"></i></span>${n}</button>`).join('')}</div>
+    <div class="muted small" style="margin:12px 0 6px">Оформление</div><div class="themes">${Object.entries({...DESIGN_THEMES, ...THEMES}).map(([k,[n,a,b,c]])=>`<button class="thbtn" aria-pressed="${curTheme()===k}" data-act="theme" data-t="${k}"><span class="thsw" aria-hidden="true"><i style="background:${a}"></i><i style="background:${b}"></i><i style="background:${c}"></i></span>${n}</button>`).join('')}</div>
     <div class="muted small" style="margin:12px 0 6px">Узор фона</div><div class="themes">${Object.entries(PATS).map(([k,[n]])=>`<button class="thbtn ${curPat()===k?'on':''}" data-act="pat" data-v="${k}"><span class="patsw" style="background:${patURI(k, priCol(), .55)}, var(--bg)"></span>${n}</button>`).join('')}</div>
     <div class="row" style="margin-top:10px;flex-wrap:nowrap;gap:10px"><span class="small grow">Надпись <span class="brandar" lang="ar">إحسان</span> в карточке дня<br><span class="tiny muted">Бледная, за кольцами на «Сегодня».</span></span><button class="chip btn ${S.settings.wmark === false ? '' : 'on'}" data-act="wmark">${S.settings.wmark === false ? 'выкл' : 'вкл'}</button></div>
     <div class="muted small" style="margin:12px 0 6px">Иконка приложения</div><div class="icpick">${ICN.map((n,i)=>`<button class="${curIcon()===i+1?'on':''}" data-act="appicon" data-v="${i+1}" title="${n}" aria-label="Иконка: ${n}"><img src="icons/ic${i+1}.png" alt="" width="64" height="64"></button>`).join('')}</div>
     <div class="tiny muted" style="margin-top:6px">Сейчас: ${ICN[curIcon()-1].toLowerCase()}. Значок на экране «Домой» берётся в момент, когда приложение туда добавляют. На iPhone у каждого значка свои данные: чтобы сменить иконку, сначала «Скачать копию», потом добавь приложение на экран заново и загрузи в нём копию.</div>
     <div class="muted small" style="margin:12px 0 6px">Размер текста</div><div class="chips">${[['0','Обычный'],['1','Крупнее'],['2','Самый крупный']].map(([v,n])=>`<button class="chip btn ${String(+S.settings.fs||0)===v?'on':''}" data-act="fsz" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted small" style="margin:12px 0 6px">Фон</div><div class="chips">${[['off','Светлый'],['on','Тёмный'],['auto','Как на телефоне']].map(([v,n])=>`<button class="chip btn ${(S.settings.dark||'off')===v?'on':''}" data-act="darkm" data-v="${v}">${n}</button>`).join('')}</div>
+    ${curTheme()==='twilight' ? '<div class="tiny muted" style="margin-top:6px">У «Города в сумерках» тёмный фон. Этот выбор фона действует в остальных темах.</div>' : ''}
     ${isOwner() ? '' : '<div hidden>'}<div class="muted small" style="margin:12px 0 6px">Мой режим дня сейчас</div><div class="chips"><button class="chip btn ${S.settings.mode==='work'?'on':''}" data-act="mode" data-m="work">Работаю 9–18</button><button class="chip btn ${S.settings.mode==='free'?'on':''}" data-act="mode" data-m="free">Свободный график</button></div>${isOwner() ? '' : '</div>'}
     <div class="muted small" style="margin:12px 0 6px">Время года на участке и в городе</div><div class="chips">${[['auto','Авто — по календарю'],['winter','Зима'],['spring','Весна'],['summer','Лето'],['autumn','Осень']].map(([v,n])=>`<button class="chip btn ${(SEASON_N[S.settings.season]?S.settings.season:'auto')===v?'on':''}" data-act="season" data-v="${v}">${n}</button>`).join('')}</div>
     <div class="muted tiny" style="margin-top:6px">Сейчас: ${SEASON_N[curSeason()].toLowerCase()}. «Авто» берёт дату с устройства.</div>
@@ -2207,7 +2220,7 @@ const CO = '<i class="coin" aria-label="монет"></i>';
 const nf = n => Math.round(n).toLocaleString('ru-RU');
 const matP = m => ECON.mat[m].p * (S.build.tools.barrow && ECON.mat[m].bulk ? .9 : 1) * (1 - townBonus().mat/100);
 const curSeason = () => SEASON_N[S.settings.season] ? S.settings.season : season(today());
-const isDark = () => { const m = (S && S.settings && S.settings.dark) || 'off'; return m === 'on' ? true : m === 'auto' ? matchMedia('(prefers-color-scheme: dark)').matches : false; };
+const isDark = () => { const m = S.settings.dark; return S.settings.theme === 'twilight' || m === 'on' || (m === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); };
 // Узоры фона (v43): плитки SVG, цвет — акцент темы (--pri) с малой прозрачностью. Иконки: app/icons/ic1..5.png.
 const PATS = {none:['Без узора', null],
   stars:['Звёзды', c => `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56"><g fill="none" stroke="${c}" stroke-width="1"><rect x="16" y="16" width="24" height="24"/><rect x="16" y="16" width="24" height="24" transform="rotate(45 28 28)"/><circle cx="28" cy="28" r="4"/><path d="M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8"/></g></svg>`],
@@ -2221,8 +2234,21 @@ function patURI(id, c, op){ const f = PATS[id] && PATS[id][1]; return f ? `url('
 function applyLook(){ const r = document.documentElement; r.style.setProperty('--pat', patURI(curPat(), priCol(), isDark() ? .13 : .17));
   const n = curIcon(), fv = document.getElementById('favi'), ap = document.getElementById('appleic'); if (fv) fv.href = `icons/ic${n}.png`; if (ap) ap.href = `icons/ic${n}.png`; }
 const THEMES = {sand:['Песок','#faf7f0','#f3e6c8','#9a6a34'], sky:['Небо','#f4f8fd','#d9e9fa','#2f72b8'], sage:['Шалфей','#f4f8f1','#ddebd0','#4b8044'], lavender:['Лаванда','#f8f6fc','#e8def7','#6b5bb0'], peach:['Персик','#fdf7f3','#fbe1d2','#c4643f'], sea:['Бирюза','#f2f9f8','#d3eeea','#23877d']};
-function applyTheme(){ document.documentElement.style.setProperty('--fz', String([1, 1.12, 1.25][+S.settings.fs || 0] || 1)); const r = document.documentElement, t = THEMES[S.settings.theme] ? S.settings.theme : 'sand'; r.dataset.theme = t; r.dataset.dark = ['on','auto'].includes(S.settings.dark) ? S.settings.dark : 'off';
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = isDark() ? getComputedStyle(r).getPropertyValue('--bg').trim() || '#15140f' : THEMES[t][1]; applyLook(); }
+const DESIGN_THEMES = {
+  warm:['Тёплый Ихсан','#f4ead8','#d8b777','#28553d'],
+  journal:['Личный дневник','#f5ecde','#25324a','#9d482f'],
+  twilight:['Город в сумерках','#111629','#394361','#f2ad78']
+};
+const curTheme = () => Object.hasOwn(THEMES,S.settings.theme) || Object.hasOwn(DESIGN_THEMES,S.settings.theme) ? S.settings.theme : 'sand';
+function applyTheme(){
+  const r = document.documentElement, t = curTheme(), dark = isDark();
+  r.style.setProperty('--fz', String([1, 1.12, 1.25][+S.settings.fs || 0] || 1));
+  r.dataset.theme = t;
+  r.dataset.dark = S.settings.dark === 'auto' && Object.hasOwn(THEMES,t) ? 'auto' : dark ? 'on' : 'off';
+  const m = document.querySelector('meta[name=theme-color]');
+  if (m) m.content = getComputedStyle(r).getPropertyValue('--bg').trim() || '#15140f';
+  applyLook();
+}
 // Монеты считаются заново из отметок дней: сняли отметку — монета ушла, поставили снова — вернулась, двойного начисления нет.
 // Дела Веры монет не дают (решение владельца): ни пункты, ни таймеры Корана и уроков.
 function coins(){
