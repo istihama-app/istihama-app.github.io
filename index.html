@@ -188,9 +188,9 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .pradj2{display:grid;gap:6px} .pra2{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;align-items:center;font-size:14px;padding:6px 0;border-top:1px solid var(--line)} .pra2 > span{grid-column:1/-1} .pra2 .navbtn{height:36px;min-height:0;width:auto;font-size:13px;padding:0} .pra2 input.in{margin:0;padding:2px 0 !important;text-align:center;font-weight:700;min-width:0;height:36px;font-size:15px;-moz-appearance:textfield;appearance:textfield} .pra2 input::-webkit-inner-spin-button,.pra2 input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .qmini2{display:block;margin-top:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--faith) 7%,var(--card));border:1px dashed color-mix(in srgb,var(--faith) 35%,var(--line));text-decoration:none;color:var(--ink);font-size:13.5px} .qmini2.on{border-style:solid} .card > .qmini2:first-child{margin-top:0}
 .evbuys{margin:4px 0 0;padding-left:18px;font-size:14px} .evsheet a:not(.btn){color:var(--spirit);text-decoration:none;font-weight:600}
-#modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:20px}
+#modal .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:71;display:grid;place-items:center;padding:20px}
 #modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
-#toast{position:fixed;left:50%;bottom:calc(84px + var(--sab));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;transition:.25s;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(84px + var(--sab));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 16px;border-radius:999px;font-size:14px;z-index:72;opacity:0;transition:.25s;pointer-events:none}
 #toast.show{opacity:1}
 .svgchart{width:100%;height:auto;display:block}
 .sep{height:1px;background:var(--line);margin:12px 0}
@@ -553,6 +553,7 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 /* ================== КОНСТАНТЫ ================== */
 const LS = 'chetyre-sily-v1';
 const PUBLISHED_HOME = 'https://istihama-app.github.io/';
+const TRANSFER_GUIDE = PUBLISHED_HOME + '#transfer';
 const isTransferPage = () => location.hostname === 'ihsan-day.github.io' && new URLSearchParams(location.search).get('transfer') === '1';
 const AXO = ['faith','mind','spirit','body'];
 const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Дух',e:'🔥'}, body:{n:'Тело',e:'💪'}};
@@ -695,7 +696,7 @@ try { S = JSON.parse(localStorage.getItem(LS) || 'null'); } catch(e) { S = null;
 // новый человек — «basic» и окно первого запуска. Автотесты (navigator.webdriver) получают «owner», если не попросили первый запуск ключом ihsan-test-onb.
 const FRESH = !S || typeof S !== 'object', AUTO = !!navigator.webdriver && !localStorage.getItem('ihsan-test-onb');
 if (FRESH) S = defaults();
-function migrate(){ const d = defaults();
+function migrate(firstRun = false){ const d = defaults();
   // испорченное хранилище (краш-тест v40): не тот тип у раздела — берём чистый, а испорченное откладываем в S._bad, ничего не теряя
   if (!S || typeof S !== 'object' || Array.isArray(S)) S = defaults();
   for (const k in d){ const a = d[k], v = S[k]; if (a === null || v === undefined) continue; const bad = v === null || (typeof a === 'object' && (typeof v !== 'object' || Array.isArray(a) !== Array.isArray(v))) || (typeof a !== 'object' && typeof v === 'object');
@@ -705,7 +706,7 @@ function migrate(){ const d = defaults();
   if (!Array.isArray(S.savings.entries)) S.savings.entries = [];
   if (!Array.isArray(S.sadaqa.entries)) S.sadaqa.entries = [];
   for (const k of Object.keys(S.cycleDays)) if (!/^\d{4}-\d\d-\d\d$/.test(k) || !Number.isInteger(S.cycleDays[k]) || S.cycleDays[k] < 1 || S.cycleDays[k] > 31) delete S.cycleDays[k];
-  if (!S.settings.profile){ S.settings.profile = FRESH && !AUTO ? 'basic' : 'owner'; if (FRESH && !AUTO) S.settings.onb = 1; }
+  if (!S.settings.profile){ S.settings.profile = firstRun ? 'basic' : 'owner'; if (firstRun) S.settings.onb = 1; }
   if (!Array.isArray(S.items) || !S.items.length) S.items = ITEMS.map(i => ({id:i.id, ax:i.ax, t:i.t, from:'', to:''}));   // v32: свои пункты
   if (S.settings && S.settings.weather && !['auto','off'].includes(S.settings.weather)) S.settings.weather = 'auto';   // ручной выбор дождя/снега убран из настроек
   for (const k in d.settings) if (S.settings[k] === undefined) S.settings[k] = d.settings[k];
@@ -743,7 +744,7 @@ function migrate(){ const d = defaults();
   // v7: подарок дня и мелочи
   if (!S.gift || typeof S.gift !== 'object') S.gift = d.gift; if (!Array.isArray(S.gift.got)) S.gift.got = [];
   if (!((S.v||1) >= 7)) S.v = 7; }
-migrate();
+migrate(FRESH && !AUTO);
 let saveT = null, storageWarned = false;
 function save(now){
   if (isTransferPage()) return;
@@ -861,6 +862,7 @@ function gtabs(){ const g = grpOf(view); if (!g || !g.t || g.v.filter(id=>g.t[id
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
   {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Записи', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>', side:1}, {id:'way', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
+  {id:'transfer', n:'Перенос записей'},
 ];
 let axEdit = '';
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
@@ -883,10 +885,25 @@ function render(){
   if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); }
   if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; }
   renderNav();
-  const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay}[view];
+  const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay, transfer:vTransfer}[view];
   let html = viewOpen(view) ? f() : lockView(view); const tb = gtabs();
   if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; }
   $('#main').innerHTML = html; after(); evSync(); onbSync();
+}
+function vTransfer(){
+  return `<div class="top"><h1>Как перенести записи</h1></div>
+    <article class="card movecard">
+      <p>Рабочий адрес «Ихсана» — <a href="${PUBLISHED_HOME}">istihama-app.github.io</a>.</p>
+      <p>Если твои записи остались на <b>ihsan-day.github.io</b>, перенеси их по шагам ниже. Повтори это на каждом устройстве, где есть записи.</p>
+      <ol>
+        <li><b>Сохрани копию.</b> Открой привычный значок «Ихсана» или тот браузер, где видны твои записи. Зайди в «Настройки» → «Скачать копию» и сохрани файл <b>.json</b> в «Файлы» или «Загрузки». Если на iPhone открылось меню «Поделиться», выбери «Сохранить в Файлы».</li>
+        <li><b>Открой «Ихсан» по рабочему адресу.</b> Если он уже установлен с этого адреса, открой его значок. Для установки открой ссылку выше в Safari на iPhone («Поделиться» → «На экран „Домой“») или Chrome на Android (меню ⋮ → добавить на главный экран). Затем открой новый значок.</li>
+        <li><b>Загрузи копию.</b> При первом входе нажми «У меня есть копия — загрузить из файла». Если приложение уже настроено, открой «Настройки» → «Загрузить из файла». Выбери сохранённый <b>.json</b>.</li>
+        <li><b>Проверь записи.</b> Открой свои отметки и дневник. Для дневника подойдёт прежний пароль. Сохрани файл копии и старый значок, пока не убедишься, что всё на месте.</li>
+      </ol>
+      <div class="banner"><b>Уже есть записи на обоих адресах?</b> Сначала скачай отдельную копию с каждого. Загрузка заменяет текущие записи на рабочем адресе целиком. Файлы можно сохранить оба и выбрать, какой загрузить.</div>
+      <a class="btn" href="${location.hostname === 'ihsan-day.github.io' ? PUBLISHED_HOME : '#town'}">Открыть «Ихсан»</a>
+    </article>`;
 }
 // Отдельный экран переноса включается ссылкой. Обычный вход оставляет доступ к записям.
 let photosLoaded = false;
@@ -905,7 +922,8 @@ function moveCard(){
     <p class="small muted">Если на основном адресе уже есть записи, сначала сохрани и их копию. Импорт заменяет данные на том адресе, где ты загружаешь файл.</p>`
     : `<p class="small muted">${photosLoaded ? 'В этом браузере по этому адресу не нашлось сохранённых записей. Если ты пользовался приложением с экрана «Домой», открой его там и скачай копию.' : 'Проверяю сохранённые записи…'}</p>`}
     <div class="chips">${hasBackup ? `<button class="btn pri" data-act="export">${ic('down')}Скачать копию</button><button class="btn" data-act="copyexp">Скопировать копию</button>` : ''}
-      <a class="btn ${hasBackup ? '' : 'pri'}" href="${PUBLISHED_HOME}">Открыть «Ихсан»</a></div></div>`;
+      <a class="btn ${hasBackup ? '' : 'pri'}" href="${PUBLISHED_HOME}">Открыть «Ихсан»</a>
+      <a class="btn" href="${TRANSFER_GUIDE}">Как перенести записи</a></div></div>`;
 }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
@@ -1456,6 +1474,7 @@ let ONB = null;
 const onbInit = () => ONB = ONB || {name:'', place:'', lat:null, lon:null, decl:7, theme:S.settings.theme || 'sand', items:new Set(Object.values(CATALOG).flat().filter(x => x[2]).map(x => x[0]))};
 function onbHTML(){ const O = onbInit();
   let h = `<div class="onbsheet"><div class="onbhead"><img src="icon-192.png" alt="" width="64" height="64" onerror="this.remove()"><div><b>Ихсан <span class="brandar" lang="ar">إحسان</span></b><span>каждое дело — на совесть</span></div></div>
+    <p class="small"><a href="#transfer">Переносишь записи с прежнего адреса?</a></p>
     <p class="small">Каждый день отмечай дела в четырёх разделах: Вера, Разум, Дух и Тело. За дела Разума, Духа и Тела растёт твой город — с жителями, кварталами и высотками. Дела Веры — только для себя, за них в игре ничего не дают.</p>
     <p class="tiny muted">Всё хранится только в этом телефоне: ни регистрации, ни сервера. Дневник закрывается паролем.</p>
     <div class="onbblk"><b>Как к тебе обращаться</b><input class="in" id="onbname" maxlength="30" placeholder="Имя — необязательно" value="${esc(O.name)}"></div>
@@ -1470,7 +1489,7 @@ function onbHTML(){ const O = onbInit();
     <button class="btn pri" data-act="onbdone" style="width:100%;padding:14px;font-size:17px">Начать</button>
     <button class="btn" data-act="import" style="width:100%;margin-top:8px">${ic('up')}У меня есть копия — загрузить из файла</button></div>`;
   return h; }
-function onbSync(){ let w = document.getElementById('onb'); if (!(S.settings.onb)){ if (w) w.remove(); document.body.classList.remove('evon'); return; }
+function onbSync(){ let w = document.getElementById('onb'); if (!S.settings.onb || view === 'transfer'){ if (w) w.remove(); document.body.classList.remove('evon'); return; }
   if (!w){ w = document.createElement('div'); w.id = 'onb'; document.body.appendChild(w); } const y = w.scrollTop; w.innerHTML = onbHTML(); w.scrollTop = y; document.body.classList.add('evon'); }
 function onbDone(){ const O = onbInit(); if (!O.items.size) return toast('Выбери хотя бы один пункт');
   const all = Object.entries(CATALOG).flatMap(([ax, l]) => l.map(([id, t]) => ({id, ax, t}))), ch = all.filter(x => O.items.has(x.id));
@@ -2365,6 +2384,7 @@ function vSetup(){
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Копия и перенос на другой телефон</h2><div class="small">Все данные лежат только в этом браузере. Если очистить браузер или сменить телефон, данные пропадут. Раз в неделю сохраняй копию в файл: в Telegram «Избранное», на флешку или в облако. Дневник в копии остаётся зашифрованным.</div>
     <div class="bcol" style="margin-top:12px"><button class="btn pri" data-act="export"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Скачать копию</button><button class="btn" data-act="copyexp"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Скопировать копию</button><button class="btn" data-act="import"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Загрузить из файла</button></div>
     <div class="muted tiny" style="margin-top:8px">Перенос на другой телефон: здесь нажми «Скачать копию» и отправь файл себе (например, в Telegram «Избранное»), на новом телефоне открой приложение и нажми «Загрузить из файла». Загрузка заменяет все данные на этом устройстве.</div>
+    <p class="small"><a href="#transfer">Как перенести записи с прежнего адреса</a></p>
     ${S.lastExport?`<div class="muted tiny" style="margin-top:6px">Последняя копия: ${fmtD(new Date(S.lastExport))}</div>`:''}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Дневник</h2>${S.crypto?`<form data-form="dchange"><div class="nums"><label class="f">Старый пароль<input class="in" type="password" name="o" required></label><label class="f">Новый пароль<input class="in" type="password" name="n" minlength="6" required></label></div><button class="btn" style="margin-top:10px">Сменить пароль</button></form>`:'<div class="muted small">Пароль задаётся при первом входе в дневник.</div>'}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg> Как поставить на телефон</h2><div class="small">
@@ -3783,6 +3803,7 @@ function vTown(){
   const nextN = CITY.need[L], prevN = CITY.need[L-1], bon = townBonus(), lvSum = ids.reduce((a,i)=>a+bLvl(i),0), lvAll = ids.reduce((a,i)=>a+ECON.town[i].lv,0);
   const td = getDay(key(today())), tsc = dayScore(td), left = countedItems(key(today())).filter(i => itemVal(td, i.id) < 1).length;
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
+  if (location.hostname === 'istihama-app.github.io' && !S.settings.transferNoticeClosed) h += `<div class="banner"><b>Пользовался «Ихсаном» на ihsan-day.github.io?</b><div class="chips" style="margin-top:8px"><a class="btn" href="#transfer">Как перенести записи</a><button class="btn" data-act="transferdismiss">Скрыть</button></div></div>`;
   h += `<a class="card daystrip" href="#today"><span class="dsp ${dayKept(td) ? 'ok' : ''}">${pct(tsc)}%</span><span class="grow"><b>${dayKept(td) ? 'День засчитан' : tsc ? 'День идёт' : 'Сегодняшние дела'}</b><span class="tiny muted">${left ? `осталось ${left} из ${ITEMS_ON().length} · ` : 'всё сделано · '}+${nf(X.today)} монет сегодня · серия ${streak()} дн.</span></span><span class="dgo">Отметить →</span></a>`;
   h += unlCard();
   h += `<div class="card axis-faith citycard"><div class="rhead"><span class="clv">${L}</span><div class="grow"><b style="font-size:18px">${CITY.names[L-1]}</b><div class="tiny muted">уровень города ${L} из 7 · ${MOSQUE_N[L-1].toLowerCase()}</div></div><button class="chip btn" data-act="twn" data-t="mosque">мечеть</button></div>
@@ -4662,6 +4683,7 @@ document.addEventListener('click', async e => {
     case 'bklater': S.bkSnooze = Date.now(); save(); toast('Напомню через три дня'); break;
     case 'copyexp': { try { await navigator.clipboard.writeText(await exportText()); S.lastExport = Date.now(); save(); toast('Скопировано — вставь в «Избранное» в Telegram'); render(); } catch(err){ toast('Не получилось скопировать'); } return; }
     case 'import': $('#importFile').click(); return;
+    case 'transferdismiss': S.settings.transferNoticeClosed = true; save(); break;
     case 'reset': if (await ask('Стереть ВСЕ данные на этом устройстве? Сначала сделай резервную копию.','Дальше') && await ask('Точно? Отменить будет нельзя.','Стереть')) { S = defaults(); KEY = null; diaryCache = null; PH.before = PH.after = null; await idbSet('photo_before',null); await idbSet('photo_after',null); save(true); toast('Данные стёрты'); } break;
     default: return;
   }
@@ -4689,8 +4711,8 @@ document.addEventListener('change', async e => {
   if (t.dataset.photo && t.files[0]){ try { const url = await shrink(t.files[0]); PH[t.dataset.photo] = url; await idbSet('photo_'+t.dataset.photo, url); render(); } catch(err){ toast('Не удалось открыть фото'); } }
   if (t.id === 'importFile' && t.files[0]){ const fr = new FileReader(); fr.onload = async () => { try { const o = JSON.parse(fr.result); if (o.app !== 'chetyre-sily' || !o.state) throw 0;
       if (!await ask('Заменить все данные на этом устройстве данными из копии?','Заменить')) return;
-      S = o.state; migrate(); KEY = null; diaryCache = null; PH.before = o.photos?.before || null; PH.after = o.photos?.after || null; await idbSet('photo_before', PH.before); await idbSet('photo_after', PH.after); save(true); toast('Данные загружены'); render();
-    } catch(err){ toast('Это не файл копии приложения'); } t.value = ''; }; fr.readAsText(t.files[0]); }
+      S = o.state; migrate(); S.settings.onb = 0; ONB = null; KEY = null; diaryCache = null; PH.before = o.photos?.before || null; PH.after = o.photos?.after || null; await idbSet('photo_before', PH.before); await idbSet('photo_after', PH.after); save(true); applyTheme(); toast('Данные загружены'); render();
+    } catch(err){ toast('Это не файл копии приложения'); } finally { t.value = ''; } }; fr.readAsText(t.files[0]); }
 });
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault(); const fd = new FormData(f);
