@@ -529,6 +529,13 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .life-center .ic{width:30px;height:30px}
 .life-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(100%,360px)}
 @media(prefers-reduced-motion:reduce){.life-face,.life-mark .ic{transition:none}}
+#quickCard[data-quick-swipe]{touch-action:pan-y}
+#quickCard[data-quick-swipe] h2{user-select:none}
+#quickCard[data-swipe="yes"]{border-color:var(--good)}
+#quickCard[data-swipe="no"]{border-color:var(--muted)}
+.week-compare table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.week-compare th,.week-compare td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:right}
+.week-compare th:first-child{text-align:left}
 </style>
 </head>
 <body>
@@ -998,7 +1005,7 @@ function vToday(){
   h += ramadan + (isT && !isOwner() && !S.settings.allOpen && unl() > (S.settings.unlSeen || 1) ? unlCard() : '') + yearBanner(isT) + warn + before;
   if (isT) h += quickCard(k,day);
   h += `<div class="card hero">${S.settings.wmark === false ? '' : '<span class="wmark" aria-hidden="true" lang="ar">إحسان</span>'}<div class="rings">${ringsSVG(day)}<div class="legend">
-    <div class="hl">${sc>=.75?'<span class="pill-good">Хороший день</span>':sc>=.5?'День засчитан':minDone(day)?'Минимум — день засчитан':sc>0?'День идёт':isT?'Новый день':'Пусто'}<small>осталось ${active.filter(i=>itemVal(day,i.id) < 1).length} из ${active.length}${minsToday.length && sc < .5 ? ` · минимум ${minsToday.filter(id=>minOk(day,id)).length} из ${minsToday.length}` : ''}</small></div>
+    <div class="hl">${dayStatus(k,day,sc)}<small>${viewDate < t ? `выполнено ${active.filter(i=>itemVal(day,i.id) >= 1).length}` : `осталось ${active.filter(i=>itemVal(day,i.id) < 1).length}`} из ${active.length}${minsToday.length && sc < .5 ? ` · минимум ${minsToday.filter(id=>minOk(day,id)).length} из ${minsToday.length}` : ''}</small></div>
     ${AXO.map(a=>{ const v = day?axisScore(day,a):0; return `<div class="axis-${a}"><span class="dot" style="background:var(--a)"></span><span class="ln">${AX[a].n}</span><span class="bar"><i style="width:${pct(v)}%"></i></span><b>${pct(v)}%</b></div>`; }).join('')}</div></div>
     <div class="herofoot">${isT && !quickOpen ? '<button class="chip btn" data-act="quickopen">Быстрые отметки</button>' : ''}<span class="chip" title="Засчитанные дни подряд. Один пропуск прощается, два подряд обнуляют">${ic('flame')}Серия: <b>${streak()}</b> дн.</span>${isT?`<a class="chip" id="todayCoins" href="#town">+${nf(coins().today)}${CO} сегодня</a>`:''}${isT && unl() >= 3 && giftAvail() && giftOffer().length ? `<button class="chip btn gchip" data-act="gogift" title="Подарок дня: одна мелочь на выбор">${ic('plus')}Подарок</button>` : ''}${isT ? `<button class="chip btn ${day && day.ev ? 'on' : (curPhase() === 'evening' || curPhase() === 'night') ? 'gchip' : ''}" data-act="evopen">${day && day.ev ? '✓ Итог дня' : 'Итог дня'}</button>` : ''}${yUndo && yUndo.k === k ? `<button class="chip btn on" data-act="asyundo">Отменить «как вчера»</button>` : getDay(key(addD(viewDate,-1))) && viewDate <= t ? `<button class="chip btn" data-act="asyest" title="Отметить те же пункты, что вчера">Как вчера</button>` : ''}</div></div>`;
   h += `<details class="card dfold" ${day && day.focus ? 'open' : ''}><summary>${ic('target')}<b>Главный поступок дня</b><span class="muted tiny">необязательно</span></summary>${inp(`days|${k}|focus`,'Что сегодня самое важное? Одна строка')}</details>`;
@@ -1043,6 +1050,16 @@ function vToday(){
   h += `<a class="btn ${isT ? '' : 'pri'}" style="display:block;text-align:center;text-decoration:none;padding:13px" href="#diary" data-act="diaryday" data-k="${k}"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Вечерняя мухасаба — открыть дневник</a>`;
   return h;
 }
+function dayStatus(k, day, score){
+  const now = key(today());
+  if (score >= .75) return `<span class="pill-good">${k < now ? 'День засчитан' : 'Хороший день'}</span>`;
+  if (score >= .5) return 'День засчитан';
+  if (minDone(day)) return 'День засчитан по минимуму';
+  if (fullyExcused(k)) return 'Без обязательных отметок';
+  if (k < now) return 'День не засчитан';
+  if (k > now) return 'Предстоящий день';
+  return score > 0 ? 'День идёт' : 'Новый день';
+}
 let quickDay = '', quickIndex = 0, quickOpen = false;
 function quickCard(k,day){
   if (quickDay !== k){
@@ -1052,13 +1069,49 @@ function quickCard(k,day){
   const items = countedItems(k), item = quickOpen ? items[quickIndex] : null;
   if (!item) return '';
   const value = itemVal(day,item.id);
-  return `<div class="card" id="quickCard"><div class="row">
+  const canSwipe = item.id !== 'namaz';
+  if (canSwipe) afterFns.push(quickSwipe);
+  return `<div class="card" id="quickCard"${canSwipe ? ' data-quick-swipe' : ''}><div class="row">
     <span class="muted small grow">${AX[item.ax].n} · ${quickIndex + 1} из ${items.length}</span>
     <button class="navbtn" data-act="quickclose" aria-label="Закрыть карточки">✕</button></div>
     <h2>${esc(item.t)}</h2><div class="chips">
     ${item.id === 'namaz' ? PRAYERS.map((n,j)=>cycleMask(k) & (1 << j) ? '' : `<button class="chip btn ${day?.p?.[j] ? 'on' : ''}" data-act="pr" data-j="${j}">${n}</button>`).join('') :
       [[1,'Сделано'],[.5,'Частично'],[0,'Не сделано']].map(([v,n])=>`<button class="btn ${v && v === value ? 'pri' : ''}" data-act="quickmark" data-id="${esc(item.id)}" data-v="${v}">${n}</button>`).join('')}
-    <button class="btn" data-act="quicknext">${item.id === 'namaz' ? 'Дальше' : 'Позже'}</button></div></div>`;
+    <button class="btn" data-act="quicknext">${item.id === 'namaz' ? 'Дальше' : 'Позже'}</button></div>
+    ${canSwipe ? '<div class="row tiny muted" style="justify-content:space-between;margin-top:8px"><span>← Не сделано</span><span>Сделано →</span></div>' : ''}</div>`;
+}
+function quickSwipe(){
+  const card = $('#quickCard');
+  let start = null;
+  function finish(e){
+    if (e.pointerId !== start?.id) return;
+    if (e.type === 'lostpointercapture' && e.target !== card) return;
+    const dx = e.clientX - start.x;
+    const mark = e.type === 'pointerup' && start.horizontal && Math.abs(dx) >= Math.max(56, card.offsetWidth * .18);
+    start = null;
+    card.style.transform = '';
+    delete card.dataset.swipe;
+    if (mark) card.querySelector(`[data-act="quickmark"][data-v="${dx > 0 ? 1 : 0}"]`).click();
+  }
+  card.addEventListener('pointerdown', e=>{
+    if (!e.isPrimary || e.button !== 0 || e.target.closest('button')) return;
+    start = {id:e.pointerId, x:e.clientX, y:e.clientY, horizontal:false};
+  });
+  card.addEventListener('pointermove', e=>{
+    if (e.pointerId !== start?.id) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (!start.horizontal){
+      if (Math.max(Math.abs(dx),Math.abs(dy)) < 12) return;
+      if (Math.abs(dx) < 1.3 * Math.abs(dy)){ start = null; return; }
+      start.horizontal = true;
+      card.setPointerCapture(e.pointerId);
+    }
+    card.dataset.swipe = dx > 0 ? 'yes' : 'no';
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+      card.style.transform = `translateX(${Math.max(-12,Math.min(12,dx/5))}px)`;
+  });
+  for (const type of ['pointerup','pointercancel','lostpointercapture']) card.addEventListener(type, finish);
+  card.addEventListener('pointerleave', ()=>{ if (start && !start.horizontal) start = null; });
 }
 
 /* ================== НАПОМИНАНИЕ О КОПИИ ================== */
@@ -1477,13 +1530,41 @@ function pQada(){ const Q = qaG(), row = (lbl, tot, dn, kT, kD, steps, unit) => 
     ${row('Намазы', Q.salah, Q.ds, 'salah', 'ds', [1, 5, 30, -1], 'нам.')}${row('Дни поста', Q.saum, Q.df, 'saum', 'df', [1, 5, -1], 'дн.')}</div>`; }
 const MOOD = ['Тяжело','Так себе','Ровно','Хорошо','Отлично'], MOODC = ['#b23838','#d08a3c','#a39a66','#5a9e5f','#1f7a5a'];
 const moodRow = k => { const d = getDay(k), m = d && d.mood; return `<div class="moodrow">${MOOD.map((n, i) => `<button class="mood ${m === i + 1 ? 'on' : ''}" data-act="mood" data-k="${k}" data-v="${i + 1}" style="--mc:${MOODC[i]}"><i></i>${n}</button>`).join('')}</div>`; };
-function moodCard(c){ const ds = c.list.map((d, i) => ({k:key(d), day:c.days[i]})).filter(x => x.day && x.day.mood); if (ds.length < 2) return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2><div class="small muted">Отмечай настроение дня (внизу «Сегодня» или в итоге дня) — здесь появится, от каких дел тебе лучше.</div></div>`;
-  const avg = ds.reduce((a, x) => a + x.day.mood, 0)/ds.length, its = itemsAll().filter((v, i, a) => a.findIndex(x => x.id === v.id) === i), cmp = [];
-  its.forEach(it => { const y = ds.filter(x => itemVal(x.day, it.id) > 0), n = ds.filter(x => !itemVal(x.day, it.id)); if (y.length >= 3 && n.length >= 3){ const a = y.reduce((s, x) => s + x.day.mood, 0)/y.length, b = n.reduce((s, x) => s + x.day.mood, 0)/n.length; cmp.push({it, a, b, d:a - b}); } });
-  cmp.sort((p, q) => q.d - p.d); const f = v => String(Math.round(v*10)/10).replace('.', ',');
-  return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2><div class="small">Среднее настроение: <b>${f(avg)}</b> из 5 (${MOOD[Math.round(avg) - 1].toLowerCase()}), отмечено дней: ${ds.length}.</div>
-    ${barChart(c.days.map(d => d && d.mood ? d.mood/5 : null), c.list.map(d => String(d.getDate())), 80)}
-    ${cmp.filter(x => x.d >= .3).slice(0, 3).map(x => `<div class="small" style="margin-top:6px">В дни, когда «${esc(x.it.t)}», настроение <b>${f(x.a)}</b>, без этого — ${f(x.b)}.</div>`).join('') || `<div class="tiny muted" style="margin-top:6px">${cmp.length ? 'Пока ни одно дело заметно не меняет настроение.' : 'Нужно ещё несколько дней с отметками, чтобы увидеть связь.'}</div>`}</div>`; }
+const moodScores = c => c.days.map(d=>{ const n = +d?.mood; return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null; });
+const moodNumber = v => v.toFixed(1).replace('.', ',');
+const mean = values => values.reduce((sum,v)=>sum+v,0)/values.length;
+function moodObservations(c, scores){
+  const items = new Map();
+  scores.forEach((score,j)=>{
+    if (score === null) return;
+    const k = key(c.list[j]), day = c.days[j];
+    const record = (id,title,v) => {
+      if (v !== 1 && v !== 0) return;
+      if (!items.has(id)) items.set(id, {title, done:[], unmarked:[]});
+      const group = items.get(id);
+      (v === 1 ? group.done : group.unmarked).push(score);
+    };
+    for (const item of countedItems(k)){
+      record(item.id,item.t,itemVal(day,item.id));
+      if (item.id === 'namaz' && !(cycleMask(k) & 1))
+        record('prayer-fajr','Фаджр',day.p?.[0] ? 1 : 0);
+    }
+  });
+  const pairs = [...items.values()].filter(r=>r.done.length >= 3 && r.unmarked.length >= 3)
+    .map(r=>({...r, a:mean(r.done), b:mean(r.unmarked)}));
+  const observations = pairs.filter(r=>Math.abs(r.a-r.b) >= .3 - 1e-9)
+    .sort((a,b)=>Math.abs(b.a-b.b)-Math.abs(a.a-a.b)).slice(0,3);
+  if (!observations.length) return `<p class="small muted">${pairs.length ? 'В этих записях средние оценки близки.' : 'Для сравнения по делу нужно хотя бы по 3 дня с настроением в каждой группе.'}</p>`;
+  return observations.map(r=>`<p class="small"><b>${esc(r.title)}</b><br>Среднее настроение: <b>${moodNumber(r.a)} из 5</b> с полной отметкой (${r.done.length} дн.) и <b>${moodNumber(r.b)} из 5</b> без отметки (${r.unmarked.length} дн.).</p>`).join('') +
+    '<p class="small muted">Эти оценки совпали с отметками в выбранные дни. На настроение могут влиять сон, нагрузка и другие обстоятельства. По записям нельзя определить причину.</p>';
+}
+function moodCard(c){
+  const scores = moodScores(c), marked = scores.filter(v=>v !== null);
+  return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2>
+    ${marked.length ? `<div class="small">Среднее настроение: <b>${moodNumber(mean(marked))} из 5</b> · оценок: ${marked.length}.</div>
+      ${barChart(scores.map(v=>v === null ? null : v/5), c.list.map(d=>String(d.getDate())), 80, 5)}` : '<div class="small muted">Оценку настроения можно оставить на «Сегодня» или в итоге дня.</div>'}
+    ${moodObservations(c,scores)}</div>`;
+}
 const fdG = () => { S.food = S.food || {prof:{}, log:{}}; S.food.prof ||= {}; S.food.log ||= {}; return S.food; };
 function fdTarget(){ const F = fdG(), P = F.prof, wp = weightPoints(), w = +P.w || (wp.length ? wp[wp.length - 1].v : 0); const h = +P.h, a = +P.a; if (!w || !h || !a) return null;
   const bmr = 10*w + 6.25*h - 5*a + (P.sex === 'f' ? -161 : 5), tdee = bmr*({1:1.2, 2:1.375, 3:1.55, 4:1.725}[P.act || 2]), k = Math.round(tdee*({lose:.85, keep:1, gain:1.1}[P.goal || 'lose'])/10)*10;
@@ -1614,7 +1695,7 @@ let evOpen = false, evLine = '', evPass = '';
 function evHTML(){
   const t = today(), k = key(t), day = getDay(k), sc = dayScore(day), kept = dayKept(day), md = minDone(day), X = coins(), sk = streak(), m = minFor(k);
   const active = countedItems(k), left = active.filter(i => i.id !== 'namaz' && !itemVal(day,i.id)), np = prayerDone(day,k), due = prayerSlots(k).length, need = m.filter(id => !minOk(day,id));
-  const st = sc >= .75 ? 'Хороший день' : sc >= .5 ? 'День засчитан' : md ? 'Минимум — день засчитан' : 'День пока не засчитан';
+  const st = sc >= .75 ? 'Хороший день' : sc >= .5 ? 'День засчитан' : md ? 'День засчитан по минимуму' : 'День пока не засчитан';
   const buys = S.build.log.filter(l => l.d === k && +l.c > 0), done = active.filter(i=>itemVal(day,i.id) >= 1).length;
   let h = `<div class="evbg" data-act="evclose"></div><div class="evsheet" role="dialog" aria-label="Итог дня">
     <div class="row" style="flex-wrap:nowrap;align-items:center;gap:8px"><h2 class="grow" style="margin:0">Итог дня</h2><span class="muted small">${fmtD(t)}</span><button class="navbtn" data-act="evclose" aria-label="Закрыть">✕</button></div>`;
@@ -1678,7 +1759,7 @@ function vWeek(){
 /* ================== ИТОГИ / СТАТИСТИКА ================== */
 function periodRange(){
   const t = today();
-  if (statT === 'week'){ const a = addD(monday(t), 7*statO); return {a, b:addD(a,6), title:`${fmtD(a)} — ${fmtD(addD(a,6))}`, key:key(a)}; }
+  if (statT === 'week'){ const a = addD(monday(t), 7*statO); return {a, b:addD(a,6), title:`${fmtD(a)} — ${fmtD(addD(a,6))}`, key:key(a), weekly:true}; }
   if (statT === 'month'){ const a = new Date(t.getFullYear(), t.getMonth()+statO, 1); const b = new Date(a.getFullYear(), a.getMonth()+1, 0); return {a, b, title:`${MN[a.getMonth()]} ${a.getFullYear()}`, key:`${a.getFullYear()}-${pad(a.getMonth()+1)}`}; }
   if (statT === 'stage'){ const i = Math.min(4, Math.max(0, stageIdx(t)+statO)); const s = STAGES[i]; return {a:mk(s.from), b:mk(s.to), title:`${s.n} — «${s.t}»`, key:String(i), idx:i}; }
   const a = startDate(); return {a, b:addD(a,363), title:`Год${yearNo() > 1 ? ' ' + yearNo() : ''}: ${fmtD(a)} ${a.getFullYear()} — ${fmtD(addD(a,363))} ${addD(a,363).getFullYear()}`, key: yearNo() > 1 ? 'year' + yearNo() : 'year'};
@@ -1695,11 +1776,12 @@ function collect(a,b){
   let best = 0, cur = 0, gap = 0; days.forEach((d,i)=>{ if (dayKept(d)){ cur++; gap = 0; best = Math.max(best,cur); } else if (!fullyExcused(key(list[i])) && ++gap >= 2) cur = 0; }); r.best = best;
   return r;
 }
-function barChart(vals, labels, h=120){
+function barChart(vals, labels, h=120, scale=100){
   const W = 360, n = vals.length, bw = W/n, gap = n>40?1:n>14?3:6;
   let s = `<svg class="svgchart" viewBox="0 0 ${W} ${h+22}" role="img">`;
-  [0,.5,.75,1].forEach(g=>{ const y = h - g*h + 2; s += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="${g===0?'':'3 4'}"/>`; if (g) s += `<text x="${W-2}" y="${y-3}" text-anchor="end" font-size="10" fill="var(--muted)">${g*100}%</text>`; });
-  vals.forEach((v,i)=>{ if (v==null) return; const bh = Math.max(v*h, v>0?2:0); s += `<rect x="${i*bw+gap/2}" y="${h-bh+2}" width="${Math.max(1,bw-gap)}" height="${bh}" rx="${Math.min(4,bw/4)}" fill="${v>=.75?'var(--good)':v>=.5?'var(--gold)':'var(--muted)'}" opacity="${v>=.5?1:.55}"><title>${labels[i]}: ${pct(v)}%</title></rect>`; });
+  const fmt = v => scale === 100 ? pct(v) + '%' : Math.round(v*scale);
+  (scale === 100 ? [0,.5,.75,1] : [0,.2,.6,1]).forEach(g=>{ const y = h - g*h + 2; s += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="${g===0?'':'3 4'}"/>`; if (g) s += `<text x="${W-2}" y="${Math.max(10,y-3)}" text-anchor="end" font-size="10" fill="var(--muted)">${fmt(g)}</text>`; });
+  vals.forEach((v,i)=>{ if (v==null) return; const bh = Math.max(v*h, v>0?2:0); s += `<rect x="${i*bw+gap/2}" y="${h-bh+2}" width="${Math.max(1,bw-gap)}" height="${bh}" rx="${Math.min(4,bw/4)}" fill="${v>=.75?'var(--good)':v>=.5?'var(--gold)':'var(--muted)'}" opacity="${v>=.5?1:.55}"><title>${labels[i]}: ${fmt(v)}</title></rect>`; });
   const step = Math.ceil(n/8); labels.forEach((l,i)=>{ if (i%step===0) s += `<text x="${i*bw+bw/2}" y="${h+18}" text-anchor="middle" font-size="11" fill="var(--muted)">${l}</text>`; });
   return s + `</svg>`;
 }
@@ -1726,6 +1808,28 @@ function heatmap(){
     h += `<i style="background:${bg};${d>addD(startDate(),363)?'opacity:.2':''}" title="${fmtD(d)}: ${pct(sc)}%${sc < .5 && minDone(getDay(k)) ? ', минимум' : ''}"></i>`; }
   return h + `</div><div class="row tiny muted" style="margin-top:8px;gap:14px"><span><span class="dot" style="background:var(--line)"></span> пропуск</span><span><span class="dot" style="background:color-mix(in srgb, var(--gold) 70%, var(--soft))"></span> минимум</span><span><span class="dot" style="background:var(--gold)"></span> 50–74%</span><span><span class="dot" style="background:var(--good)"></span> от 75%</span></div>`;
 }
+function weeklyComparison(c){
+  const first = c.list[0], last = c.list.at(-1);
+  const a = addD(first,-7), b = addD(last,-7), previous = collect(a,b);
+  const heading = '<h2>Сравнение с прошлой неделей</h2>';
+  if (previous.n !== c.n || !c.days.some(Boolean) || !previous.days.some(Boolean))
+    return heading + '<p class="small muted">Для сравнения нужны записи за обе недели.</p>';
+  const range = (start,end) => key(start) === key(end) ? fmtD(start) : `${fmtD(start)} — ${fmtD(end)}`;
+  const mood = period => {
+    const values = moodScores(period).filter(v=>v !== null);
+    return values.length ? `${moodNumber(mean(values))} из 5<small class="muted" style="display:block">${values.length} дн.</small>` : '—';
+  };
+  const rows = [
+    ['Средний балл дня', x=>pct(x.avg) + '%'],
+    ['Хорошие дни (от 75%)', x=>x.good],
+    ['Тренировки', x=>x.train],
+    ['Страницы прочитано', x=>x.pages],
+    ['Среднее настроение', mood],
+  ];
+  return heading + `<p class="small muted">Сравниваются одинаковые дни недели.</p><table class="small">
+    <thead><tr><th scope="col">Показатель</th><th scope="col">${range(a,b)}</th><th scope="col">${range(first,last)}</th></tr></thead>
+    <tbody>${rows.map(([label,value])=>`<tr><th scope="row">${label}</th><td>${value(previous)}</td><td>${value(c)}</td></tr>`).join('')}</tbody></table>`;
+}
 function vStats(){
   const R = periodRange(), c = collect(R.a, R.b);
   let h = topbar('Итоги');
@@ -1733,6 +1837,7 @@ function vStats(){
   h += `<div class="datebar">${statT!=='year'?`<button class="navbtn" data-act="sprev">‹</button>`:''}<div class="d"><b style="font-size:17px">${R.title}</b><span class="muted small">${c.n} дн. учтено</span></div>${statT!=='year'?`<button class="navbtn" data-act="snext">›</button>`:''}</div>`;
   if (!c.n){ h += `<div class="card muted">За этот период ещё нет прошедших дней плана.</div>`; return h + reviewBlock(R); }
   h += `<div class="card row"><span class="grow small">${R.b > today() ? 'Предварительный отчёт' : 'Отчёт за период'}</span><button class="btn" data-act="report">Открыть отчёт для PDF</button></div>`;
+  if (R.weekly) h += `<div class="card week-compare">${weeklyComparison(c)}</div>`;
   h += `<div class="kpis">
     <div class="kpi"><div class="v">${pct(c.avg)}%</div><div class="l">средний балл дня</div></div>
     <div class="kpi"><div class="v">${c.good}</div><div class="l">хороших дней (от 75%)</div></div>
@@ -1761,39 +1866,32 @@ function vStats(){
   return h + reviewBlock(R);
 }
 function reportHTML(R){
-  const c = collect(R.a,R.b), previous = collect(addD(R.a,-c.n),addD(R.a,-1)), last = c.list.at(-1);
+  const c = collect(R.a,R.b), previous = R.weekly ? null : collect(addD(R.a,-c.n),addD(R.a,-1)), last = c.list.at(-1);
   const rows = new Map();
   c.list.forEach((d,j)=>{
     const k = key(d), day = c.days[j];
     countedItems(k).forEach(i=>{
-      if (!rows.has(i.id)) rows.set(i.id,{t:i.t, ax:i.ax, due:0, full:0, half:0, yes:[], no:[]});
+      if (!rows.has(i.id)) rows.set(i.id,{t:i.t, ax:i.ax, due:0, full:0, half:0});
       const r = rows.get(i.id), v = itemVal(day,i.id);
       r.due++; if (v === 1) r.full++; else if (v > 0) r.half++;
-      if (day?.mood >= 1 && day.mood <= 5){
-        if (v === 1) r.yes.push(+day.mood); else if (!v) r.no.push(+day.mood);
-      }
     });
     (Array.isArray(day?.own) ? day.own : []).forEach(i=>{
       if (!i?.t) return;
       const id = 'own:' + i.t;
-      if (!rows.has(id)) rows.set(id,{t:i.t, ax:'own', due:0, full:0, half:0, yes:[], no:[]});
+      if (!rows.has(id)) rows.set(id,{t:i.t, ax:'own', due:0, full:0, half:0});
       const r = rows.get(id);
       r.due++; if (i.d) r.full++;
     });
   });
-  const avg = values => values.reduce((a,b)=>a+b,0)/values.length;
-  const observations = [...rows.values()].filter(r=>r.yes.length >= 3 && r.no.length >= 3)
-    .map(r=>({...r, a:avg(r.yes), b:avg(r.no)})).filter(r=>Math.abs(r.a-r.b)>=.3)
-    .sort((a,b)=>Math.abs(b.a-b.b)-Math.abs(a.a-a.b)).slice(0,3);
   const rate = r => (r.full + .5*r.half)/r.due;
   const ranked = [...rows.values()].filter(r=>r.due >= 3).sort((a,b)=>rate(b)-rate(a));
   const high = ranked[0], low = ranked.at(-1);
   const values = [], labels = [], step = c.n > 45 ? 7 : 1;
   for (let j=0;j<c.n;j+=step){
     const group = c.list.slice(j,j+step).map((d,i)=>fullyExcused(key(d)) ? null : dayScore(c.days[j+i])).filter(v=>v !== null);
-    values.push(group.length ? avg(group) : null); labels.push(key(c.list[j]).slice(5).split('-').reverse().join('.'));
+    values.push(group.length ? mean(group) : null); labels.push(key(c.list[j]).slice(5).split('-').reverse().join('.'));
   }
-  const diff = pct(c.avg) - pct(previous.avg), dates = d => d.toLocaleDateString('ru-RU');
+  const diff = previous ? pct(c.avg) - pct(previous.avg) : 0, dates = d => d.toLocaleDateString('ru-RU');
   return `<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ихсан — отчёт ${key(R.a)}</title>
   <style>
     :root{--ink:#17261f;--line:#d4dfd8;--muted:#52635b;--good:#236b50;--gold:#99532c}
@@ -1809,10 +1907,11 @@ function reportHTML(R){
   <p class="brand">Ихсан · личные итоги</p><h1>${esc(R.title)}</h1>
   <p class="muted">${dates(c.list[0])} – ${dates(last)} · ${c.n} дн.${R.b >= today()?' · период ещё идёт':''}</p>
   <div class="metrics"><div><strong>${pct(c.avg)}%</strong>Средний балл дня</div><div><strong>${c.good}</strong>Хороших дней</div><div><strong>${c.best}</strong>Лучшая серия, дн.</div>
-  ${previous.n === c.n ? `<div><strong>${diff > 0 ? '+' : ''}${diff} п. п.</strong>К предыдущим ${c.n} дням</div>` : ''}</div>
+  ${previous?.n === c.n ? `<div><strong>${diff > 0 ? '+' : ''}${diff} п. п.</strong>К предыдущим ${c.n} дням</div>` : ''}</div>
+  ${R.weekly ? weeklyComparison(c) : ''}
   <div class="graph"><h2>Как менялся балл ${step === 1 ? 'по дням' : 'по неделям'}</h2>${barChart(values,labels)}</div>
   <h2>Настроение и привычки</h2>
-  ${observations.length ? observations.map(r=>`<p><b>${esc(r.t)}</b> · ${r.a.toFixed(1).replace('.',',')} из 5 в дни выполнения (${r.yes.length} дн.) и ${r.b.toFixed(1).replace('.',',')} в дни без отметки (${r.no.length} дн.).</p>`).join('') + '<p class="muted">Это сравнение наблюдений. Причину изменений по нему определить нельзя.</p>' : '<p class="muted">Пока нет заметных различий или мало оценок настроения для сравнения.</p>'}
+  ${moodObservations(c,moodScores(c))}
   <h2>Результат по каждому пункту</h2>
   ${high && pct(rate(high)) > pct(rate(low)) ? `<p>Лучше всего шло «${esc(high.t)}» (${pct(rate(high))}%). Самый низкий результат у «${esc(low.t)}» (${pct(rate(low))}%). Полная отметка даёт 1 балл, частичная — ½.</p>` : ''}
   <table><thead><tr><th>Пункт</th><th>План</th><th>Готово</th><th>Часть</th><th>Без отметки</th></tr></thead><tbody>
