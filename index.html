@@ -529,12 +529,6 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .life-center .ic{width:30px;height:30px}
 .life-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(100%,360px)}
 @media(prefers-reduced-motion:reduce){.life-face,.life-mark .ic{transition:none}}
-.transfer-page #side,.transfer-page #bnav{display:none}
-.transfer-page .app{display:block}
-.transfer-page main{max-width:600px;margin:0 auto;padding:28px 16px}
-.movecard .brandar{margin-left:8px}
-.movecard ol{padding-left:22px}
-.movecard li+li{margin-top:6px}
 </style>
 </head>
 <body>
@@ -552,9 +546,6 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 "use strict";
 /* ================== КОНСТАНТЫ ================== */
 const LS = 'chetyre-sily-v1';
-const PUBLISHED_HOME = 'https://istihama-app.github.io/';
-const TRANSFER_GUIDE = PUBLISHED_HOME + '#transfer';
-const isTransferPage = () => location.hostname === 'ihsan-day.github.io' && new URLSearchParams(location.search).get('transfer') === '1';
 const AXO = ['faith','mind','spirit','body'];
 const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Дух',e:'🔥'}, body:{n:'Тело',e:'💪'}};
 const ITEMS = [
@@ -747,7 +738,6 @@ function migrate(firstRun = false){ const d = defaults();
 migrate(FRESH && !AUTO);
 let saveT = null, storageWarned = false;
 function save(now){
-  if (isTransferPage()) return;
   clearTimeout(saveT);
   const w = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) { if (!storageWarned){ storageWarned = true; toast('Не удалось сохранить — сделай резервную копию'); } } };
   if (now) w(); else saveT = setTimeout(w, 250);
@@ -862,7 +852,6 @@ function gtabs(){ const g = grpOf(view); if (!g || !g.t || g.v.filter(id=>g.t[id
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
   {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Записи', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>', side:1}, {id:'way', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
-  {id:'transfer', n:'Перенос записей'},
 ];
 let axEdit = '';
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
@@ -881,49 +870,13 @@ function renderNav(){
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1>${planOn() ? '' : '<!--'}<a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a>${planOn() ? '' : '-->'}<a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
 function render(){
-  if (isTransferPage()){ document.body.classList.add('transfer-page'); $('#main').innerHTML = moveCard(); return; }
   if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); }
   if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; }
   renderNav();
-  const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay, transfer:vTransfer}[view];
+  const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay}[view];
   let html = viewOpen(view) ? f() : lockView(view); const tb = gtabs();
   if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; }
   $('#main').innerHTML = html; after(); evSync(); onbSync();
-}
-function vTransfer(){
-  return `<div class="top"><h1>Как перенести записи</h1></div>
-    <article class="card movecard">
-      <p>Рабочий адрес «Ихсана» — <a href="${PUBLISHED_HOME}">istihama-app.github.io</a>.</p>
-      <p>Если твои записи остались на <b>ihsan-day.github.io</b>, перенеси их по шагам ниже. Повтори это на каждом устройстве, где есть записи.</p>
-      <ol>
-        <li><b>Сохрани копию.</b> Открой привычный значок «Ихсана» или тот браузер, где видны твои записи. Зайди в «Настройки» → «Скачать копию» и сохрани файл <b>.json</b> в «Файлы» или «Загрузки». Если на iPhone открылось меню «Поделиться», выбери «Сохранить в Файлы».</li>
-        <li><b>Открой «Ихсан» по рабочему адресу.</b> Если он уже установлен с этого адреса, открой его значок. Для установки открой ссылку выше в Safari на iPhone («Поделиться» → «На экран „Домой“») или Chrome на Android (меню ⋮ → добавить на главный экран). Затем открой новый значок.</li>
-        <li><b>Загрузи копию.</b> При первом входе нажми «У меня есть копия — загрузить из файла». Если приложение уже настроено, открой «Настройки» → «Загрузить из файла». Выбери сохранённый <b>.json</b>.</li>
-        <li><b>Проверь записи.</b> Открой свои отметки и дневник. Для дневника подойдёт прежний пароль. Сохрани файл копии и старый значок, пока не убедишься, что всё на месте.</li>
-      </ol>
-      <div class="banner"><b>Уже есть записи на обоих адресах?</b> Сначала скачай отдельную копию с каждого. Загрузка заменяет текущие записи на рабочем адресе целиком. Файлы можно сохранить оба и выбрать, какой загрузить.</div>
-      <a class="btn" href="${location.hostname === 'ihsan-day.github.io' ? PUBLISHED_HOME : '#town'}">Открыть «Ихсан»</a>
-    </article>`;
-}
-// Отдельный экран переноса включается ссылкой. Обычный вход оставляет доступ к записям.
-let photosLoaded = false;
-function transferState(){
-  try {
-    const saved = JSON.parse(localStorage.getItem(LS) || 'null');
-    return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : null;
-  } catch(e){ return null; }
-}
-function moveCard(){
-  const hasBackup = photosLoaded && (!!transferState() || !!PH.before || !!PH.after);
-  return `<div class="top"><h1>Ихсан <span class="brandar" lang="ar">إحسان</span></h1></div>
-    <div class="card movecard"><h2>«Ихсан» переехал</h2>
-    <p>Рабочий адрес для обновлений <b>istihama-app.github.io</b>. Если ты вёл записи здесь, их можно перенести с помощью резервной копии.</p>
-    ${hasBackup ? `<ol class="small"><li>Скачай копию на этом устройстве.</li><li>Открой «Ихсан» по основному адресу.</li><li>В настройках выбери «Загрузить из файла». При первом входе есть кнопка «У меня есть копия».</li></ol>
-    <p class="small muted">Если на основном адресе уже есть записи, сначала сохрани и их копию. Импорт заменяет данные на том адресе, где ты загружаешь файл.</p>`
-    : `<p class="small muted">${photosLoaded ? 'В этом браузере по этому адресу не нашлось сохранённых записей. Если ты пользовался приложением с экрана «Домой», открой его там и скачай копию.' : 'Проверяю сохранённые записи…'}</p>`}
-    <div class="chips">${hasBackup ? `<button class="btn pri" data-act="export">${ic('down')}Скачать копию</button><button class="btn" data-act="copyexp">Скопировать копию</button>` : ''}
-      <a class="btn ${hasBackup ? '' : 'pri'}" href="${PUBLISHED_HOME}">Открыть «Ихсан»</a>
-      <a class="btn" href="${TRANSFER_GUIDE}">Как перенести записи</a></div></div>`;
 }
 let afterFns = []; function after(){ const a = afterFns; afterFns = []; a.forEach(f=>f()); }
 
@@ -1348,7 +1301,7 @@ function tCal(){ const t = today(), h0 = hijri(t);
 
 // ---- напоминания: в приложении и файлом календаря ----
 const prDone = {};
-function prTick(){ if (isTransferPage() || !S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9 && !cycleExempt(dk,'saum'), list = prayerSlots(dk).map(j => { const id = PR5[j]; return [id, P[id], `Время намаза: ${PR_N[id]}`]; });
+function prTick(){ if (!S || !prCfg().remind) return; const now = new Date(), t = today(), P = prayTimes(t), dk = key(t), ram = hijri(t).m === 9 && !cycleExempt(dk,'saum'), list = prayerSlots(dk).map(j => { const id = PR5[j]; return [id, P[id], `Время намаза: ${PR_N[id]}`]; });
   if (ram){ list.push(['iftar', P.maghrib, 'Время ифтара — разговляйся']); list.push(['iftar10', new Date(P.maghrib - 600000), 'Через 10 минут ифтар']); list.push(['imsak', P.imsak, 'Имсак — сухур заканчивается']); list.push(['imsak15', new Date(P.imsak - 900000), 'Через 15 минут конец сухура']); }
   list.forEach(([id, at, txt]) => { const k = dk + id; if (prDone[k] || now < at || now - at > 120000) return; prDone[k] = 1; toast(txt); try { beep(); } catch(e){} vib([200, 100, 200]);
     try { if (window.Notification && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r => r.showNotification('Ихсан', {body:txt, icon:'icon-192.png', tag:k})); } catch(e){} }); }
@@ -1474,7 +1427,6 @@ let ONB = null;
 const onbInit = () => ONB = ONB || {name:'', place:'', lat:null, lon:null, decl:7, theme:S.settings.theme || 'sand', items:new Set(Object.values(CATALOG).flat().filter(x => x[2]).map(x => x[0]))};
 function onbHTML(){ const O = onbInit();
   let h = `<div class="onbsheet"><div class="onbhead"><img src="icon-192.png" alt="" width="64" height="64" onerror="this.remove()"><div><b>Ихсан <span class="brandar" lang="ar">إحسان</span></b><span>каждое дело — на совесть</span></div></div>
-    <p class="small"><a href="#transfer">Переносишь записи с прежнего адреса?</a></p>
     <p class="small">Каждый день отмечай дела в четырёх разделах: Вера, Разум, Дух и Тело. За дела Разума, Духа и Тела растёт твой город — с жителями, кварталами и высотками. Дела Веры — только для себя, за них в игре ничего не дают.</p>
     <p class="tiny muted">Всё хранится только в этом телефоне: ни регистрации, ни сервера. Дневник закрывается паролем.</p>
     <div class="onbblk"><b>Как к тебе обращаться</b><input class="in" id="onbname" maxlength="30" placeholder="Имя — необязательно" value="${esc(O.name)}"></div>
@@ -1489,7 +1441,7 @@ function onbHTML(){ const O = onbInit();
     <button class="btn pri" data-act="onbdone" style="width:100%;padding:14px;font-size:17px">Начать</button>
     <button class="btn" data-act="import" style="width:100%;margin-top:8px">${ic('up')}У меня есть копия — загрузить из файла</button></div>`;
   return h; }
-function onbSync(){ let w = document.getElementById('onb'); if (!S.settings.onb || view === 'transfer'){ if (w) w.remove(); document.body.classList.remove('evon'); return; }
+function onbSync(){ let w = document.getElementById('onb'); if (!S.settings.onb){ if (w) w.remove(); document.body.classList.remove('evon'); return; }
   if (!w){ w = document.createElement('div'); w.id = 'onb'; document.body.appendChild(w); } const y = w.scrollTop; w.innerHTML = onbHTML(); w.scrollTop = y; document.body.classList.add('evon'); }
 function onbDone(){ const O = onbInit(); if (!O.items.size) return toast('Выбери хотя бы один пункт');
   const all = Object.entries(CATALOG).flatMap(([ax, l]) => l.map(([id, t]) => ({id, ax, t}))), ch = all.filter(x => O.items.has(x.id));
@@ -2384,7 +2336,6 @@ function vSetup(){
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Копия и перенос на другой телефон</h2><div class="small">Все данные лежат только в этом браузере. Если очистить браузер или сменить телефон, данные пропадут. Раз в неделю сохраняй копию в файл: в Telegram «Избранное», на флешку или в облако. Дневник в копии остаётся зашифрованным.</div>
     <div class="bcol" style="margin-top:12px"><button class="btn pri" data-act="export"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Скачать копию</button><button class="btn" data-act="copyexp"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Скопировать копию</button><button class="btn" data-act="import"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Загрузить из файла</button></div>
     <div class="muted tiny" style="margin-top:8px">Перенос на другой телефон: здесь нажми «Скачать копию» и отправь файл себе (например, в Telegram «Избранное»), на новом телефоне открой приложение и нажми «Загрузить из файла». Загрузка заменяет все данные на этом устройстве.</div>
-    <p class="small"><a href="#transfer">Как перенести записи с прежнего адреса</a></p>
     ${S.lastExport?`<div class="muted tiny" style="margin-top:6px">Последняя копия: ${fmtD(new Date(S.lastExport))}</div>`:''}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Дневник</h2>${S.crypto?`<form data-form="dchange"><div class="nums"><label class="f">Старый пароль<input class="in" type="password" name="o" required></label><label class="f">Новый пароль<input class="in" type="password" name="n" minlength="6" required></label></div><button class="btn" style="margin-top:10px">Сменить пароль</button></form>`:'<div class="muted small">Пароль задаётся при первом входе в дневник.</div>'}</div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg> Как поставить на телефон</h2><div class="small">
@@ -2434,7 +2385,6 @@ function tFinish(id){
   (S.timers.log[day] ||= []).push({id, t:p.t, min, at:Date.now()});
   return p; }
 function tCheck(){
-  if (isTransferPage()) return;
   const done = []; for (const id of Object.keys(S.timers.run)){ const r = S.timers.run[id]; if (r && r.st && tRem(r) <= 0) done.push(tFinish(id)); }
   if (!done.length) return false;
   save(true); beep(); vib([250,120,250]); toast(`Время вышло ✓ ${done.map(p => tItem(p) ? `«${tItem(p).t}» отмечено` : p.t).join(', ')}`);
@@ -3803,7 +3753,6 @@ function vTown(){
   const nextN = CITY.need[L], prevN = CITY.need[L-1], bon = townBonus(), lvSum = ids.reduce((a,i)=>a+bLvl(i),0), lvAll = ids.reduce((a,i)=>a+ECON.town[i].lv,0);
   const td = getDay(key(today())), tsc = dayScore(td), left = countedItems(key(today())).filter(i => itemVal(td, i.id) < 1).length;
   let h = `<div class="top"><h1>Город</h1><span class="icon-btn" id="coinBal">${nf(Math.max(0,X.bal))}${CO}</span><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
-  if (location.hostname === 'istihama-app.github.io' && !S.settings.transferNoticeClosed) h += `<div class="banner"><b>Пользовался «Ихсаном» на ihsan-day.github.io?</b><div class="chips" style="margin-top:8px"><a class="btn" href="#transfer">Как перенести записи</a><button class="btn" data-act="transferdismiss">Скрыть</button></div></div>`;
   h += `<a class="card daystrip" href="#today"><span class="dsp ${dayKept(td) ? 'ok' : ''}">${pct(tsc)}%</span><span class="grow"><b>${dayKept(td) ? 'День засчитан' : tsc ? 'День идёт' : 'Сегодняшние дела'}</b><span class="tiny muted">${left ? `осталось ${left} из ${ITEMS_ON().length} · ` : 'всё сделано · '}+${nf(X.today)} монет сегодня · серия ${streak()} дн.</span></span><span class="dgo">Отметить →</span></a>`;
   h += unlCard();
   h += `<div class="card axis-faith citycard"><div class="rhead"><span class="clv">${L}</span><div class="grow"><b style="font-size:18px">${CITY.names[L-1]}</b><div class="tiny muted">уровень города ${L} из 7 · ${MOSQUE_N[L-1].toLowerCase()}</div></div><button class="chip btn" data-act="twn" data-t="mosque">мечеть</button></div>
@@ -4683,7 +4632,6 @@ document.addEventListener('click', async e => {
     case 'bklater': S.bkSnooze = Date.now(); save(); toast('Напомню через три дня'); break;
     case 'copyexp': { try { await navigator.clipboard.writeText(await exportText()); S.lastExport = Date.now(); save(); toast('Скопировано — вставь в «Избранное» в Telegram'); render(); } catch(err){ toast('Не получилось скопировать'); } return; }
     case 'import': $('#importFile').click(); return;
-    case 'transferdismiss': S.settings.transferNoticeClosed = true; save(); break;
     case 'reset': if (await ask('Стереть ВСЕ данные на этом устройстве? Сначала сделай резервную копию.','Дальше') && await ask('Точно? Отменить будет нельзя.','Стереть')) { S = defaults(); KEY = null; diaryCache = null; PH.before = PH.after = null; await idbSet('photo_before',null); await idbSet('photo_after',null); save(true); toast('Данные стёрты'); } break;
     default: return;
   }
@@ -4815,11 +4763,11 @@ document.addEventListener('submit', async e => {
   } catch(err){ toast('Ошибка шифрования в этом браузере'); }
   render();
 });
-async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:isTransferPage() ? transferState() || S : S, photos:{before:PH.before, after:PH.after}}); }
+async function exportText(){ return JSON.stringify({app:'chetyre-sily', v:1, exported:new Date().toISOString(), state:S, photos:{before:PH.before, after:PH.after}}); }
 const isPhone = () => matchMedia('(pointer: coarse)').matches;
 async function shareFile(txt, name, type){ try { const f = new File([txt], name, {type}); if (isPhone() && navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return 'shared'; } } catch(e){ if (e && e.name === 'AbortError') return 'cancel'; } return ''; }
 async function doExport(){
-  const filename = `ihsan-${isTransferPage() ? 'perenos-' : ''}${key(today())}.json`;
+  const filename = `ihsan-${key(today())}.json`;
   const txt0 = await exportText(), sh = await shareFile(txt0, filename, 'application/json');
   if (sh === 'shared'){ S.lastExport = Date.now(); save(); toast('Копия готова — сохрани её в «Файлы» или отправь себе'); return; } if (sh === 'cancel') return;
   try { const blob = new Blob([txt0], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -4839,8 +4787,7 @@ setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost','127.0.0.1'].includes(location.hostname)))
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   PH.before = await idbGet('photo_before'); PH.after = await idbGet('photo_after');
-  photosLoaded = true;
-  if (isTransferPage() || view === 'path') render();
+  if (view === 'path') render();
 })();
 </script>
 </body>
