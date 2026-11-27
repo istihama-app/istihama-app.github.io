@@ -554,7 +554,7 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 /* ================== КОНСТАНТЫ ================== */
 const LS = 'chetyre-sily-v1';
 const AXO = ['faith','mind','spirit','body'];
-const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Дух',e:'🔥'}, body:{n:'Тело',e:'💪'}};
+const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Нафс',e:'🔥'}, body:{n:'Тело',e:'💪'}};
 const ITEMS = [
   {id:'namaz', ax:'faith', t:'Пять намазов вовремя'},
   {id:'azkar', ax:'faith', t:'Азкары утро и вечер'},
@@ -641,7 +641,7 @@ const DHIKR0 = [
 ];
 const KAABA = [21.4225, 39.8262];
 const GROZNY = {lat:43.3178, lon:45.6985, place:'Грозный', decl:7};
-// Большие вызовы года (из плана по месяцам) — плоды Духа на дереве
+// Большие вызовы года (из плана по месяцам) — плоды Нафса на дереве
 const BIG0 = ['Рамадан и итикаф','Выступление перед людьми','Горы и неделя без соцсетей','Своя инициатива'];
 
 // Вид дома: первый вариант в каждой строке — по умолчанию; p — цена (без p — бесплатно), c — цвет.
@@ -1480,7 +1480,7 @@ let ONB = null;
 const onbInit = () => ONB = ONB || {name:'', place:'', lat:null, lon:null, decl:7, theme:S.settings.theme || 'sand', items:new Set(Object.values(CATALOG).flat().filter(x => x[2]).map(x => x[0]))};
 function onbHTML(){ const O = onbInit();
   let h = `<div class="onbsheet"><div class="onbhead"><img src="icon-192.png" alt="" width="64" height="64" onerror="this.remove()"><div><b>Ихсан <span class="brandar" lang="ar">إحسان</span></b><span>каждое дело — на совесть</span></div></div>
-    <p class="small">Каждый день отмечай дела в четырёх разделах: Вера, Разум, Дух и Тело. За дела Разума, Духа и Тела растёт твой город — с жителями, кварталами и высотками. Дела Веры — только для себя, за них в игре ничего не дают.</p>
+    <p class="small">Каждый день отмечай дела в четырёх разделах: Вера, Разум, Нафс и Тело. За дела Разума, Нафса и Тела растёт твой город — с жителями, кварталами и высотками. Дела Веры — только для себя, за них в игре ничего не дают.</p>
     <p class="tiny muted">Всё хранится только в этом телефоне: ни регистрации, ни сервера. Дневник закрывается паролем.</p>
     <div class="onbblk"><b>Как к тебе обращаться</b><input class="in" id="onbname" maxlength="30" placeholder="Имя — необязательно" value="${esc(O.name)}"></div>
     <div class="onbblk"><b>Пол</b>${sexChoices()}</div>
@@ -1589,7 +1589,7 @@ function foodCard(){ const F = fdG(), tk = key(today()), L = F.log[tk] || [], T 
       <div class="tiny muted" style="margin-top:6px">Норма — по формуле Миффлина — Сан Жеора: для похудения −15%, белок 2 г на кг веса. Это ориентир, не врачебный совет.</div></details></div>`; }
 
 /* ================== ПУТЬ: ЧЕТЫРЕ РАЗДЕЛА (v38) ================== */
-// Вкладка «Путь» = четыре раздела (Вера, Разум, Дух, Тело). В каждом: цель года, сегодня в разделе, плитки инструментов с живыми подписями, таймеры раздела.
+// Вкладка «Путь» = четыре раздела (Вера, Разум, Нафс, Тело). В каждом: цель года, сегодня в разделе, плитки инструментов с живыми подписями, таймеры раздела.
 // Инструменты — прежние страницы (#tools, #path, #diary); сверху у них «‹ Раздел» и вкладки только этого раздела.
 let wayTab = 'faith';
 const OWNER_GOALS = {faith:'Читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.', mind:'Около 25 книг, итоговое эссе.', spirit:'40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.', body:'93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.'};
@@ -1627,7 +1627,9 @@ function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day
   let h = topbar('Путь');
   h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px"><button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button></div>`;
   h += `<div class="waytabs">${AXO.map(x => `<button class="wt axis-${x} ${x === a ? 'on' : ''}" data-act="wayax" data-a="${x}"><span class="axb">${ic(AXI[x])}</span>${AX[x].n}</button>`).join('')}</div>`;
-  h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}</b><span class="rst">${({faith:'Коран, намаз, иман', mind:'учёба и чтение', spirit:'страхи, мухасаба, характер', body:'тело и здоровье'})[a]}</span></div>
+  h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}${a === 'spirit' ? ' · <bdi lang="ar">نفس</bdi>' : ''}</b>
+    ${a === 'spirit' ? '' : `<span class="rst">${({faith:'Коран, намаз, иман', mind:'учёба и чтение', body:'тело и здоровье'})[a]}</span>`}</div>
+    ${a === 'spirit' ? '<div class="small muted" style="margin-top:4px">Самочувствие, размышления, работа со страхами и отношения с близкими.</div>' : ''}
     ${goal ? `<div class="small" style="margin-top:6px"><span class="muted">Цель года:</span> ${esc(goal)}</div>` : `<div class="tiny muted" style="margin-top:6px">${planOn() ? 'Цель года можно записать в «Плане».' : 'Цель года можно записать, если включить «План года» в настройках.'}</div>`}
     <a class="waytoday" href="#today" data-act="dtoday"><span>Сегодня в разделе: <b>${nd} из ${its.length}</b></span><span class="bar" style="flex:1"><i style="width:${pct(its.length ? nd/its.length : 0)}%;background:var(--a)"></i></span><span class="dgo">отметить →</span></a></div>`;
   h += `<div class="waygrid">${WAY[a].map(([id, v, t, icn, n]) => { const lock = !viewOpen(v); return `<button class="wtile ${lock ? 'locked' : ''}" data-act="wgo" data-v="${v}" data-t="${t}" data-a="${a}" ${lock ? 'disabled' : ''}><span class="wti axis-${a}">${ic(icn)}</span><b>${n}</b><span class="tiny muted">${lock ? 'откроется позже' : esc(waySub(id))}</span></button>`; }).join('')}</div>`;
@@ -1636,8 +1638,8 @@ function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day
   if (tm.length) h += `<div class="card"><h2>${ic('timer')} Таймеры раздела</h2><div class="chips">${tm.map(tChip).join('')}</div><div class="tiny muted" style="margin-top:6px">Таймер закончился — пункт дня отмечается сам. Сделал без таймера — отметь пункт на «Сегодня» вручную.</div></div>`;
   return h; }
 const WHEEL_AREAS = [
-  ['Вера','mosque','faith'],['Разум','book','mind'],['Дух','compass','spirit'],
-  ['Тело','dumb','body'],['Близкие','user','people'],['Самочувствие','heart','wellbeing']
+  [AX.faith.n,'mosque','faith'],[AX.mind.n,'book','mind'],[AX.spirit.n,'compass','spirit'],
+  [AX.body.n,'dumb','body'],['Близкие','user','people'],['Самочувствие','heart','wellbeing']
 ];
 let wayWheelOpen = false, wheelStep = 0;
 const wheelArea = () => WHEEL_AREAS[((wheelStep % WHEEL_AREAS.length) + WHEEL_AREAS.length) % WHEEL_AREAS.length];
@@ -1948,7 +1950,7 @@ const BA = [
   {k:'w', n:'Вес, кг', dir:-1}, {k:'waist', n:'Талия, см', dir:-1}, {k:'sq', n:'Присед, кг', dir:1}, {k:'bp', n:'Жим лёжа, кг', dir:1}, {k:'dl', n:'Становая, кг', dir:1},
   {k:'pu', n:'Подтягивания', dir:1}, {k:'run', n:'5 км, минут', dir:-1}, {k:'ql', n:'Чтение Корана', dir:1, sel:QLEVEL}, {k:'suras', n:'Сур наизусть', dir:1, auto:1},
   {k:'books', n:'Книг прочитано', dir:1, auto:1}, {k:'fears', n:'Страхов пройдено', dir:1, auto:1},
-  {k:'s_faith', n:'Вера — самооценка 1–10', dir:1}, {k:'s_mind', n:'Разум — самооценка 1–10', dir:1}, {k:'s_spirit', n:'Дух — самооценка 1–10', dir:1}, {k:'s_body', n:'Тело — самооценка 1–10', dir:1},
+  {k:'s_faith', n:'Вера — самооценка 1–10', dir:1}, {k:'s_mind', n:'Разум — самооценка 1–10', dir:1}, {k:'s_spirit', n:'Нафс — самооценка 1–10', dir:1}, {k:'s_body', n:'Тело — самооценка 1–10', dir:1},
 ];
 function baField(side, f){
   const o = S[side], locked = o.locked, v = o[f.k];
@@ -2234,7 +2236,7 @@ function pBooks(){
     h += `<div class="card"><h2>${st?STAGES[st].n+' — «'+STAGES[st].t+'»':'Мои книги'}</h2>${list.map(({b,i})=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="dot" style="background:var(--${b.ax});margin-top:8px"></span><div class="grow">${esc(b.t)}${b.done?` <span class="muted tiny">· ${fmtD(parse(b.done))}</span>`:''}</div>
       <button class="chip btn ${b.s===2?'on':''}" data-act="bcyc" data-i="${i}">${ST[b.s]}</button>${!BOOKS0.some(x=>x[2]===b.t)?`<button class="btn danger" style="padding:3px 8px" data-act="bdel" data-i="${i}">✕</button>`:''}</div>
       ${b.s?`<input class="in" style="padding:6px 10px;font-size:14px" data-bind="books|${i}|idea" placeholder="Главная мысль книги одной фразой" value="${esc(b.idea||'')}"><details class="bnotes" ${b.notes ? '' : ''}><summary class="tiny">Заметки и цитаты${b.notes ? ' ✓' : ''}</summary>${txt(`books|${i}|notes`, 'Что запомнилось, цитаты со страницами, с чем не согласен…', 5)}</details>`:''}</div>`).join('')}</div>`; });
-  h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Своя книга</h2><div class="row"><input class="in grow" id="b_t" placeholder="Автор — «Название»"><select class="in" id="b_ax" style="width:auto"><option value="mind">Разум</option><option value="faith">Вера</option><option value="spirit">Дух</option><option value="body">Тело</option></select></div><button class="btn pri" style="margin-top:8px" data-act="badd">Добавить</button></div>`;
+  h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Своя книга</h2><div class="row"><input class="in grow" id="b_t" placeholder="Автор — «Название»"><select class="in" id="b_ax" style="width:auto"><option value="mind">Разум</option><option value="faith">Вера</option><option value="spirit">Нафс</option><option value="body">Тело</option></select></div><button class="btn pri" style="margin-top:8px" data-act="badd">Добавить</button></div>`;
   return h;
 }
 function pSuras(){ return hifzCard() + pSuras0(); }
@@ -2363,7 +2365,7 @@ function vPlan(){
   if (planTab==='week') h += `<div class="card"><table>${[['Пн','Зал: силовая A','С марта — сунна-пост'],['Вт','Кардио + техника карате','Урок Корана у учителя'],['Ср','Зал: силовая B','—'],['Чт','Кардио + техника','Урок Корана. С июня — второй пост'],['Пт','Зал: силовая A','Джума, «аль-Кахф», салават, садака'],['Сб','Горы, 10 км пешком, плавание','Родственники. Чтение 2 ч, блог и бизнес 3 ч'],['Вс','Отдых','Повтор выученного. Текст по прочитанному. Разбор недели']].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table></div>`;
   if (planTab==='rules') h += `<div class="card">${RULES.map((r,i)=>`<div style="padding:8px 0;border-top:${i?'1px solid var(--line)':'0'}">${r}</div>`).join('')}</div>
     <div class="card"><h2>Ввод по неделям</h2><div>Неделя 1 — сон и пять намазов вовремя.<br>Неделя 2 — Коран и утреннее чтение.<br>Неделя 3 — зал.<br>Неделя 4 — уроки по религии и вызовы страху.</div></div>
-    <div class="card"><h2>Цели к ноябрю 2027</h2><div><b>Вера:</b> читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.<br><b>Разум:</b> около 25 книг, итоговое эссе.<br><b>Дух:</b> 40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.<br><b>Тело:</b> 93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.</div></div>`;
+    <div class="card"><h2>Цели к ноябрю 2027</h2><div><b>Вера:</b> читать Коран с таджвидом, 20 сур наизусть, смыслы прочитаны целиком.<br><b>Разум:</b> около 25 книг, итоговое эссе.<br><b>Нафс:</b> 40–50 шагов навстречу страхам, 4 больших вызова, своя инициатива.<br><b>Тело:</b> 93–95 кг, талия −6…10 см, присед 140×5, жим 110×5, становая 180×5, 15 подтягиваний, 5 км быстрее 25 минут.</div></div>`;
   if (planTab==='year') h += `<div class="card"><div class="wrap"><table><tr><th>Месяц</th>${AXO.map(a=>`<th>${AX[a].n}</th>`).join('')}</tr>${Object.entries(MONTHPLAN).map(([k,v])=>`<tr ${k===key(today()).slice(0,7)?'style="background:var(--soft)"':''}><td><b>${MN[+k.slice(5)-1]}</b><br><span class="tiny muted">${k.slice(0,4)}</span></td>${v.map(x=>`<td class="small">${esc(x)}</td>`).join('')}</tr>`).join('')}</table></div></div>`;
   return h;
 }
@@ -2656,7 +2658,7 @@ document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && townFull){ t
 document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tCheck(); });
 
 /* ================== ДЕРЕВО ГОДА ================== */
-// Ствол — Вера, корни — Дух, ветви — Тело, листья — Разум и хорошие дни, плоды — цели года.
+// Ствол — Вера, корни — Нафс, ветви — Тело, листья — Разум и хорошие дни, плоды — цели года.
 // Рисунок детерминированный: форма задаётся сидом от даты старта, рост — накопленными баллами.
 let treePart = 'about';
 const hstr = s => { let h = 2166136261; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h>>>0; };
@@ -2709,7 +2711,7 @@ function treeSVG(T){
   if (sn === 'summer') s += `<circle cx="338" cy="62" r="26" fill="#f4c64e" opacity=".85"/>`;
   if (sn === 'winter') for (let i=0;i<26;i++) s += `<circle cx="${f1(rs()*W)}" cy="${f1(rs()*(gy-30))}" r="${f1(1+rs()*1.6)}" fill="#fff" opacity="${dark?.35:.85}"/>`;
   if (sn === 'autumn') s += `<circle cx="338" cy="66" r="22" fill="#f0a54a" opacity=".45"/>`;
-  // корни — Дух
+  // корни — Нафс
   const rr = rng(seed ^ 0xA7), eR = ez(T.E/150), nr = T.E > 0 ? Math.min(10, 2 + Math.floor(T.E/6)) : 1;
   let roots = '';
   for (let i=0;i<10;i++){ const side = i%2 ? 1 : -1, ang = (i===0 ? (rr()-.5)*8 : side*(12 + 6.5*i + rr()*8)) * Math.PI/180, lf = i===0 ? 1 : .55 + rr()*.4, t1 = rr(), t2 = rr();
@@ -2766,7 +2768,7 @@ function treeDetail(T){
   if (treePart === 'trunk') return `<h2><span class="dot" style="background:var(--faith)"></span>Ствол — Вера</h2><div class="muted small" style="margin:-6px 0 10px">Ствол растёт в высоту и толщину от каждого дня с намазами, Кораном и азкарами.</div>
     <div class="kpis">${k(pct(c.ax.faith)+'%','Вера в среднем за день')}${k(c.prDue ? pct(c.pr/c.prDue)+'%' : '—','намазов вовремя')}${k(c.quran,'минут Корана')}${k(D.filter(d=>d?.c?.azkar).length,'дней с азкарами')}${k(D.filter(d=>d?.c?.ilm).length,'дней учёбы по религии')}</div>`;
   if (treePart === 'roots'){ const done = S.fears.map(f=>f).filter(f=>f.done);
-    return `<h2><span class="dot" style="background:var(--spirit)"></span>Корни — Дух</h2><div class="muted small" style="margin:-6px 0 10px">Под землёй, их не видно со стороны. Каждый пройденный страх, мухасаба и вызов удлиняет корни или даёт новый.</div>
+    return `<h2><span class="dot" style="background:var(--spirit)"></span>Корни — Нафс</h2><div class="muted small" style="margin:-6px 0 10px">Под землёй, их не видно со стороны. Каждый пройденный страх, мухасаба и вызов удлиняет корни или даёт новый.</div>
     <div class="kpis">${k(T.fearsDone+' из '+S.fears.length,'страхов пройдено')}${k(c.fear,'шагов вопреки страху')}${k(T.muh,'вечеров мухасабы')}${k(T.wch,'вызовов недели')}${k(T.big+' из 4','больших вызовов')}</div>
     ${done.length?`<h3>Пройденные страхи</h3>${done.map(f=>`<div class="row" style="padding:4px 0;flex-wrap:nowrap"><span class="done">✓</span><span class="grow">${esc(f.t)}</span><span class="muted tiny">${f.date?fmtD(parse(f.date)):''}</span></div>`).join('')}`:'<div class="muted small">Пройденных страхов пока нет — лестница в разделе «Путь».</div>'}`; }
   if (treePart === 'branches'){ const w = weightPoints();
@@ -2782,7 +2784,7 @@ function treeDetail(T){
     ${!G.some(g=>g.g==='Книги')?'<div class="muted small" style="margin-top:8px">Книги и суры появятся здесь, когда отметишь первую в разделе «Путь».</div>':''}`; }
   return `<h2>Как растёт дерево</h2>
     <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--faith);margin-top:7px"></span><div><b>Ствол — Вера.</b> Намазы, Коран, азкары, учёба: от них ствол выше и толще.</div></div>
-    <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--spirit);margin-top:7px"></span><div><b>Корни — Дух.</b> Страхи, мухасаба и вызовы. Растут под землёй.</div></div>
+    <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--spirit);margin-top:7px"></span><div><b>Корни — Нафс.</b> Страхи, мухасаба и вызовы. Растут под землёй.</div></div>
     <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--body);margin-top:7px"></span><div><b>Ветви — Тело.</b> Тренировки, шаги, еда и сон.</div></div>
     <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--mind);margin-top:7px"></span><div><b>Листья — Разум и хорошие дни.</b> Каждый день — листок. Пропуск дерево не губит, крона просто реже.</div></div>
     <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin:6px 0"><span class="dot" style="background:var(--gold);margin-top:7px"></span><div><b>Плоды — цели года.</b> Книги, суры, веса в зале, большие вызовы.</div></div>
@@ -3438,7 +3440,7 @@ function claimPlotStarter(){
 function vPlot(){
   const X = plotCtx(), C = X.C, B = S.build, before = today() < startDate();
   let h = `<div class="top"><h1>Мой участок</h1><a class="icon-btn" href="#town">← Город</a><a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`;
-  if (!C.earned && !B.log.length) h += `<div class="banner">${before?`План стартует ${fmtD(startDate())}. `:''}Отмечай дела Разума, Духа и Тела на экране «Сегодня», чтобы заработать монеты${CO} на стройку.</div>`;
+  if (!C.earned && !B.log.length) h += `<div class="banner">${before?`План стартует ${fmtD(startDate())}. `:''}Отмечай дела Разума, Нафса и Тела на экране «Сегодня», чтобы заработать монеты${CO} на стройку.</div>`;
   h += `<div class="kpis pk"><div class="kpi"><div class="v" id="coinBal">${nf(Math.max(0,C.bal))}${CO}</div><div class="l">Монет сейчас</div></div>
     <div class="kpi"><div class="v">+${nf(C.today)}</div><div class="l">Сегодня</div></div>
     <div class="kpi"><div class="v">${nf(C.earned)}</div><div class="l">Заработано за всё время</div></div></div>`;
@@ -3464,7 +3466,7 @@ function vPlot(){
   return h; }
 function coinsCard(C){
   return `<div class="card"><div class="rhead">${CO.replace('class="coin"','class="coin" style="margin:0;font-size:20px"')}<b style="font-size:17px">Откуда монеты</b></div>
-      <div class="plist"><div class="g"><span>Пункт дня (Разум, Дух, Тело) · ${ECON.item}</span><b>${nf(C.items)}</b></div>
+      <div class="plist"><div class="g"><span>Пункт дня (Разум, Нафс, Тело) · ${ECON.item}</span><b>${nf(C.items)}</b></div>
       <div class="g"><span>Таймер доведён до конца · +${ECON.timer} <span class="muted tiny">до ${ECON.timerMax} в день</span></span><b>${nf(C.timers)}</b></div>
       ${C.bonus > .5 ? `<div class="g"><span class="muted">из них прибавка от зданий города</span><b>${nf(C.bonus)}</b></div>` : ''}
       <div class="g"><span>Мои дела · +${ECON.own} <span class="muted tiny">до ${ECON.ownMax} в день</span></span><b>${nf(C.own)}</b></div>
@@ -3549,7 +3551,7 @@ const TOWN_D = { spring:'Чистая вода у реки.', road:'Грунт �
   stop:'Остановка на главной улице.', admin:'Здание с колоннами и флагом.', clinic:'Врач рядом с домом.', bazaar:'Ряды под цветными навесами.', library:'Читальный зал за школой.', post:'Письма и посылки.', stadium:'Поле, дорожки и трибуны.',
   fire:'Гараж с красными воротами и вышка.', wtower:'Вода во все дома.', park:'Аллеи, фонтан, скамейки.', hospital:'Большое белое здание на западе.', medrese:'Учёба рядом с мечетью.', bridge:'Путь на тот берег — к башне и канатке.',
   power:'Свет во всём городе.', quay:'Прогулка вдоль реки.', culture:'Зал для собраний и праздников.', museum:'История края.', station:'Поезда на запад.', garden:'Пруд, беседка и много деревьев на юге.', tower:'Вайнахская башня на склоне за рекой.', cable:'Кабинки в горы.' };
-const BONUS_T = {mind:'к монетам за пункты Разума', spirit:'к монетам за пункты Духа', body:'к монетам за пункты Тела', all:'к монетам за все пункты', mat:'скидка на материалы', week:'монет за каждую неделю без пропусков'};
+const BONUS_T = {mind:'к монетам за пункты Разума', spirit:'к монетам за пункты Нафса', body:'к монетам за пункты Тела', all:'к монетам за все пункты', mat:'скидка на материалы', week:'монет за каждую неделю без пропусков'};
 let townSel = '', townFull = false, townMove = '';
 function townFullSet(on){ townFull = !!on; document.body.classList.toggle('tfull', townFull); }
 // --- рузба (пятничная молитва): d.rz = 1 — был, 'x' — не смог (серию не рвёт), нет поля — не отмечено ---
@@ -3840,13 +3842,13 @@ function bCard(id, X, big){ const o = ECON.town[id], l = bLvl(id), st = bState(i
 function howCard(){ const open = !S.settings.howSeen;
   return `<details class="card howcard" ${open ? 'open' : ''} data-act="howseen"><summary><b>Как всё связано</b><span class="tiny muted">${open ? 'свернуть' : 'открыть схему'}</span></summary>
     <div class="howflow">
-      <div class="hfour">${[['faith','Вера','Коран, намаз, иман'],['mind','Разум','учёба и книги'],['spirit','Дух','страхи, мухасаба, характер'],['body','Тело','тренировки, еда, сон']].map(([a,n,t]) => `<div class="hb4 axis-${a}"><b><span class="dot" style="background:var(--${a})"></span>${n}</b><span>${t}</span></div>`).join('')}</div>
+      <div class="hfour">${[['faith','Вера','Коран, намаз, иман'],['mind','Разум','учёба и книги'],['spirit','Нафс','страхи, мухасаба, характер'],['body','Тело','тренировки, еда, сон']].map(([a,n,t]) => `<div class="hb4 axis-${a}"><b><span class="dot" style="background:var(--${a})"></span>${n}</b><span>${t}</span></div>`).join('')}</div>
       <div class="harr">↓ отмечаешь каждый день</div>
       <div class="hrow"><a class="hbox" href="#today"><b>Сегодня</b><span>дела дня по четырём разделам</span></a></div>
-      <div class="hsplit"><div class="hcol"><div class="harr">↓ Разум, Дух, Тело</div><div class="hbox gold"><b>Монеты</b><span>за отмеченные дела</span></div><div class="harr">↓ тратишь на</div>
+      <div class="hsplit"><div class="hcol"><div class="harr">↓ Разум, Нафс, Тело</div><div class="hbox gold"><b>Монеты</b><span>за отмеченные дела</span></div><div class="harr">↓ тратишь на</div>
         <div class="hbox"><b>Город · Дом · Участок</b><span>здания, квартал, высотки, комнаты</span></div><div class="harr">↓ город живёт сам</div><div class="hbox"><b>Жители</b><span>растут, если хватает воды, работы, школ; газета и просьбы каждый день</span></div></div>
         <div class="hcol"><div class="harr">↓ Вера</div><div class="hbox faith"><b>Только для себя</b><span>кольцо, серия, процент дня — без монет</span></div><div class="harr">↓ каждый день</div>
-        <a class="hbox ${unl() < 3 ? 'locked' : ''}" href="#tree"><b>Дерево года</b><span>Вера — ствол, Дух — корни, Тело — ветви, Разум — листья</span></a><div class="harr">↓ итоги</div><a class="hbox" href="#way"><b>Путь</b><span>инструменты разделов: намаз, суры, книги, страхи, тренировки</span></a><div class="harr">↓ итоги</div><a class="hbox ${unl() < 2 ? 'locked' : ''}" href="#stats"><b>Итоги</b><span>неделя, месяц, год</span></a></div></div></div></details>`; }
+        <a class="hbox ${unl() < 3 ? 'locked' : ''}" href="#tree"><b>Дерево года</b><span>Вера — ствол, Нафс — корни, Тело — ветви, Разум — листья</span></a><div class="harr">↓ итоги</div><a class="hbox" href="#way"><b>Путь</b><span>инструменты разделов: намаз, суры, книги, страхи, тренировки</span></a><div class="harr">↓ итоги</div><a class="hbox ${unl() < 2 ? 'locked' : ''}" href="#stats"><b>Итоги</b><span>неделя, месяц, год</span></a></div></div></div></details>`; }
 function vTown(){
   const Y = townSync(), D = Y.D, X = coins(), T = S.town, B = S.build, L = cityLvl(), nb = nbStages(), gw = goodWeeks(), ids = Object.keys(ECON.town);
   const nextN = CITY.need[L], prevN = CITY.need[L-1], bon = townBonus(), lvSum = ids.reduce((a,i)=>a+bLvl(i),0), lvAll = ids.reduce((a,i)=>a+ECON.town[i].lv,0);
@@ -3878,7 +3880,7 @@ function vTown(){
   const now = ids.filter(i=>bState(i).next).sort((a,b)=>bState(a).cost - bState(b).cost), later = ids.filter(i=>!bState(i).next && !bState(i).max), done = ids.filter(i=>bState(i).max);
   h += `<div class="towngrid"><div><div class="card"><div class="rhead"><b style="font-size:17px">Можно строить сейчас</b><span class="rst">${now.length}</span></div>${now.length ? now.map(i=>bCard(i, X)).join('') : `<div class="small muted" style="margin-top:6px">Всё доступное построено. Новые здания откроет следующий уровень города.</div>`}</div></div><div>`;
   const bl = Object.entries(bon).filter(([k,v])=>v > 0);
-  h += `<div class="card"><div class="rhead"><b style="font-size:17px">Что город уже даёт</b></div>${bl.length ? `<div class="plist">${bl.map(([k,v])=>`<div class="g"><span>${BONUS_T[k][0].toUpperCase() + BONUS_T[k].slice(1)}</span><b>${k==='week' ? '+'+f1(v).replace('.0','') : (k==='mat'?'−':'+') + String(Math.round(v*10)/10).replace('.', ',') + '%'}</b></div>`).join('')}</div>` : `<div class="small muted" style="margin-top:6px">Пока ничего. Школа и библиотека прибавляют монеты за Разум, стадион — за Тело, парк и музей — за Дух.</div>`}</div>`;
+  h += `<div class="card"><div class="rhead"><b style="font-size:17px">Что город уже даёт</b></div>${bl.length ? `<div class="plist">${bl.map(([k,v])=>`<div class="g"><span>${BONUS_T[k][0].toUpperCase() + BONUS_T[k].slice(1)}</span><b>${k==='week' ? '+'+f1(v).replace('.0','') : (k==='mat'?'−':'+') + String(Math.round(v*10)/10).replace('.', ',') + '%'}</b></div>`).join('')}</div>` : `<div class="small muted" style="margin-top:6px">Пока ничего. Школа и библиотека прибавляют монеты за Разум, стадион — за Тело, парк и музей — за Нафс.</div>`}</div>`;
   h += `<div class="card"><div class="rhead"><b style="font-size:17px">Откроется позже</b></div>${[2,3,4,5,6,7].filter(n=>n > L).map(n=>`<div class="tgoal"><div class="prow"><b>Уровень ${n} · ${CITY.names[n-1]}</b></div><div class="tiny muted">${ids.filter(i=>ECON.town[i].L===n).map(i=>ECON.town[i].n).join(', ')}</div></div>`).join('') || `<div class="small muted" style="margin-top:6px">Все здания открыты.</div>`}
     ${later.filter(i=>ECON.town[i].L <= L).length ? `<div class="tiny muted" style="margin-top:8px">Ждут роста города или другой постройки: ${later.filter(i=>ECON.town[i].L <= L).map(i=>ECON.town[i].n.toLowerCase()).join(', ')}.</div>` : ''}${done.length ? `<div class="tiny muted" style="margin-top:6px">Построено полностью: ${done.map(i=>ECON.town[i].n.toLowerCase()).join(', ')}.</div>` : ''}</div>`;
   if (unl() >= 3) h += giftCard() ;   // лавку мелочей убрали (решение владельца 15.11.2026): мелочи — только подарком дня; купленное остаётся на местах
