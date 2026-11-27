@@ -223,11 +223,11 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .tbname{font-weight:600}
 .tbcount{text-align:center;font-size:48px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .tbcount .muted{font-size:22px;font-weight:600}
-.beads{position:relative;display:block;width:100%;height:126px;padding:0;border:0;border-radius:15px;margin:12px 0 0;overflow:hidden;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;
-  background:radial-gradient(ellipse 55% 55% at 50% 46%, var(--faith-s), transparent 85%);
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent);mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent)}
-.beads::before{content:'';position:absolute;top:46%;left:4%;right:4%;height:3px;background:var(--gold);opacity:.55}
-.bead{position:absolute;left:0;top:46%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;pointer-events:none;
+.beads{position:relative;display:block;width:100%;height:min(49vh,410px);min-height:270px;padding:0;border:0;border-radius:15px;margin:12px 0 0;overflow:hidden;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(ellipse 55% 50% at 50% 48%, var(--faith-s), transparent 78%);
+  -webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}
+.beads::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:3px;transform:translateX(-50%);background:var(--gold);opacity:.55}
+.bead{position:absolute;left:50%;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.75) 0,rgba(255,255,255,0) 26%),radial-gradient(circle at 50% 45%,var(--bead1),var(--bead2) 92%);
   box-shadow:inset 0 -4px 7px rgba(0,0,0,.28),0 3px 6px rgba(0,0,0,.22);
   transition:transform .4s cubic-bezier(.25,1.25,.45,1),opacity .4s,filter .4s;will-change:transform}
@@ -302,7 +302,7 @@ body.tfull{overflow:hidden} body.tfull nav.bottom{display:none}
 .townwrap.full .tfbtn{top:calc(10px + var(--sat))} .townwrap.full .tmbtn{bottom:calc(12px + var(--sab))}
 body.tfull #tsel{position:fixed;left:8px;right:64px;bottom:calc(8px + var(--sab));z-index:46;max-height:46vh;overflow:auto;margin:0;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 @media (min-width:900px){.townwrap{height:min(66vh,620px)}}
-html,body{touch-action:pan-x pan-y;overscroll-behavior-y:none}
+html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 @media (display-mode:standalone){body::before{content:'';position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--bg);z-index:44;pointer-events:none}} /* страница не приближается пальцами и двойным касанием; карта города — своим жестом */
 #tmap{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none} #tmap.drag{cursor:grabbing}
 .tmbtn{position:absolute;right:8px;bottom:8px;display:grid;gap:6px} .tmbtn .navbtn{width:40px;height:40px;background:color-mix(in srgb,var(--card) 88%,transparent)}
@@ -564,7 +564,16 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .diary-turn-right{animation:diary-right .46s cubic-bezier(.2,.68,.29,1);transform-origin:right center}
 @keyframes diary-left{from{transform:rotateY(-64deg) skewY(-4deg);--leaf-shade:.8;opacity:.75}to{transform:rotateY(0);--leaf-shade:0;opacity:1}}
 @keyframes diary-right{from{transform:rotateY(64deg) skewY(4deg);--leaf-shade:.8;opacity:.75}to{transform:rotateY(0);--leaf-shade:0;opacity:1}}
-#reportDialog{border:1px solid var(--line);padding:0;margin:auto;width:min(94vw,830px);max-height:94vh;background:var(--bg);color:var(--ink);border-radius:18px;overflow:auto;overscroll-behavior:contain;box-shadow:0 16px 65px #130e1245}
+#reportDialog{
+  --report-safe-top:env(safe-area-inset-top,0px);--report-safe-bottom:env(safe-area-inset-bottom,0px);
+  --report-safe-left:env(safe-area-inset-left,0px);--report-safe-right:env(safe-area-inset-right,0px);
+  position:fixed;inset:calc(var(--report-safe-top) + 8px) var(--report-safe-right) calc(var(--report-safe-bottom) + 8px) var(--report-safe-left);
+  width:min(calc(100vw - var(--report-safe-left) - var(--report-safe-right) - 20px),830px);
+  max-height:calc(100vh - var(--report-safe-top) - var(--report-safe-bottom) - 16px);
+  max-height:calc(100dvh - var(--report-safe-top) - var(--report-safe-bottom) - 16px);
+  border:1px solid var(--line);padding:0;margin:auto;background:var(--bg);color:var(--ink);border-radius:18px;overflow:auto;overscroll-behavior:contain;box-shadow:0 16px 65px #130e1245
+}
+@media(display-mode:standalone){#reportDialog{--report-safe-top:max(env(safe-area-inset-top,0px),24px)}}
 #reportDialog::backdrop{background:#20181385}
 .report-tools{position:sticky;top:0;z-index:1;display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:var(--card);padding:8px 11px;border-bottom:1px solid var(--line)}
 .report-sheet{--report-accent:var(--faith);padding:clamp(13px,4vw,28px);background:var(--card);overflow-wrap:anywhere}
@@ -961,9 +970,10 @@ window.addEventListener('hashchange', route);
 // iPhone не слушает user-scalable=no: гасим жест приближения страницы сами. Карта города (#tmap) приближается своими касаниями — их не трогаем.
 ['gesturestart','gesturechange','gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
 document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !(e.target.closest && e.target.closest('#tmap'))) e.preventDefault(); }, {passive:false});
-function goMainTab(to){
-  if(to==='way'){wayTab='';wayWheelOpen=false;}
-  if(location.hash==='#'+to){render();window.scrollTo(0,0);}
+function goMainTab(to,swipe=false){
+  if(to==='way')wayWheelOpen=false;
+  if(swipe){history.replaceState(history.state,'','#'+to);route();}
+  else if(location.hash==='#'+to){render();window.scrollTo(0,0);}
   else location.hash='#'+to;
 }
 (function wireNavigationSwipe(){
@@ -973,7 +983,7 @@ function goMainTab(to){
     gesture=null;
     if(e.touches.length!==1||$('#reportDialog').open||townFull||evOpen||S.settings.onb)return;
     const touch=e.touches[0];
-    if(touch.clientX<22||touch.clientX>innerWidth-22||e.target.closest('a,button,input,textarea,select,label,summary,canvas,.tabs,.gtabs,.wrap,.townwrap,#quickCard,#lifeDial,#diaryLeaf,#diaryPages,#beads'))return;
+    if(e.target.closest('input,textarea,select,canvas,.tabs,.gtabs,.wrap,.townwrap,#quickCard,#lifeDial,#diaryLeaf,#diaryPages,#beads'))return;
     gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,view};
   },{passive:true});
   main.addEventListener('touchmove',e=>{
@@ -991,23 +1001,20 @@ function goMainTab(to){
     if(start?.id!==end?.identifier||!start||start.view!==view)return;
     const dx=end.clientX-start.x,dy=end.clientY-start.y;
     if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*1.55)return;
-    if(view==='way'&&(wayTab||wayWheelOpen)){
-      if(dx>0)goMainTab('way');
-      return;
-    }
+    if(e.cancelable)e.preventDefault();
     const index=NAV_B.indexOf(view);
     if(index!==-1){
       const available=NAV_B.filter(viewOpen);
       const next=available[available.indexOf(view)+(dx<0?1:-1)];
-      if(next)goMainTab(next);
+      if(next)goMainTab(next,true);
       return;
     }
     if(dx<=0)return;
     const back=$('#main .backc');
-    if(back){back.click();return;}
-    if(view==='setup'||view==='plan')location.hash='#'+settingsFrom;
-    else{const group=grpOf(view);if(group)goMainTab(group.v[0]);}
-  },{passive:true});
+    if(back){if(back.dataset.a)wayTab=back.dataset.a;goMainTab('way',true);return;}
+    if(view==='setup'||view==='plan')goMainTab(settingsFrom,true);
+    else{const group=grpOf(view);if(group)goMainTab(group.v[0],true);}
+  },{passive:false});
 })();
 
 function renderNav(){
@@ -1766,11 +1773,10 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'ba') return S.before && S.before.locked ? '«До» зафиксировано' : 'зафиксировать «До»';
   if (id === 'timer') return `${S.timers.list.length} таймеров`;
   } catch(e){} return ''; }
-function vWay(){ const a = AX[wayTab] ? wayTab : '';
+function vWay(){ const a = AX[wayTab] ? wayTab : 'faith';
   let h = topbar('Путь');
-  h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px">${a?backTo(''):''}<button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button><a class="chip btn" href="#tools" data-act="gotool" data-t="timer">${ic('timer')} Таймеры</a></div>`;
+  h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px"><button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button><a class="chip btn" href="#tools" data-act="gotool" data-t="timer">${ic('timer')} Таймеры</a></div>`;
   h += `<div class="waytabs">${AXO.map(x => `<button class="wt axis-${x} ${x === a ? 'on' : ''}" data-act="wayax" data-a="${x}"><span class="axb">${ic(AXI[x])}</span>${AX[x].n}</button>`).join('')}</div>`;
-  if(!a)return h;
   const tk = key(today()), day = getDay(tk), its = itemsOn(tk).filter(i=>i.ax===a), nd = its.filter(i=>itemVal(day,i.id)>=1).length;
   const goal = isOwner() ? OWNER_GOALS[a] : (S.myplan && S.myplan.goals && S.myplan.goals[a]) || '';
   h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}${a === 'spirit' ? ' · <bdi lang="ar">نفس</bdi>' : ''}</b>
@@ -2859,14 +2865,14 @@ function tTasbih(){
 }
 function drawBeads(){
   const box = $('#beads'); if (!box) return;
-  const D = curD(), c = beadSeq, w=box.clientWidth, center=Math.round(w/2), base = c - D.c;
-  const lo = c - Math.ceil(center/BG)-1, hi = c + Math.ceil((w-center)/BG)+1, have = {};
+  const D=curD(),c=beadSeq,h=box.clientHeight,center=Math.round(h*.48),base=c-D.c;
+  const lo=c-Math.ceil((h-center)/BG)-1,hi=c+Math.ceil(center/BG)+1,have={};
   box.querySelectorAll('.bead').forEach(b=>{ const i = +b.dataset.i; if (i < lo || i > hi) b.remove(); else have[i] = b; });
   for (let i=lo; i<=hi; i++){
     let b = have[i]; const fresh = !b;
     if (fresh){ b = document.createElement('i'); b.className = 'bead'; b.dataset.i = i; b.style.transition = 'none'; box.appendChild(b); }
-    const x = center + (i-c)*BG, sc = i===c ? 1.42 : i<c ? .76 : 1;
-    b.style.transform = `translateX(${x}px) scale(${sc})`;
+    const y=center-(i-c)*BG,sc=i===c ? 1.42 : i<c ? .76 : 1;
+    b.style.transform=`translateY(${y}px) scale(${sc})`;
     b.classList.toggle('cur', i===c); b.classList.toggle('past', i<c);
     b.classList.toggle('last', i >= base && ((i-base) % D.n) === D.n-1);
     if (fresh) requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.transition = ''; }));
