@@ -78,6 +78,8 @@ nav.bottom a.on .i{transform:scale(1.08)}
 .pr{display:flex;gap:6px;margin-top:2px}
 .pr button{width:44px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--soft);font-size:12px;font-weight:600}
 .pr button.on{background:var(--faith);border-color:var(--faith);color:#fff}
+.pr button.pr-made-up,.chip.btn.pr-made-up{background:#f0ca73;border-color:#a47432;color:#412b13}
+.pr-legend{font-size:11px;color:var(--muted);margin-top:5px}
 .axis-faith{--a:var(--faith);--as:var(--faith-s)} .axis-mind{--a:var(--mind);--as:var(--mind-s)}
 .axis-spirit{--a:var(--spirit);--as:var(--spirit-s)} .axis-gold{--a:var(--gold);--as:color-mix(in srgb,var(--gold) 16%,var(--card))} .axis-body{--a:var(--body);--as:var(--body-s)}
 .axcard{border-left:5px solid var(--a)}
@@ -221,11 +223,11 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .tbname{font-weight:600}
 .tbcount{text-align:center;font-size:48px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .tbcount .muted{font-size:22px;font-weight:600}
-.beads{position:relative;height:min(52vh,440px);min-height:300px;margin:10px -16px 0;overflow:hidden;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;
-  background:radial-gradient(ellipse 60% 50% at 50% 56%, var(--faith-s), transparent 75%);
-  -webkit-mask-image:linear-gradient(transparent,#000 16%,#000 84%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 84%,transparent)}
-.beads::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--gold);opacity:.55}
-.bead{position:absolute;left:50%;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;pointer-events:none;
+.beads{position:relative;display:block;width:100%;height:126px;padding:0;border:0;border-radius:15px;margin:12px 0 0;overflow:hidden;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(ellipse 55% 55% at 50% 46%, var(--faith-s), transparent 85%);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent);mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent)}
+.beads::before{content:'';position:absolute;top:46%;left:4%;right:4%;height:3px;background:var(--gold);opacity:.55}
+.bead{position:absolute;left:0;top:46%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.75) 0,rgba(255,255,255,0) 26%),radial-gradient(circle at 50% 45%,var(--bead1),var(--bead2) 92%);
   box-shadow:inset 0 -4px 7px rgba(0,0,0,.28),0 3px 6px rgba(0,0,0,.22);
   transition:transform .4s cubic-bezier(.25,1.25,.45,1),opacity .4s,filter .4s;will-change:transform}
@@ -236,6 +238,7 @@ main{zoom:var(--fz,1)} #townwrap{zoom:calc(1 / var(--fz,1))} #ev .evsheet{zoom:v
 .beads.lap{animation:lap .8s ease-out}
 @keyframes lap{0%{background-color:color-mix(in srgb,var(--gold) 35%,transparent)}100%{background-color:transparent}}
 .tbhint{position:absolute;left:0;right:0;bottom:18px;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.bead{transition:none!important}.beads.lap{animation:none}}
 /* ---- Практика: кибла ---- */
 .qwrap{max-width:300px;margin:0 auto 8px}
 .qdial{width:100%;height:auto;display:block}
@@ -536,6 +539,73 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 .week-compare table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .week-compare th,.week-compare td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:right}
 .week-compare th:first-child{text-align:left}
+.diary-wrap{max-width:690px;margin:0 auto}
+.diary-cover{--folio:#fdedcc;--diary-ink:#3b2a1e;--diary-muted:#735039;--diary-line:#a47c5845;position:relative;padding:9px 10px 12px 16px;border:1px solid #64452e;border-radius:16px 24px 22px 14px;background:repeating-linear-gradient(105deg,#543c2b30 0 1px,transparent 1px 4px),linear-gradient(100deg,#34231c,#684534 45%,#442b23);box-shadow:0 9px 24px #31271938;perspective:1100px}
+.diary-cover::before{content:"";position:absolute;inset:3px;border:1px dashed #d2a36c85;border-radius:inherit;pointer-events:none}
+.diary-cover::after{content:"";position:absolute;right:10%;top:0;width:24px;height:51px;background:linear-gradient(90deg,#713c30,#a75e46,#7a4031);clip-path:polygon(0 0,100% 0,100% 100%,50% 81%,0 100%);pointer-events:none}
+.diary-leaf{position:relative;min-width:0;padding:20px 17px 16px 25px;border:1px solid #e1c69b;border-radius:6px 14px 14px 5px;background:linear-gradient(90deg,#80552e38,transparent 13%),linear-gradient(140deg,#f4e0bc,var(--folio) 30%,#fff7e4 66%,#f0d9b1);color:var(--diary-ink);box-shadow:3px 4px 0 #b5966b,5px 7px 0 #806044;transform-origin:left center;touch-action:pan-y}
+.diary-leaf::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 51%,#6e441747 92%,#fff8ea72 100%);opacity:var(--leaf-shade,0);pointer-events:none}
+.diary-leaf h2{display:block;font:500 clamp(26px,6vw,36px)/1.2 Georgia,serif;margin:6px 0 16px;padding-bottom:9px;border-bottom:1px solid #ae805b;touch-action:pan-y}
+.diary-leaf h2,.diary-leaf .diary-weekday{-webkit-user-select:none;user-select:none}
+.diary-leaf .diary-weekday{color:var(--diary-muted);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.diary-leaf .diary-writing{display:block;width:100%;min-height:245px;padding:0 0 0 9px;margin:0;background:repeating-linear-gradient(to bottom,transparent 0 27px,var(--diary-line) 27px 28px);color:inherit;border:0;border-left:1px solid #b672626a;border-radius:0;font:17px/28px Georgia,serif;resize:vertical}
+.diary-leaf .diary-writing::placeholder{color:var(--diary-muted);opacity:.9}
+.diary-leaf .diary-writing:focus-visible{outline:1px solid #a8754e;outline-offset:3px}
+.diary-head{justify-content:space-between;margin-bottom:9px}
+.diary-head details{flex:1;min-width:0}
+.diary-head summary,.diary-extra summary{min-height:44px;display:list-item;padding:9px 0;cursor:pointer}
+.diary-archive{max-height:260px;overflow:auto}
+.diary-pages.notebook-actions{grid-template-columns:repeat(3,minmax(0,1fr));margin:14px 0 5px}
+.diary-extra{margin-top:12px}
+.diary-extra>summary{font-weight:650}
+.diary-extra .diary-reflection{margin:5px 0}
+.diary-extra .diary-reflection .hint{margin:2px 0}
+.diary-turn-left{animation:diary-left .46s cubic-bezier(.2,.68,.29,1);transform-origin:left center}
+.diary-turn-right{animation:diary-right .46s cubic-bezier(.2,.68,.29,1);transform-origin:right center}
+@keyframes diary-left{from{transform:rotateY(-64deg) skewY(-4deg);--leaf-shade:.8;opacity:.75}to{transform:rotateY(0);--leaf-shade:0;opacity:1}}
+@keyframes diary-right{from{transform:rotateY(64deg) skewY(4deg);--leaf-shade:.8;opacity:.75}to{transform:rotateY(0);--leaf-shade:0;opacity:1}}
+#reportDialog{border:1px solid var(--line);padding:0;margin:auto;width:min(94vw,830px);max-height:94vh;background:var(--bg);color:var(--ink);border-radius:18px;overflow:auto;overscroll-behavior:contain;box-shadow:0 16px 65px #130e1245}
+#reportDialog::backdrop{background:#20181385}
+.report-tools{position:sticky;top:0;z-index:1;display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:var(--card);padding:8px 11px;border-bottom:1px solid var(--line)}
+.report-sheet{--report-accent:var(--faith);padding:clamp(13px,4vw,28px);background:var(--card);overflow-wrap:anywhere}
+.report-sheet h1{font:500 clamp(25px,5vw,36px)/1.15 Georgia,serif;margin:7px 0}
+.report-sheet h2{font:600 19px/1.24 Georgia,serif;margin:18px 0 7px;break-after:avoid}
+.report-sheet .report-brand{color:var(--report-accent);font-weight:650;letter-spacing:.05em}
+.report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:13px;border-block:1px solid var(--line);padding:9px 0}
+.report-metrics strong{display:block;font:500 clamp(22px,5vw,32px) Georgia,serif;color:var(--report-accent)}
+.report-sheet p{margin:6px 0 10px}
+.report-sheet table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+.report-sheet th,.report-sheet td{padding:6px 3px;text-align:right;border-bottom:1px solid var(--line);vertical-align:top}
+.report-sheet th:first-child,.report-sheet td:first-child{text-align:left}
+.report-sheet tr,.report-chart,.report-insight{break-inside:avoid}
+.report-sheet .svgchart{display:block;width:100%;max-height:200px;margin:0}
+.report-insight{border-left:3px solid var(--report-accent);background:var(--faith-s);padding:8px 11px;margin:13px 0}
+.report-insight h2{margin:0 0 6px}
+.report-legend{display:flex;gap:4px 11px;flex-wrap:wrap;margin:5px 0}
+.report-map{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+.report-map h3{font-size:12px;margin:0 0 3px}
+.report-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.report-days i,.report-key{display:inline-block;background:var(--heat-color);border-radius:2px}
+.report-days i{height:8px}
+.report-key{width:10px;height:10px;margin-right:3px}
+.report-days .heat-out{visibility:hidden}
+.report-map .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.heat-no{--heat-color:#d2ccbe}.heat-low{--heat-color:#c4a785}.heat-min{--heat-color:#916339}.heat-kept{--heat-color:#89a88e}.heat-good{--heat-color:#285b48}
+@media(min-width:620px){.report-map{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.diary-turn-left,.diary-turn-right{animation:none}}
+@page{size:A4;margin:13mm}
+@media print{
+  body:has(#reportDialog[open])>*:not(#reportDialog){display:none!important}
+  html:has(#reportDialog[open]){background:#fff!important;color-scheme:light}
+  body:has(#reportDialog[open]){height:auto!important;overflow:visible!important;background:#fff!important}
+  #reportDialog[open]{position:static!important;display:block;margin:0;padding:0;width:100%;max-width:none;max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;background:#fff}
+  #reportDialog::backdrop,.report-tools{display:none!important}
+  #reportDialog .report-sheet{--ink:#20342a;--muted:#4f5f55;--line:#cbd8ce;--good:#23684f;--gold:#9c682e;--faith:#23684f;--mind:#365e99;--spirit:#a05c32;--body:#9e4352;--faith-s:#e3efe7;--card:#fff;--report-accent:#23684f;padding:0;background:#fff;color:var(--ink);font-size:12px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  #reportDialog .report-sheet .svgchart{max-height:150px}
+  #reportDialog .report-comparison{break-inside:avoid}
+  #reportDialog .report-map{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #reportDialog thead{display:table-header-group}
+}
 </style>
 </head>
 <body>
@@ -547,6 +617,7 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-home" viewBox="0 0 24 24"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3M3.5 13a2 2 0 0 1 4 0v2h9v-2a2 2 0 0 1 4 0v4.5h-17zM6 17.5V20M18 17.5V20"/></symbol><symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.5" cy="12" r="1.5"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol><symbol id="i-beads" viewBox="0 0 24 24"><circle cx="12" cy="10" r="6.5" stroke-dasharray="0.1 3.3" stroke-width="3"/><path d="M12 16.5v3"/><circle cx="12" cy="21" r=".9"/></symbol><symbol id="i-town" viewBox="0 0 24 24"><path d="M2.5 20.5h19M4.5 20.5v-8.5l5-3.5 5 3.5v8.5M14.5 14h5v6.5M8 20.5v-4h3v4M17 9.5V5.5M17 5.5c1.2 0 2 .8 2 2"/></symbol><symbol id="i-plot" viewBox="0 0 24 24"><path d="M3 20.5h18M4.5 20.5v-8l7.5-6 7.5 6v8M9.5 20.5V15h5v5.5"/></symbol><symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 21v-7M12 14c-4.5 0-7-2.6-7-5.6C5 5.4 8 3 12 3s7 2.4 7 5.4c0 3-2.5 5.6-7 5.6zM12 14l-2.5-3M12 11.5L14.5 9"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20.5h16M7 20.5v-6M12 20.5V5M17 20.5V11"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zM8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7"/><path d="M12 2.6v2.4M12 19v2.4M2.6 12H5M19 12h2.4M5.4 5.4l1.7 1.7M16.9 16.9l1.7 1.7M5.4 18.6l1.7-1.7M16.9 7.1l1.7-1.7"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></symbol><symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4.5 9h16M3.5 15h16"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 17.5h6M10 20.5h4M8.2 14.5a6.5 6.5 0 1 1 7.6 0c-.6.6-.8 1.2-.8 3H9c0-1.8-.2-2.4-.8-3z"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21c-3.9 0-6.5-2.6-6.5-6 0-2.6 1.6-4.2 3-5.8.5 1.5 1.2 2.2 2 2.6C10.2 8 11.5 5 14 3c0 3 4.5 5.6 4.5 11.5 0 3.6-2.6 6.5-6.5 6.5z"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol><symbol id="i-mirror" viewBox="0 0 24 24"><ellipse cx="12" cy="10" rx="6" ry="7.5"/><path d="M12 17.5V21M8.5 21h7M9.5 8l2-2"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 8z"/><circle cx="12" cy="13.5" r="3.5"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16.5M7 20.5h10M5 7h14M5 7l-2.5 6a2.8 2.8 0 0 0 5 0zM19 7l-2.5 6a2.8 2.8 0 0 0 5 0z"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-ladder" viewBox="0 0 24 24"><path d="M8 3v18M16 3v18M8 7h8M8 12h8M8 17h8"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 4 5v13.5c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5V20"/></symbol><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.5 7.5l8.5 6 8.5-6"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1-4 4-5.5 7.5-5.5s6.5 1.5 7.5 5.5"/></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M5.5 3.5H16l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V5a1.5 1.5 0 0 1 1.5-1.5zM8 3.5v5h7v-5M8 20.5v-6h8v6"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9L12 4.5 16.5 9M5 20h14"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11.5" height="12" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8.5a2 2 0 0 0 2 2h2.5"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2v.3"/></symbol><symbol id="i-apple" viewBox="0 0 24 24"><path d="M12 8c-2-1.5-6-1-6 4 0 4 2.5 8.5 4.5 8.5 1 0 1-.5 1.5-.5s.5.5 1.5.5c2 0 4.5-4.5 4.5-8.5 0-5-4-5.5-6-4zM12 8c0-2 1-3.5 3-4.5"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5v-4M9.5 3h5M12 3v3"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13M15.5 5.5v13"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol><symbol id="i-head" viewBox="0 0 24 24"><path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2M4.5 14h3v6h-3zM16.5 14h3v6h-3z"/></symbol><symbol id="i-mosque" viewBox="0 0 24 24"><path d="M4 20.5h16M6 20.5v-7h12v7M6 13.5c0-3.5 3-4.5 6-7.5 3 3 6 4 6 7.5M12 6V3.5M10.5 20.5V17a1.5 1.5 0 0 1 3 0v3.5"/></symbol><symbol id="i-dumb" viewBox="0 0 24 24"><path d="M3 12h18M6.5 7.5v9M17.5 7.5v9M3.5 9.5v5M20.5 9.5v5"/></symbol><symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol><symbol id="i-run" viewBox="0 0 24 24"><circle cx="14.5" cy="4.5" r="1.8"/><path d="M6 12.5l3-3.5 4 1 2.5 3.5 3 1M13 10l-2 5 3 2.5V21M11 15l-2.5 2.5H5"/></symbol><symbol id="i-walk" viewBox="0 0 24 24"><circle cx="12.5" cy="4.5" r="1.8"/><path d="M12 8.5l-2 5 2.5 3V21M10 13.5L8 21M12 8.5l3 2.5 2.5.5M11.5 9L9 10.5v3"/></symbol><symbol id="i-crescent" viewBox="0 0 24 24"><path d="M17.5 15.5A7.5 7.5 0 1 1 11 4a6 6 0 0 0 6.5 11.5z"/></symbol></svg>
 <div id="modal"></div>
 <div id="toast"></div>
+<dialog id="reportDialog" aria-labelledby="reportTitle"></dialog>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 
 <script>
@@ -556,7 +627,7 @@ const LS = 'chetyre-sily-v1';
 const AXO = ['faith','mind','spirit','body'];
 const AX = {faith:{n:'Вера',e:'☪'}, mind:{n:'Разум',e:'📖'}, spirit:{n:'Нафс',e:'🔥'}, body:{n:'Тело',e:'💪'}};
 const ITEMS = [
-  {id:'namaz', ax:'faith', t:'Пять намазов вовремя'},
+  {id:'namaz', ax:'faith', t:'Пять намазов'},
   {id:'azkar', ax:'faith', t:'Азкары утро и вечер'},
   {id:'quran', ax:'faith', t:'Коран: урок 40 мин'},
   {id:'maani', ax:'faith', t:'Смыслы: 2 страницы'},
@@ -746,8 +817,8 @@ migrate(FRESH && !AUTO);
 let saveT = null, storageWarned = false;
 function save(now){
   clearTimeout(saveT);
-  const w = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) { if (!storageWarned){ storageWarned = true; toast('Не удалось сохранить — сделай резервную копию'); } } };
-  if (now) w(); else saveT = setTimeout(w, 250);
+  const w = () => { try { localStorage.setItem(LS, JSON.stringify(S)); return true; } catch(e) { if (!storageWarned){ storageWarned = true; toast('Не удалось сохранить — сделай резервную копию'); } return false; } };
+  if (now) return w(); else saveT = setTimeout(w, 250);
 }
 window.addEventListener('pagehide', () => save(true));
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
@@ -784,7 +855,16 @@ const cycleExempt = (k, id) => id === 'saum' || id === 'suhur'
   : (id === 'namaz' || id === 'tarawih') && cycleMask(k) === 31;
 const countedItems = k => itemsOn(k).filter(i => !cycleExempt(k, i.id));
 const prayerSlots = k => PRAYERS.map((_,j)=>j).filter(j=>!(cycleMask(k) & (1 << j)));
-const prayerDone = (day, k) => prayerSlots(k).filter(j=>day?.p?.[j]).length;
+const prayerMark=(day,j)=>+day?.p?.[j]===2?2:day?.p?.[j]?1:0;
+const prayerDone = (day, k) => prayerSlots(k).filter(j=>prayerMark(day,j)).length;
+function prayerButton(day,k,j,time){
+  const excluded=!!(cycleMask(k)&(1<<j)), mark=excluded?0:prayerMark(day,j), compact=time===undefined;
+  const status=excluded?'не требуется':['без отметки','вовремя','восполнен'][mark];
+  const cls=(compact?'chip btn ':'')+['','on','pr-made-up'][mark];
+  const label=PRAYERS[j]+' · '+status;
+  return '<button data-act="pr" data-j="'+j+'" class="'+cls+'" title="'+label+'" aria-label="'+label+'"'+(excluded?' disabled':'')+'>'+
+    (compact?PRAYERS[j]:PR_S[j]+'<small class="prt">'+(excluded?'–':time)+'</small>')+'</button>';
+}
 const fullyExcused = k => cycleMask(k) === 31 && !countedItems(k).length;
 const tagDay = (d, k) => { if (d && !d._k) Object.defineProperty(d, '_k', {value:k, enumerable:false, writable:true}); return d; };
 const dkey = d => (d && d._k) || key(today());
@@ -852,35 +932,97 @@ const txt = (path, ph='', rows=3) => `<textarea class="in" rows="${rows}" data-b
 /* ================== НАВИГАЦИЯ ================== */
 // Меню (v24): внизу пять групп; у групп из нескольких разделов сверху вкладки. Кнопка группы ведёт в раздел, где был в последний раз.
 // «Ещё» убран из меню (раздел #more остаётся для старых ссылок). План и настройки — кнопками в шапке.
-const GROUPS = [{id:'town', n:'Город', v:['town','home','plot','tree'], t:{town:'Город', home:'Дом', plot:'Участок', tree:'Дерево'}}, {id:'today', n:'Сегодня', v:['today']}, {id:'way', n:'Путь', v:['way','tools','path']}, {id:'diary', n:'Дневник', v:['diary']}, {id:'sum', n:'Итоги', v:['stats','week','year'], t:{stats:'Итоги', week:'Неделя'}}];
+const GROUPS = [{id:'town', n:'Город', v:['town','home','plot','tree'], t:{town:'Город', home:'Дом', plot:'Участок', tree:'Дерево'}}, {id:'today', n:'Сегодня', v:['today']}, {id:'way', n:'Путь', v:['way','tools','path','diary']}, {id:'beads', n:'Чётки', v:['beads']}, {id:'sum', n:'Итоги', v:['stats','week','year'], t:{stats:'Итоги', week:'Неделя'}}];
 const grpOf = v => GROUPS.find(g => g.v.includes(v)), grpLast = {};
-const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['town','home','plot','tree','today','way','diary','stats','week','year','plan','setup'], NAV_MORE = [];
+const NAV_B = GROUPS.map(g => g.v[0]), NAV_S = ['town','home','plot','tree','today','way','beads','stats','week','year','plan','setup'], NAV_MORE = [];
 function gtabs(){ const g = grpOf(view); if (!g || !g.t || g.v.filter(id=>g.t[id] && viewOpen(id)).length < 2) return ''; return `<div class="gtabs mob" role="tablist">${g.v.filter(id=>g.t[id] && viewOpen(id)).map(id=>`<a href="#${id}" role="tab" class="${id===view?'on':''}">${g.t[id]}</a>`).join('')}</div>`; }
 const VIEWS = [{id:'home', n:'Дом', i:'<svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>'}, {id:'more', n:'Ещё', i:'<svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>'},
+  {id:'beads', n:'Чётки', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'},
   {id:'today', n:'Сегодня', i:'<svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>'}, {id:'week', n:'Неделя', i:'<svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>'}, {id:'tools', n:'Практика', i:'<svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg>'}, {id:'town', n:'Город', i:'<svg class="ic" aria-hidden="true"><use href="#i-town"/></svg>'}, {id:'plot', n:'Участок', i:'<svg class="ic" aria-hidden="true"><use href="#i-plot"/></svg>', side:1}, {id:'tree', n:'Дерево', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'stats', n:'Итоги', i:'<svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>'},
   {id:'year', n:'Год', i:'<svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg>', side:1}, {id:'path', n:'Записи', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>', side:1}, {id:'way', n:'Путь', i:'<svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>'}, {id:'diary', n:'Дневник', i:'<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>'}, {id:'plan', n:'План', i:'<svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>', side:1}, {id:'setup', n:'Настройки', i:'<svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>', side:1},
 ];
 let axEdit = '';
 let view = 'today', viewDate = today(), weekStart = monday(today()), statT = 'week', statO = 0, pathTab = 'ba', planTab = 'day', diaryDate = key(today()), diaryCache = null;
-async function route(){ const h = location.hash.replace('#',''); const nv = VIEWS.find(v=>v.id===h) ? h : 'town'; if (view === 'diary' && nv !== 'diary') { clearTimeout(dTimer); await flushDiary(); KEY = null; diaryCache = null; } if (nv !== 'tools') stopCompass(); view = nv; render(); window.scrollTo(0,0); const m = $('#main'); m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); }
+let settingsFrom='today', routeGeneration=0;
+async function route(){
+  const generation=++routeGeneration, h=location.hash.slice(1), nv=VIEWS.some(v=>v.id===h)?h:'town';
+  if(view==='diary'&&nv!=='diary'){
+    const saved=await flushDiary();
+    if(generation!==routeGeneration)return;
+    if(!saved){location.hash='#diary';return;}
+    KEY=null;diaryCache=null;
+  }
+  if((nv==='setup'||nv==='plan')&&view!=='setup'&&view!=='plan')settingsFrom=view;
+  if(nv!=='tools')stopCompass();
+  view=nv;render();window.scrollTo(0,0);
+  const main=$('#main');main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
+}
 window.addEventListener('hashchange', route);
 // iPhone не слушает user-scalable=no: гасим жест приближения страницы сами. Карта города (#tmap) приближается своими касаниями — их не трогаем.
 ['gesturestart','gesturechange','gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
 document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !(e.target.closest && e.target.closest('#tmap'))) e.preventDefault(); }, {passive:false});
+function goMainTab(to){
+  if(to==='way'){wayTab='';wayWheelOpen=false;}
+  if(location.hash==='#'+to){render();window.scrollTo(0,0);}
+  else location.hash='#'+to;
+}
+(function wireNavigationSwipe(){
+  const main=$('#main');
+  let gesture=null;
+  main.addEventListener('touchstart',e=>{
+    gesture=null;
+    if(e.touches.length!==1||$('#reportDialog').open||townFull||evOpen||S.settings.onb)return;
+    const touch=e.touches[0];
+    if(touch.clientX<22||touch.clientX>innerWidth-22||e.target.closest('a,button,input,textarea,select,label,summary,canvas,.tabs,.gtabs,.wrap,.townwrap,#quickCard,#lifeDial,#diaryLeaf,#diaryPages,#beads'))return;
+    gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,view};
+  },{passive:true});
+  main.addEventListener('touchmove',e=>{
+    const touch=e.touches[0];
+    if(!gesture||e.touches.length!==1||gesture.id!==touch.identifier)return;
+    const x=Math.abs(touch.clientX-gesture.x),y=Math.abs(touch.clientY-gesture.y);
+    if(Math.max(x,y)<13)return;
+    if(x>1.55*y){if(e.cancelable)e.preventDefault();}
+    else gesture=null;
+  },{passive:false});
+  main.addEventListener('touchcancel',()=>{gesture=null;});
+  main.addEventListener('touchend',e=>{
+    const start=gesture;gesture=null;
+    const end=e.changedTouches[0];
+    if(start?.id!==end?.identifier||!start||start.view!==view)return;
+    const dx=end.clientX-start.x,dy=end.clientY-start.y;
+    if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*1.55)return;
+    if(view==='way'&&(wayTab||wayWheelOpen)){
+      if(dx>0)goMainTab('way');
+      return;
+    }
+    const index=NAV_B.indexOf(view);
+    if(index!==-1){
+      const available=NAV_B.filter(viewOpen);
+      const next=available[available.indexOf(view)+(dx<0?1:-1)];
+      if(next)goMainTab(next);
+      return;
+    }
+    if(dx<=0)return;
+    const back=$('#main .backc');
+    if(back){back.click();return;}
+    if(view==='setup'||view==='plan')location.hash='#'+settingsFrom;
+    else{const group=grpOf(view);if(group)goMainTab(group.v[0]);}
+  },{passive:true});
+})();
 
 function renderNav(){
   $('#side').innerHTML = `<div class="brand">Ихсан <span class="brandar" lang="ar">إحسان</span></div><div class="brand-s">каждое дело — на совесть</div>` +
     NAV_S.filter(id => (id !== 'plan' || planOn()) && viewOpen(id)).map(id=>VIEWS.find(v=>v.id===id)).map(v=>`<a href="#${v.id}" class="${v.id===view?'on':''}"><span>${v.i}</span>${v.n}${v.id === 'town' && newsUnread() ? ' <i class="ndot side"></i>' : ''}</a>`).join('') +
     `<div class="foot">Все данные хранятся только на этом устройстве.</div>`;
   const cg = grpOf(view); if (cg) grpLast[cg.id] = view;
-  $('#bnav').innerHTML = GROUPS.filter(g => g.v.some(viewOpen)).map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}${g.id === 'town' && newsUnread() ? '<i class="ndot" aria-label="свежие вести"></i>' : ''}</span>${g.n}</a>`; }).join('');
+  $('#bnav').innerHTML = GROUPS.filter(g => g.v.some(viewOpen)).map(g=>{ const v = VIEWS.find(x=>x.id===g.v[0]), to = g.id!=='way' && grpLast[g.id] && g.id !== (cg && cg.id) ? grpLast[g.id] : g.v[0]; return `<a href="#${to}" data-g="${g.id}" ${g.id==='way'?'data-act="wayroot"':''} class="${cg && cg.id===g.id ?'on':''}"><span class="i">${v.i}${g.id === 'town' && newsUnread() ? '<i class="ndot" aria-label="свежие вести"></i>' : ''}</span>${g.n}</a>`; }).join('');
 }
 function topbar(title){ return `<div class="top"><h1>${title}</h1>${planOn() ? '' : '<!--'}<a class="icon-btn mob" href="#plan"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> План</a>${planOn() ? '' : '-->'}<a class="icon-btn mob" href="#setup"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></a></div>`; }
 function render(){
   if (view === 'town' && S.town && newsUnread()){ popSync(); S.town.news = key(today()); save(); }
   if (view !== 'town'){ if (townFull) townFullSet(false); townMove = ''; townBuild = false; townPick = ''; }
   renderNav();
-  const f = {today:vToday, week:vWeek, tools:vTools, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay}[view];
+  const f = {today:vToday, week:vWeek, tools:vTools, beads:vBeads, tree:vTree, plot:vPlot, town:vTown, home:vHome, more:vMore, stats:vStats, path:vPath, diary:vDiary, plan:vPlan, setup:vSetup, year:vYear, way:vWay}[view];
   let html = viewOpen(view) ? f() : lockView(view); const tb = gtabs();
   if (tb){ const i = html.indexOf('<div class="top">'), j = i >= 0 ? html.indexOf('</div>', i) : -1; html = j >= 0 ? html.slice(0, j+6) + tb + html.slice(j+6) : tb + html; }
   $('#main').innerHTML = html; after(); evSync(); onbSync();
@@ -1016,10 +1158,12 @@ function vToday(){
     if (fold){ h += (a === 'faith' ? cycleDayCard(k) : '') + '</div>'; return; }
     its.forEach(i=>{
       if (cycleExempt(k,i.id)){ h += `<div class="item"><span class="mark">–</span><span class="lbl">${esc(i.t)}<div class="hint">Не требуется</div></span></div>`; }
-      else if (i.id === 'namaz'){ const p = day?.p || [0,0,0,0,0]; const v = itemVal(day,'namaz'), mask = cycleMask(k);
-        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':prayerDone(day,k)||''}</span><div class="lbl">${i.t}${mtag(i.id)}<div class="pr">${(()=>{ const PT = prayTimes(viewDate); return PRAYERS.map((n,j)=>`<button data-act="pr" data-j="${j}" class="${p[j] && !(mask & (1 << j))?'on':''}" title="${n}${mask & (1 << j)?' · не требуется':''}" ${mask & (1 << j)?'disabled':''}>${PR_S[j]}<small class="prt">${mask & (1 << j)?'–':hm(PT[PR5[j]])}</small></button>`).join(''); })()}</div></div></div>`;
+      else if (i.id === 'namaz'){ const v = itemVal(day,'namaz'), PT = prayTimes(viewDate);
+        h += `<div class="item" style="cursor:default"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':prayerDone(day,k)||''}</span><div class="lbl">Пять намазов${mtag(i.id)}
+          <div class="pr">${PRAYERS.map((_,j)=>prayerButton(day,k,j,hm(PT[PR5[j]]))).join('')}</div>
+          ${v>0?'<div class="pr-legend">Зелёный — вовремя · жёлтый — восполнен</div>':''}</div></div>`;
       } else { const v = itemVal(day,i.id);
-        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${tHint(i.id, k)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
+        h += `<button class="item" data-act="tog" data-id="${i.id}"><span class="mark ${v===1?'full':v>0?'half':''}">${v===1?'✓':v>0?'½':''}</span><span class="lbl">${i.t}${mtag(i.id)}${i.id==='muhasaba'?'<div class="hint">Отмечается сама, когда сохраняешь запись в дневнике</div>':''}</span></button>`; }
     });
     if (a === 'faith' && viewDate.getDay() === 5){ const rz = day && day.rz;
       h += `<button class="item" data-act="rz" id="rzItem"><span class="mark ${rz===1?'full':rz==='x'?'half':''}">${rz===1?'✓':rz==='x'?'–':''}</span><span class="lbl">Рузба в мечети<div class="hint">${rz==='x' ? 'Не смог (болезнь, дорога) — серия не прерывается' : 'Пятничная молитва — отметка для себя. Второе нажатие — «не смог»'}</div></span></button>`; }
@@ -1038,7 +1182,7 @@ function vToday(){
   if (duePeople) h += `<div class="card row"><span class="grow small">Близкие · напоминаний ${duePeople}</span><a class="btn" href="#path" data-act="ptab" data-t="people">Открыть</a></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-hash"/></svg> Цифры дня</h2><div class="nums">
     ${numStep(k,'quran','Коран, минут')}${numStep(k,'pages','Страниц книги')}${numStep(k,'steps','Шаги, тыс.')}${numStep(k,'sleep','Сон, часов')}${numStep(k,'weight','Вес утром, кг')}</div>
-    <div class="muted tiny" style="margin-top:8px">Нажми на пункт один раз — ✓. Второй раз — «½», засчитан минимум. Третий — снять отметку. Числа: «+» и «−», первое нажатие подставляет прошлое значение. Кнопки <svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> запускают таймер: пункт отметится сам, когда отсчёт дойдёт до нуля.</div></div>`;
+    <div class="muted tiny" style="margin-top:8px">Нажми на пункт один раз — ✓. Второй раз — «½», засчитан минимум. Третий — снять отметку. Числа: «+» и «−», первое нажатие подставляет прошлое значение.</div></div>`;
   const myf = !isOwner() && planOn() && S.myplan && S.myplan.months && S.myplan.months[k.slice(0,7)];
   if (myf && AXO.some(a => myf[a])) h += `<a class="card" href="#plan" style="display:block;text-decoration:none;color:inherit"><h2>${ic('compass')} Фокус месяца · ${MN[viewDate.getMonth()]}</h2>${AXO.filter(a => myf[a]).map(a => `<div class="row" style="margin:5px 0;flex-wrap:nowrap;align-items:flex-start"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div class="small"><b>${AX[a].n}.</b> ${esc(myf[a])}</div></div>`).join('')}</a>`;
   if (mp && isOwner()) h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Фокус месяца · ${MN[viewDate.getMonth()]}</h2><div class="muted small" style="margin:-6px 0 8px">${st.n} — «${st.t}»</div>${AXO.map((a,i)=>`<div class="row" style="margin:6px 0;align-items:flex-start;flex-wrap:nowrap"><span class="dot" style="background:var(--${a});margin-top:7px"></span><div><b>${AX[a].n}.</b> ${esc(mp[i])}</div></div>`).join('')}</div>`;
@@ -1075,7 +1219,7 @@ function quickCard(k,day){
     <span class="muted small grow">${AX[item.ax].n} · ${quickIndex + 1} из ${items.length}</span>
     <button class="navbtn" data-act="quickclose" aria-label="Закрыть карточки">✕</button></div>
     <h2>${esc(item.t)}</h2><div class="chips">
-    ${item.id === 'namaz' ? PRAYERS.map((n,j)=>cycleMask(k) & (1 << j) ? '' : `<button class="chip btn ${day?.p?.[j] ? 'on' : ''}" data-act="pr" data-j="${j}">${n}</button>`).join('') :
+    ${item.id === 'namaz' ? prayerSlots(k).map(j=>prayerButton(day,k,j)).join('') :
       [[1,'Сделано'],[.5,'Частично'],[0,'Не сделано']].map(([v,n])=>`<button class="btn ${v && v === value ? 'pri' : ''}" data-act="quickmark" data-id="${esc(item.id)}" data-v="${v}">${n}</button>`).join('')}
     <button class="btn" data-act="quicknext">${item.id === 'namaz' ? 'Дальше' : 'Позже'}</button></div>
     ${canSwipe ? '<div class="row tiny muted" style="justify-content:space-between;margin-top:8px"><span>← Не сделано</span><span>Сделано →</span></div>' : ''}</div>`;
@@ -1448,7 +1592,7 @@ function vYear(){
     <div class="ybig"><b>${kept}</b><span>засчитанных дней из ${done}${done < total ? ` прошедших (всего ${total})` : ''}</span></div>
     <div class="bar" style="margin-top:8px"><i style="width:${pct(kept/Math.max(1,total))}%;background:var(--good)"></i></div>
     <div class="muted small" style="margin-top:8px">${over ? (cur ? 'Год пройден. То, что ты делал каждый день, никуда не делось — оно в тебе и в городе.' : 'Этот год в архиве.') : `До финала ${Math.max(0, Math.round((Y.b - t)/864e5))} дн.`}</div></div>`;
-  h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.prDue ? pct(c.pr/c.prDue)+'%' : '—','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
+  h += `<div class="card"><h2>Год в цифрах</h2><div class="kpis">${k(c.good,'хороших дней')}${k(c.best,'лучшая серия')}${k(pct(c.avg)+'%','средний день')}${k(c.prDue ? pct(c.prOn/c.prDue)+'%' : '—','намазов вовремя')}${k(nf(c.quran),'минут Корана')}${k(nf(c.pages),'страниц прочитано')}${k(books,'книг закончено')}${k(c.fear,'шагов вопреки страху')}${k(c.train,'тренировок')}${w0 != null && w1 != null ? k(`${(Math.round(w0*10)/10).toString().replace(".", ",")} → ${(Math.round(w1*10)/10).toString().replace(".", ",")}`,'вес, кг') : ''}</div></div>`;
   { const bk = S.books.filter(b => b.s === 2 && inY(b.done)); if (bk.length) h += `<div class="card"><h2>${ic('book')} Книги года — главные мысли</h2>${bk.map(b => `<div style="padding:6px 0;border-top:1px solid var(--line)"><b class="small">${esc(b.t)}</b>${b.idea ? `<div class="small">${esc(b.idea)}</div>` : ''}${b.notes ? `<div class="tiny muted" style="white-space:pre-wrap;margin-top:2px">${esc(b.notes.slice(0, 400))}${b.notes.length > 400 ? '…' : ''}</div>` : ''}</div>`).join('')}</div>`; }
   h += `<div class="card"><h2>Разделы за год</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}</div>`;
   if (cur){ const G = gGrid(), gh = Object.values(G).filter(x => UP.includes(x)).length;
@@ -1472,7 +1616,7 @@ async function yearNext(){ const end = yearEnd(); if (today() <= end) return;
 // «Начать» записывает выбор: пункты, минимум, место, тему, старт года — сегодня; книги — пустой список (свои добавляются в «Пути»).
 const CITIES = [['Грозный',43.3178,45.6985,7],['Махачкала',42.9849,47.5047,7],['Назрань',43.2257,44.7645,7],['Нальчик',43.4853,43.6071,7],['Москва',55.7558,37.6173,11],['Санкт-Петербург',59.9343,30.3351,11],['Казань',55.7963,49.1088,12],['Уфа',54.7388,55.9721,14],['Стамбул',41.0082,28.9784,6]];
 const CATALOG = {
-  faith:[['namaz','Пять намазов вовремя',1],['azkar','Азкары утром и вечером',1],['quran','Чтение Корана',1],['ilm','Изучение религии',0],['sunna','Сунна-намазы',0],['salawat','Салават и зикр',0]],
+  faith:[['namaz','Пять намазов',1],['azkar','Азкары утром и вечером',1],['quran','Чтение Корана',1],['ilm','Изучение религии',0],['sunna','Сунна-намазы',0],['salawat','Салават и зикр',0]],
   mind:[['deep','Чтение книги — 20 минут',1],['study','Учёба или курс',1],['lang','Иностранный язык',0],['light','Лекция или подкаст',0]],
   spirit:[['muhasaba','Мухасаба вечером',1],['good','Доброе дело или садака',0],['family','Позвонить родителям, родным',0],['fear','Шаг вопреки страху',1]],
   body:[['train','Тренировка или 10 тыс. шагов',1],['food','Вода и правильная еда',1],['sleep','Лёг вовремя',1],['nosugar','Без сладкого',0]] };
@@ -1545,7 +1689,7 @@ function moodObservations(c, scores){
       (v === 1 ? group.done : group.unmarked).push(score);
     };
     for (const item of countedItems(k)){
-      record(item.id,item.t,itemVal(day,item.id));
+      record(item.id,item.id==='namaz'?'Пять намазов':item.t,itemVal(day,item.id));
       if (item.id === 'namaz' && !(cycleMask(k) & 1))
         record('prayer-fajr','Фаджр',day.p?.[0] ? 1 : 0);
     }
@@ -1622,11 +1766,13 @@ function waySub(id){ try { const t = today(), tk = key(t);
   if (id === 'ba') return S.before && S.before.locked ? '«До» зафиксировано' : 'зафиксировать «До»';
   if (id === 'timer') return `${S.timers.list.length} таймеров`;
   } catch(e){} return ''; }
-function vWay(){ const a = AX[wayTab] ? wayTab : 'faith', tk = key(today()), day = getDay(tk), its = itemsOn(tk).filter(i => i.ax === a), nd = its.filter(i => itemVal(day, i.id) >= 1).length;
-  const goal = isOwner() ? OWNER_GOALS[a] : (S.myplan && S.myplan.goals && S.myplan.goals[a]) || '';
+function vWay(){ const a = AX[wayTab] ? wayTab : '';
   let h = topbar('Путь');
-  h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px"><button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button></div>`;
+  h += wayWheelOpen ? wayWheel() : `<div class="chips" style="margin-bottom:10px">${a?backTo(''):''}<button class="chip btn" data-act="wheelToggle">${ic('compass')} Колесо жизни</button><a class="chip btn" href="#tools" data-act="gotool" data-t="timer">${ic('timer')} Таймеры</a></div>`;
   h += `<div class="waytabs">${AXO.map(x => `<button class="wt axis-${x} ${x === a ? 'on' : ''}" data-act="wayax" data-a="${x}"><span class="axb">${ic(AXI[x])}</span>${AX[x].n}</button>`).join('')}</div>`;
+  if(!a)return h;
+  const tk = key(today()), day = getDay(tk), its = itemsOn(tk).filter(i=>i.ax===a), nd = its.filter(i=>itemVal(day,i.id)>=1).length;
+  const goal = isOwner() ? OWNER_GOALS[a] : (S.myplan && S.myplan.goals && S.myplan.goals[a]) || '';
   h += `<div class="card wayhead axis-${a}"><div class="rhead"><b style="font-size:18px">${AX[a].n}${a === 'spirit' ? ' · <bdi lang="ar">نفس</bdi>' : ''}</b>
     ${a === 'spirit' ? '' : `<span class="rst">${({faith:'Коран, намаз, иман', mind:'учёба и чтение', body:'тело и здоровье'})[a]}</span>`}</div>
     ${a === 'spirit' ? '<div class="small muted" style="margin-top:4px">Самочувствие, размышления, работа со страхами и отношения с близкими.</div>' : ''}
@@ -1688,7 +1834,7 @@ function wheelShift(delta){
     wave.connect(volume); volume.connect(AC.destination); wave.start(now); wave.stop(now+.04);
   } catch(e){}
 }
-const backTo = a => a ? `<a class="chip btn backc" href="#way" data-act="wayax" data-a="${a}">‹ ${AX[a].n}</a>` : `<a class="chip btn backc" href="#way">‹ Путь</a>`;
+const backTo = a => a ? `<a class="chip btn backc" href="#way" data-act="wayax" data-a="${a}">‹ ${AX[a].n}</a>` : `<a class="chip btn backc" href="#way" data-act="wayroot">‹ Путь</a>`;
 
 /* ================== ВЕЧЕРНИЙ ИТОГ ================== */
 // Итог дня за полминуты: что сделано и держится ли серия, одна строка в дневник, что прибавилось в городе.
@@ -1761,10 +1907,10 @@ function vWeek(){
 /* ================== ИТОГИ / СТАТИСТИКА ================== */
 function periodRange(){
   const t = today();
-  if (statT === 'week'){ const a = addD(monday(t), 7*statO); return {a, b:addD(a,6), title:`${fmtD(a)} — ${fmtD(addD(a,6))}`, key:key(a), weekly:true}; }
-  if (statT === 'month'){ const a = new Date(t.getFullYear(), t.getMonth()+statO, 1); const b = new Date(a.getFullYear(), a.getMonth()+1, 0); return {a, b, title:`${MN[a.getMonth()]} ${a.getFullYear()}`, key:`${a.getFullYear()}-${pad(a.getMonth()+1)}`}; }
-  if (statT === 'stage'){ const i = Math.min(4, Math.max(0, stageIdx(t)+statO)); const s = STAGES[i]; return {a:mk(s.from), b:mk(s.to), title:`${s.n} — «${s.t}»`, key:String(i), idx:i}; }
-  const a = startDate(); return {a, b:addD(a,363), title:`Год${yearNo() > 1 ? ' ' + yearNo() : ''}: ${fmtD(a)} ${a.getFullYear()} — ${fmtD(addD(a,363))} ${addD(a,363).getFullYear()}`, key: yearNo() > 1 ? 'year' + yearNo() : 'year'};
+  if (statT === 'week'){ const a = addD(monday(t), 7*statO); return {a, b:addD(a,6), title:`${fmtD(a)} — ${fmtD(addD(a,6))}`, key:key(a), kind:'week', weekly:true}; }
+  if (statT === 'month'){ const a = new Date(t.getFullYear(), t.getMonth()+statO, 1); const b = new Date(a.getFullYear(), a.getMonth()+1, 0); return {a, b, title:`${MN[a.getMonth()]} ${a.getFullYear()}`, key:`${a.getFullYear()}-${pad(a.getMonth()+1)}`, kind:'month'}; }
+  if (statT === 'stage'){ const i = Math.min(4, Math.max(0, stageIdx(t)+statO)); const s = STAGES[i]; return {a:mk(s.from), b:mk(s.to), title:`${s.n} — «${s.t}»`, key:String(i), idx:i, kind:'stage'}; }
+  const a = startDate(); return {a, b:addD(a,363), title:`Год${yearNo() > 1 ? ' ' + yearNo() : ''}: ${fmtD(a)} ${a.getFullYear()} — ${fmtD(addD(a,363))} ${addD(a,363).getFullYear()}`, key: yearNo() > 1 ? 'year' + yearNo() : 'year', kind:'year'};
 }
 function collect(a,b){
   const t = today(), s = firstStart(), list = [];
@@ -1772,7 +1918,9 @@ function collect(a,b){
   const n = list.filter(d=>!fullyExcused(key(d))).length || 1, days = list.map(d=>getDay(key(d)));
   const r = {n:list.length, list, days, avg:days.reduce((x,d)=>x+dayScore(d),0)/n, good:days.filter(d=>dayScore(d)>=.75).length,
     ax:Object.fromEntries(AXO.map(a=>[a, days.reduce((x,d)=>x+(d?axisScore(d,a):0),0)/n])),
-    pr:list.reduce((x,d,i)=>x+prayerDone(days[i],key(d)),0), prDue:list.reduce((x,d)=>x+prayerSlots(key(d)).length,0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
+    pr:list.reduce((x,d,i)=>x+prayerDone(days[i],key(d)),0),
+    prOn:list.reduce((x,d,i)=>x+prayerSlots(key(d)).filter(j=>prayerMark(days[i],j)===1).length,0),
+    prDue:list.reduce((x,d)=>x+prayerSlots(key(d)).length,0), train:days.filter(d=>d && (d.c?.train || (d.tr && d.tr!=='Отдых'))).length,
     pages:days.reduce((x,d)=>x+(+d?.n?.pages||0),0), quran:days.reduce((x,d)=>x+(+d?.n?.quran||0),0), fear:days.filter(d=>d?.c?.fear).length,
     sleep:(()=>{const v=days.map(d=>+d?.n?.sleep).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})()};
   let best = 0, cur = 0, gap = 0; days.forEach((d,i)=>{ if (dayKept(d)){ cur++; gap = 0; best = Math.max(best,cur); } else if (!fullyExcused(key(list[i])) && ++gap >= 2) cur = 0; }); r.best = best;
@@ -1844,7 +1992,8 @@ function vStats(){
     <div class="kpi"><div class="v">${pct(c.avg)}%</div><div class="l">средний балл дня</div></div>
     <div class="kpi"><div class="v">${c.good}</div><div class="l">хороших дней (от 75%)</div></div>
     <div class="kpi"><div class="v">${c.best}</div><div class="l">лучшая серия, дней</div></div>
-    <div class="kpi"><div class="v">${c.prDue ? pct(c.pr/c.prDue)+'%' : '—'}</div><div class="l">намазов вовремя</div></div>
+    <div class="kpi"><div class="v">${c.prDue ? pct(c.prOn/c.prDue)+'%' : '—'}</div><div class="l">намазов вовремя</div></div>
+    ${c.pr>c.prOn?`<div class="kpi"><div class="v">${c.pr-c.prOn}</div><div class="l">намазов восполнено</div></div>`:''}
     <div class="kpi"><div class="v">${c.train}</div><div class="l">тренировок</div></div>
     <div class="kpi"><div class="v">${c.pages}</div><div class="l">страниц прочитано</div></div>
     <div class="kpi"><div class="v">${c.quran}</div><div class="l">минут Корана</div></div>
@@ -1867,70 +2016,138 @@ function vStats(){
   h += `<div class="card"><h2>Что проседает</h2>${it.slice(0,3).map(x=>`<div class="axrow axis-${x.i.ax}" style="grid-template-columns:1fr 90px 44px"><span>${x.i.t}</span><div class="bar"><i style="width:${pct(x.v)}%"></i></div><b>${pct(x.v)}%</b></div>`).join('')}</div>`;
   return h + reviewBlock(R);
 }
-function reportHTML(R){
-  const c = collect(R.a,R.b), previous = R.weekly ? null : collect(addD(R.a,-c.n),addD(R.a,-1)), last = c.list.at(-1);
-  const rows = new Map();
-  c.list.forEach((d,j)=>{
-    const k = key(d), day = c.days[j];
-    countedItems(k).forEach(i=>{
-      if (!rows.has(i.id)) rows.set(i.id,{t:i.t, ax:i.ax, due:0, full:0, half:0});
-      const r = rows.get(i.id), v = itemVal(day,i.id);
-      r.due++; if (v === 1) r.full++; else if (v > 0) r.half++;
-    });
-    (Array.isArray(day?.own) ? day.own : []).forEach(i=>{
-      if (!i?.t) return;
-      const id = 'own:' + i.t;
-      if (!rows.has(id)) rows.set(id,{t:i.t, ax:'own', due:0, full:0, half:0});
-      const r = rows.get(id);
-      r.due++; if (i.d) r.full++;
-    });
-  });
-  const rate = r => (r.full + .5*r.half)/r.due;
-  const ranked = [...rows.values()].filter(r=>r.due >= 3).sort((a,b)=>rate(b)-rate(a));
-  const high = ranked[0], low = ranked.at(-1);
-  const values = [], labels = [], step = c.n > 45 ? 7 : 1;
-  for (let j=0;j<c.n;j+=step){
-    const group = c.list.slice(j,j+step).map((d,i)=>fullyExcused(key(d)) ? null : dayScore(c.days[j+i])).filter(v=>v !== null);
-    values.push(group.length ? mean(group) : null); labels.push(key(c.list[j]).slice(5).split('-').reverse().join('.'));
+function reportBuckets(c, R){
+  const groups = new Map();
+  for (const d of c.list){
+    const start = R.weekly ? d : R.kind === 'year' ? new Date(d.getFullYear(), d.getMonth(), 1) : monday(d);
+    const id = key(start), current = groups.get(id);
+    if (current) current.last = d;
+    else groups.set(id,{start, first:d, last:d});
   }
-  const diff = previous ? pct(c.avg) - pct(previous.avg) : 0, dates = d => d.toLocaleDateString('ru-RU');
-  return `<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ихсан — отчёт ${key(R.a)}</title>
-  <style>
-    :root{--ink:#17261f;--line:#d4dfd8;--muted:#52635b;--good:#236b50;--gold:#99532c}
-    *{box-sizing:border-box}body{font:14px/1.5 system-ui,sans-serif;color:var(--ink);max-width:780px;margin:0 auto;padding:22px}
-    h1{font-size:30px;margin:0}h2{font-size:18px;margin:20px 0 8px;break-after:avoid}
-    .brand{color:var(--good);font-weight:700;margin:0}.muted{color:var(--muted)}p{margin:5px 0 10px}
-    .metrics{display:flex;flex-wrap:wrap;gap:12px 20px;border-block:1px solid var(--line);padding:10px 0}
-    .metrics strong{display:block;font-size:21px}.svgchart{display:block;width:100%;height:auto;max-height:240px}
-    table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}td,th{padding:6px;text-align:right;border-bottom:1px solid var(--line)}td:first-child,th:first-child{text-align:left}
-    tr{break-inside:avoid}thead{display:table-header-group}.graph{break-inside:avoid}button{margin-bottom:12px;padding:8px 12px}
-    @page{size:A4;margin:14mm}@media print{body{padding:0;max-width:none}button{display:none}}
-  </style><body><button id="printReport">Печать / сохранить PDF</button>
-  <p class="brand">Ихсан · личные итоги</p><h1>${esc(R.title)}</h1>
-  <p class="muted">${dates(c.list[0])} – ${dates(last)} · ${c.n} дн.${R.b >= today()?' · период ещё идёт':''}</p>
-  <div class="metrics"><div><strong>${pct(c.avg)}%</strong>Средний балл дня</div><div><strong>${c.good}</strong>Хороших дней</div><div><strong>${c.best}</strong>Лучшая серия, дн.</div>
-  ${previous?.n === c.n ? `<div><strong>${diff > 0 ? '+' : ''}${diff} п. п.</strong>К предыдущим ${c.n} дням</div>` : ''}</div>
-  ${R.weekly ? weeklyComparison(c) : ''}
-  <div class="graph"><h2>Как менялся балл ${step === 1 ? 'по дням' : 'по неделям'}</h2>${barChart(values,labels)}</div>
-  <h2>Настроение и привычки</h2>
-  ${moodObservations(c,moodScores(c))}
-  <h2>Результат по каждому пункту</h2>
-  ${high && pct(rate(high)) > pct(rate(low)) ? `<p>Лучше всего шло «${esc(high.t)}» (${pct(rate(high))}%). Самый низкий результат у «${esc(low.t)}» (${pct(rate(low))}%). Полная отметка даёт 1 балл, частичная — ½.</p>` : ''}
-  <table><thead><tr><th>Пункт</th><th>План</th><th>Готово</th><th>Часть</th><th>Без отметки</th></tr></thead><tbody>
-  ${[...rows.values()].sort((a,b)=>[...AXO,'own'].indexOf(a.ax)-[...AXO,'own'].indexOf(b.ax)).map(r=>`<tr><td>${esc(r.t)}<br><span class="muted">${AX[r.ax]?.n || 'Свои дела'}</span></td><td>${r.due}</td><td>${r.full}</td><td>${r.half}</td><td>${r.due-r.full-r.half}</td></tr>`).join('')}
-  </tbody></table>
-  <h2>Другие результаты</h2><p>${c.train} тренировок · ${c.pages} страниц · ${c.quran} мин. Корана · ${c.fear} шагов вопреки страху${c.sleep ? ` · ${c.sleep.toFixed(1).replace('.',',')} ч сна в среднем` : ''}</p>
-  </body></html>`;
+  return [...groups.values()].map(({start,first,last})=>{
+    const group=collect(first,last);
+    const scores=moodScores(group).filter(v=>v !== null);
+    const label=R.weekly ? DN[(start.getDay()+6)%7] : R.kind === 'year' ? MONTH_SHORT[start.getMonth()] : key(first).slice(5).split('-').reverse().join('.');
+    return {label,group, mood:scores.length?mean(scores)/5:null};
+  });
+}
+const MONTH_SHORT=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+function reportAxisChart(buckets){
+  const W=420,H=150, top=12, left=31, right=18, bottom=121;
+  const styles=['','7 4','2 3','9 3 2 3'];
+  const x=i=>buckets.length===1 ? W/2 : left+(W-left-right)*i/(buckets.length-1);
+  const y=v=>bottom-(bottom-top)*v;
+  const labels=buckets.map(b=>b.label);
+  const accessible=buckets.map(({label,group})=>label+': '+AXO.map(a=>AX[a].n+' '+(group.days.some(Boolean)?pct(group.ax[a])+'%':'—')).join(', ')).join('. ');
+  let svg='<svg class="svgchart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(accessible)+'">';
+  for(const v of [0,.5,1]){
+    svg+='<line x1="'+left+'" x2="'+(W-right)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(left-3)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+pct(v)+'%</text>';
+  }
+  for(const [index,a] of AXO.entries()){
+    const points=buckets.map(({group},i)=>group.days.some(Boolean)?[x(i),y(group.ax[a])]:null);
+    const path=points.map((p,i)=>p?(points[i-1]?'L':'M')+p.map(v=>v.toFixed(1)).join(' '):'').join(' ');
+    svg+='<path d="'+path+'" fill="none" stroke="var(--'+a+')" stroke-width="2" stroke-dasharray="'+styles[index]+'"/>';
+    svg+=points.map(p=>p?'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.5" fill="var(--'+a+')"/>':'').join('');
+  }
+  svg+=labels.map((l,i)=>{
+    if(labels.length>8 && i%2 && i!==labels.length-1)return '';
+    return '<text x="'+x(i)+'" y="139" text-anchor="middle" font-size="10" fill="var(--muted)">'+l+'</text>';
+  }).join('');
+  return svg+'</svg><div class="report-legend small">'+AXO.map(a=>'<span><i class="dot" style="background:var(--'+a+')"></i> '+AX[a].n+'</span>').join('')+'</div>';
+}
+function reportYearMap(c){
+  const months=new Map(), legends={no:'Нет отметок',low:'Менее 50%',min:'День по минимуму',kept:'50–74%',good:'От 75%'};
+  for(const [i,d] of c.list.entries()){
+    const k=key(d), id=k.slice(0,7), day=c.days[i], score=dayScore(day);
+    if(!months.has(id))months.set(id,{label:MN[d.getMonth()],lead:(d.getDay()+6)%7,cells:[]});
+    const status=fullyExcused(k)?'no':score>=.75?'good':score>=.5?'kept':minDone(day)?'min':score>0?'low':'no';
+    months.get(id).cells.push('<i class="heat-'+status+'" title="'+fmtD(d)+' — '+legends[status]+'"></i>');
+  }
+  return '<div class="report-map" role="img" aria-label="Календарь отметок, всего '+c.n+' дней"><span class="sr-only">'+[...months.values()].map(m=>m.label+': '+m.cells.length+' дн.').join(', ')+'</span>'+
+    [...months.values()].map(m=>'<section><h3>'+m.label+'</h3><div class="report-days">'+('<i class="heat-out"></i>'.repeat(m.lead))+m.cells.join('')+'</div></section>').join('')+'</div>'+
+    '<div class="report-legend small">'+Object.entries(legends).map(([id,desc])=>'<span><i class="report-key heat-'+id+'"></i>'+desc+'</span>').join('')+'</div>';
+}
+function reportPrevious(R,c){
+  if(R.weekly) return collect(addD(c.list[0],-7),addD(c.list.at(-1),-7));
+  if(R.kind==='month'){
+    const start=new Date(R.a.getFullYear(),R.a.getMonth()-1,1), end=addD(R.a,-1);
+    return collect(start,R.b>today() && addD(start,c.n-1)<end ? addD(start,c.n-1) : end);
+  }
+  const start=addD(R.a,R.kind==='year'?-364:-c.n);
+  return collect(start,addD(start,c.n-1));
+}
+function reportHTML(R){
+  const c=collect(R.a,R.b);
+  if(!c.n)return '<p>За этот период ещё нет прошедших дней плана.</p>';
+  const prev=reportPrevious(R,c), comparison=prev.days.some(Boolean) ? prev : null;
+  const dated=(start,end)=>start.toLocaleDateString('ru-RU')+' — '+end.toLocaleDateString('ru-RU');
+  const rows=new Map();
+  function mark(id,t,ax,v){
+    if(!rows.has(id))rows.set(id,{t,ax,due:0,full:0,half:0,points:0});
+    const row=rows.get(id);row.due++;row.points+=v;
+    if(v===1)row.full++;else if(v>0)row.half++;
+  }
+  c.list.forEach((d,i)=>{
+    const day=c.days[i];
+    for(const item of countedItems(key(d)))mark(item.id,item.id==='namaz'?'Пять намазов':item.t,item.ax,itemVal(day,item.id) || 0);
+    for(const item of Array.isArray(day?.own)?day.own:[])if(item?.t)mark('own:'+item.t,item.t,'own',item.d?1:0);
+  });
+  const amounts=[
+    ['Тренировки, дней',x=>x.train],['Прочитано, страниц',x=>x.pages],['Коран, минут',x=>x.quran],
+    ['Намазы вовремя',x=>x.prDue?x.prOn+' из '+x.prDue:'—'],
+    ['Намазы восполнены',x=>x.prDue?x.pr-x.prOn:'—'],
+    ['Шаги навстречу страхам',x=>x.fear],
+    ['Средний сон, ч',x=>x.sleep?moodNumber(x.sleep):'—'],
+    ['Дни с оценкой настроения',x=>moodScores(x).filter(v=>v!==null).length],
+    ['Прочитано книг',x=>{const a=key(x.list[0]),b=key(x.list.at(-1));return S.books.filter(book=>book?.s===2&&book.done>=a&&book.done<=b).length;}]
+  ];
+  const weights=weightPoints(R.a,c.list.at(-1));
+  const rowOrder=[...AXO,'own'];
+  const buckets=reportBuckets(c,R), labels=buckets.map(b=>b.label);
+  const by=R.weekly?'дням':R.kind==='year'?'месяцам':'неделям';
+  const mood=moodScores(c).filter(v=>v!==null);
+  const kept=c.days.filter(dayKept).length;
+  const low=c.days.reduce((n,day,i)=>n+(!dayKept(day)&&!fullyExcused(key(c.list[i]))?1:0),0);
+  const ranked=[...rows.values()].filter(r=>r.due>=3).sort((a,b)=>b.points/b.due-a.points/a.due);
+  const best=ranked[0], rare=ranked.at(-1), hasSignal=c.days.some(day=>dayScore(day)>0 || day?.own?.some?.(o=>o?.d));
+  const diff=comparison ? pct(c.avg)-pct(comparison.avg) : 0;
+  const reading=buckets.map(({label,group})=>({
+    label, total:group.n, read:group.days.filter(d=>+d?.n?.pages>0 || d?.c?.deep>0 || d?.c?.light>0).length
+  })).filter(b=>b.total>=20);
+  const firstReading=reading[0], lastReading=reading.at(-1);
+  const readingNote=R.kind==='year'&&reading.length>=2&&firstReading.read!==lastReading.read
+    ? '<p>Дни с чтением в начале и конце периода. '+firstReading.label+' — '+firstReading.read+' из '+firstReading.total+', '+lastReading.label+' — '+lastReading.read+' из '+lastReading.total+'.</p>' : '';
+  const span=c.list.at(-1), name=R.weekly?'Отчёт за неделю':R.kind==='year'?'Отчёт за год':R.kind==='month'?'Отчёт за месяц':'Отчёт за этап';
+  return '<article class="report-sheet">'+
+    '<p class="report-brand small">ИХСАН · ЛИЧНЫЕ ИТОГИ</p><h1 id="reportTitle">'+name+'</h1><p class="muted">'+dated(c.list[0],span)+' · '+c.n+' дн.'+(R.b>=today()?' · период ещё идёт':'')+'</p>'+
+    '<div class="report-metrics"><div><strong>'+pct(c.avg)+'%</strong>Средний балл дня</div><div><strong>'+kept+'</strong>Засчитано дней</div><div><strong>'+c.best+'</strong>Лучшая серия, дн.</div></div>'+
+    '<section class="report-chart"><h2>Отметки по '+by+'</h2><p class="muted small">Доля выполненных пунктов</p>'+barChart(buckets.map(({group})=>group.days.some(Boolean)?group.avg:null),labels,116)+'</section>'+
+    '<section class="report-chart"><h2>Как менялись четыре раздела</h2>'+reportAxisChart(buckets)+'</section>'+
+    '<section class="report-insight"><h2>Что видно по отметкам</h2>'+
+      (comparison?'<p>Средний балл '+(diff===0?'остался на прежнем уровне':diff>0?'выше на '+diff+' п. п.':'ниже на '+(-diff)+' п. п.')+' по сравнению с периодом '+dated(comparison.list[0],comparison.list.at(-1))+'.</p>':'')+
+      (hasSignal?'<p>'+c.good+' дн. с результатом от 75%, '+low+' дн. без зачёта.</p>':'<p>За этот период пока нет выполненных дел в записях.</p>')+readingNote+
+      (hasSignal&&best&&rare&&pct(best.points/best.due)>pct(rare.points/rare.due)?'<p>Чаще отмечалось «'+esc(best.t)+'» ('+pct(best.points/best.due)+'%). Реже — «'+esc(rare.t)+'» ('+pct(rare.points/rare.due)+'%).</p>':'')+'</section>'+
+    (R.kind==='year'?'<section class="report-chart"><h2>Карта дней за год</h2>'+reportYearMap(c)+'</section>':'')+
+    (R.weekly?'<section class="report-comparison">'+weeklyComparison(c)+'</section>':'')+
+    '<section><h2>Настроение и привычки</h2>'+
+      (mood.length?'<p>Средняя оценка '+moodNumber(mean(mood))+' из 5 · '+mood.length+' дн. с оценкой.</p><div class="report-chart">'+barChart(buckets.map(b=>b.mood),labels,78,5)+'</div>':'')+
+      moodObservations(c,moodScores(c))+'</section>'+
+    (weights.length>=2?'<section class="report-chart"><h2>Вес по замерам</h2>'+lineChart(weights)+'</section>':'')+
+    '<section><h2>Другие результаты</h2><table><thead><tr><th scope="col">Показатель</th><th scope="col">Этот период</th>'+(comparison?'<th scope="col">Предыдущий</th>':'')+'</tr></thead><tbody>'+
+      amounts.map(([label,value])=>'<tr><th scope="row">'+label+'</th><td>'+value(c)+'</td>'+(comparison?'<td>'+value(comparison)+'</td>':'')+'</tr>').join('')+'</tbody></table></section>'+
+    '<section><h2>Результат по каждому пункту</h2><table><thead><tr><th scope="col">Пункт</th><th scope="col">План</th><th scope="col">Готово</th><th scope="col">Часть</th><th scope="col">Без отметки</th></tr></thead><tbody>'+
+      [...rows.values()].sort((a,b)=>rowOrder.indexOf(a.ax)-rowOrder.indexOf(b.ax)).map(r=>'<tr><th scope="row">'+esc(r.t)+'<br><span class="muted">'+(AX[r.ax]?.n||'Свои дела')+'</span></th><td>'+r.due+'</td><td>'+r.full+'</td><td>'+r.half+'</td><td>'+(r.due-r.full-r.half)+'</td></tr>').join('')+'</tbody></table></section></article>';
 }
 function openReport(){
-  const range = periodRange();
-  if (!collect(range.a,range.b).n) return;
-  const tab = window.open('','_blank');
-  if (!tab) return toast('Разреши открытие новой вкладки для отчёта');
-  tab.opener = null;
-  tab.document.open(); tab.document.write(reportHTML(range)); tab.document.close();
-  tab.document.getElementById('printReport').onclick = ()=>tab.print();
+  const range=periodRange(), dialog=$('#reportDialog');
+  if(dialog.open || !collect(range.a,range.b).n)return;
+  dialog.innerHTML='<header class="report-tools"><button type="button" class="btn" data-report-close autofocus>‹ Закрыть</button><button type="button" class="btn pri" data-report-print>Сохранить PDF</button></header>'+reportHTML(range);
+  dialog.querySelector('[data-report-close]').onclick=()=>dialog.close();
+  dialog.querySelector('[data-report-print]').onclick=()=>window.print();
+  dialog.addEventListener('close',()=>{if(!dialog.open)dialog.replaceChildren();},{once:true});
+  dialog.showModal();dialog.scrollTop=0;
 }
+
 function reviewBlock(R){
   const base = `rev|${statT}|${R.key}`;
   if (statT === 'week') return `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-mirror"/></svg> Разбор недели</h2><label class="f">Что сорвало плохие дни?${txt(base+'|q1','',2)}</label><label class="f">Что получилось лучше всего?${txt(base+'|q2','',2)}</label><label class="f">Одно, что меняю${txt(base+'|q3','',2)}</label></div>`;
@@ -2257,7 +2474,7 @@ function pCapsule(){
 }
 
 /* ================== ДНЕВНИК ================== */
-let diaryFocusWellbeing = false;
+let diaryFocusWellbeing = false, diaryArchiveOpen = false, diaryExtrasOpen = false, diaryReflectionOpen = false, diaryChanging = false, diaryTurn = 0;
 const WELL_FIELDS = ['anxiety','panicCount','panicTime','wellbeing'];
 const diaryHasWellbeing = e => WELL_FIELDS.some(field=>String(e?.[field] ?? '').trim());
 function diaryWellbeing(e){
@@ -2275,7 +2492,7 @@ function diaryWellbeing(e){
     </details>`;
 }
 function vDiary(){
-  let h = topbar('Дневник');
+  let h = topbar('Дневник') + backTo('spirit');
   if (!cryptoOK()) return h + `<div class="card">Этот браузер не поддерживает шифрование. Открой приложение в Chrome, Safari или Edge по адресу https.</div>`;
   if (!S.crypto) return h + `<div class="card lock"><div class="lockico"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg></div><h2 style="justify-content:center">Придумай пароль для дневника</h2>
     <p class="muted small">Записи шифруются этим паролем прямо на устройстве. Без пароля их не прочитает никто — ни в браузере, ни из резервной копии.<br><b>Если забудешь пароль, восстановить записи нельзя.</b></p>
@@ -2284,53 +2501,141 @@ function vDiary(){
   if (!KEY) return h + `<div class="card lock"><div class="lockico"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg></div><h2 style="justify-content:center">Дневник закрыт</h2><p class="muted small">Записей: ${Object.keys(S.diary).length}</p>
     <form data-form="dunlock" style="max-width:300px;margin:0 auto"><input class="in" type="password" name="p" placeholder="Пароль" autocomplete="current-password" required><button class="btn pri" style="width:100%;margin-top:10px">Открыть</button></form>
     <details style="max-width:320px;margin:16px auto 0;text-align:left"><summary class="small" style="cursor:pointer;color:var(--spirit)">Забыл пароль?</summary><p class="tiny muted">Пароль нельзя восстановить: записи зашифрованы именно им, и без него их не прочитает никто — ни ты, ни мы. Если вспомнить не получается, можно начать новый дневник с новым паролем. Старые записи (${Object.keys(S.diary).length}) при этом удалятся навсегда. Если есть копия данных со старым паролем — сначала попробуй вспомнить пароль, записи в копии тоже под ним.</p><button class="btn danger" style="width:100%" data-act="dforgot">Начать новый дневник</button></details></div>`;
-  const keys = Object.keys(S.diary).sort().reverse(), d = parse(diaryDate);
-  const older = keys.find(k => k < diaryDate), newer = keys.filter(k => k > diaryDate).at(-1);
-  h += `<div class="row" style="margin-bottom:12px"><input class="in grow" type="date" id="ddate" value="${diaryDate}" style="max-width:200px;margin:0"><button class="btn" data-act="dtodayd">Сегодня</button><button class="btn" data-act="dlock"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg> Закрыть</button></div>`;
-  h += `<nav class="diary-pages" id="diaryPages" aria-label="Страницы дневника">
-    <button class="btn" data-act="dpage" data-k="${older || ''}" ${older ? '' : 'disabled'}>‹ Раньше</button>
-    <span class="small muted">${fmtD(d)}</span>
-    <button class="btn" data-act="dpage" data-k="${newer || ''}" ${newer ? '' : 'disabled'}>Позже ›</button>
-    </nav>`;
+  const d=parse(diaryDate), loaded=diaryCache?.k===diaryDate, ready=loaded&&!diaryCache.readFailed, e=ready?diaryCache.e:{};
+  const turn=ready?diaryTurn:0;
+  if(ready)diaryTurn=0;
+  const expanded=diaryExtrasOpen || diaryFocusWellbeing;
+  h+='<div class="diary-wrap"><div class="row diary-head">'+
+    '<details id="diaryArchive"'+(diaryArchiveOpen?' open':'')+'><summary>Записи и календарь</summary><div class="row">'+
+    '<label class="small">Открыть дату <input class="in" type="date" id="ddate" value="'+esc(diaryDate)+'"></label>'+
+    '<button class="btn" data-act="dtodayd">Сегодня</button></div><div class="entry-list diary-archive"></div></details>'+
+    '<button class="btn" data-act="dlock">'+ic('lock')+' Закрыть</button></div>'+
+    '<div class="diary-cover"><section id="diaryLeaf" class="diary-leaf'+(turn<0?' diary-turn-right':turn>0?' diary-turn-left':'')+'">'+
+    '<div class="diary-weekday">'+DFULL[d.getDay()]+'</div><h2>'+fmtD(d)+' '+d.getFullYear()+'</h2>'+
+    (ready?'<textarea class="in diary-writing" rows="9" data-diary="free" aria-label="Запись в дневнике" placeholder="О чём хочется написать?">'+esc(e.free||'')+'</textarea>':loaded?'<p role="alert">Не удалось расшифровать эту запись.</p>':'<p class="muted">Открываю запись…</p>')+
+    '</section></div>'+
+    '<nav class="diary-pages notebook-actions" id="diaryPages" aria-label="Страницы дневника">'+
+    '<button class="btn" data-act="dpage" data-way="-1" disabled>‹ Раньше</button><button class="btn pri" data-act="dsave"'+(ready?'':' disabled')+'>Сохранить</button><button class="btn" data-act="dpage" data-way="1" disabled>Позже ›</button></nav>'+
+    '<div class="row small muted" style="justify-content:space-between"><span id="dstatus" role="status">'+(loaded&&!ready?'Запись закрыта':S.diary[diaryDate]?'Сохранено, зашифровано':'Новая запись')+'</span><span>Листай за край страницы</span></div>';
+  if(ready){
+    h+='<details class="card diary-extra" id="diaryExtras"'+(expanded?' open':'')+'><summary>Дополнения к записи</summary>'+
+      (e.line!==undefined?'<label class="f">Итог дня одной строкой<textarea class="in" rows="2" data-diary="line">'+esc(e.line||'')+'</textarea></label>':'')+
+      '<details class="dfold diary-reflection" id="diaryReflection"'+(diaryReflectionOpen?' open':'')+'><summary><b>Мухасаба</b></summary>'+
+      ['q1','q2','q3'].map((q,i)=>{
+        const option=MUHQ_()[q];
+        return '<label class="f">'+MUHL()[i]+'<textarea class="in" rows="2" data-diary="'+q+'">'+esc(e[q]||'')+'</textarea></label>'+
+          '<details class="dfold"><summary class="small">Подсказки</summary><div class="chips">'+option.map(o=>'<button class="chip btn '+(chipSet(e[q]).includes(o)?'on':'')+'" data-act="dctx" data-q="'+q+'" data-v="'+esc(o)+'">'+esc(o)+'</button>').join('')+'</div></details>';
+      }).join('')+'</details>'+diaryWellbeing(e)+'</details>';
+  }
+  h+='</div>';
   afterFns.push(()=>{
-    const pages = $('#diaryPages'); let start;
-    pages.addEventListener('touchstart', e=>{ start = e.touches.length === 1 ? e.touches[0] : null; }, {passive:true});
-    pages.addEventListener('touchend', e=>{
-      if (!start || e.touches.length) return;
-      const end = e.changedTouches[0], dx = end.clientX - start.clientX, dy = end.clientY - start.clientY;
-      start = null;
-      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5) pages.querySelectorAll('button')[dx > 0 ? 0 : 1].click();
-    }, {passive:true});
-  });
-  if (!diaryCache || diaryCache.k !== diaryDate){ h += `<div class="card muted">Открываю запись…</div>`; afterFns.push(loadEntry); }
-  else { const e = diaryCache.e;
-    if (diaryFocusWellbeing){
-      afterFns.push(()=>requestAnimationFrame(()=>$('#diaryWellbeing')?.scrollIntoView({block:'start'})));
+    diaryNavigation();
+    $('#diaryArchive').ontoggle=e=>{if(e.target.isConnected)diaryArchiveOpen=e.target.open;};
+    if(!loaded)return loadEntry();
+    bindDiarySwipe($('#diaryLeaf'));
+    if(!ready)return;
+    $('#diaryExtras').ontoggle=e=>{if(e.target.isConnected)diaryExtrasOpen=e.target.open;};
+    $('#diaryReflection').ontoggle=e=>{if(e.target.isConnected)diaryReflectionOpen=e.target.open;};
+    if(diaryFocusWellbeing){
+      diaryFocusWellbeing=false;diaryExtrasOpen=true;
+      requestAnimationFrame(()=>$('#diaryWellbeing')?.scrollIntoView({block:'start'}));
     }
-    h += `<div class="card axis-spirit axcard diary-page"><h2>${fmtD(d)} ${d.getFullYear()}, ${DFULL[d.getDay()]}</h2>
-      ${e.line !== undefined ? `<h3>Итог дня одной строкой</h3><textarea class="in" rows="2" data-diary="line">${esc(e.line||'')}</textarea>` : ''}
-      <h3>Мухасаба</h3>
-      <div class="f" style="margin-top:10px">${MUHL()[0]}</div><div class="chips copts">${MUHQ_().q1.map(o=>`<button class="chip btn ${chipSet(e.q1).includes(o)?'on':''}" data-act="dctx" data-q="q1" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q1" placeholder="Своими словами — необязательно">${esc(e.q1||'')}</textarea>
-      <div class="f" style="margin-top:10px">${MUHL()[1]}</div><div class="chips copts">${MUHQ_().q2.map(o=>`<button class="chip btn ${chipSet(e.q2).includes(o)?'on':''}" data-act="dctx" data-q="q2" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q2" placeholder="Своими словами — необязательно">${esc(e.q2||'')}</textarea>
-      <div class="f" style="margin-top:10px">${MUHL()[2]}</div><div class="chips copts">${MUHQ_().q3.map(o=>`<button class="chip btn ${chipSet(e.q3).includes(o)?'on':''}" data-act="dctx" data-q="q3" data-v="${esc(o)}">${o}</button>`).join('')}</div><textarea class="in" rows="1" data-diary="q3" placeholder="Своими словами — необязательно">${esc(e.q3||'')}</textarea>
-      <h3>Свободная запись</h3><textarea class="in" rows="8" data-diary="free" placeholder="Сны, мысли, разговоры, оговорки — всё, что хочется записать">${esc(e.free||'')}</textarea>
-      ${diaryWellbeing(e)}
-      <div class="row" style="margin-top:10px"><button class="btn pri" data-act="dsave">Сохранить</button><span class="muted tiny" id="dstatus">${S.diary[diaryDate]?'Сохранено, зашифровано':'Новая запись'}</span></div></div>`; }
-  if (diaryFocusWellbeing && diaryCache?.k === diaryDate) diaryFocusWellbeing = false;
-  h += `<div class="card entry-list"><h2>Записи</h2>${keys.length?keys.map(k=>`<button class="${k===diaryDate?'on':''}" data-act="dopen" data-k="${k}">${fmtD(parse(k))} ${parse(k).getFullYear()}</button>`).join(''):'<div class="muted small">Пока пусто.</div>'}</div>`;
-  h += `<div class="muted tiny" style="text-align:center">Дневник закрывается сам, когда уходишь из раздела или 10 минут ничего не делаешь.</div>`;
+  });
   return h;
 }
-async function loadEntry(){ const k = diaryDate, diaryKey = KEY; let e = {};
-  if (S.diary[k]) { try { e = await decObj(diaryKey, S.diary[k]); } catch(err){ toast('Не удалось расшифровать запись'); } }
+function diaryNavigation(){
+  const keys=Object.keys(S.diary).filter(k=>/^\d{4}-\d\d-\d\d$/.test(k)).sort().reverse();
+  const archive=$('.diary-archive');
+  if(!archive)return;
+  archive.innerHTML=keys.length?keys.map(k=>'<button class="'+(k===diaryDate?'on':'')+'" data-act="dopen" data-k="'+k+'">'+fmtD(parse(k))+' '+parse(k).getFullYear()+'</button>').join(''):'<div class="muted small">Пока пусто.</div>';
+  const older=keys.find(k=>k<diaryDate), newer=keys.filter(k=>k>diaryDate).at(-1);
+  for(const [i,k] of [older,newer].entries()){
+    const b=$('#diaryPages [data-way="'+(i===0?-1:1)+'"]');b.dataset.k=k||'';b.disabled=!k;
+  }
+}
+const animatedDiary=()=>!matchMedia('(prefers-reduced-motion: reduce)').matches;
+function bindDiarySwipe(leaf){
+  let p=null;
+  leaf.addEventListener('pointerdown',e=>{
+    if(e.isPrimary&&e.button===0&&!e.target.closest('textarea'))p={id:e.pointerId,x:e.clientX,y:e.clientY,direction:0};
+  });
+  leaf.addEventListener('pointermove',e=>{
+    if(p?.id!==e.pointerId)return;
+    const dx=e.clientX-p.x,dy=e.clientY-p.y;
+    if(!p.direction){
+      if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
+      if(Math.abs(dx)<Math.abs(dy)*1.4){p=null;return;}
+      const direction=dx>0?-1:1;
+      if($('#diaryPages [data-way="'+direction+'"]').disabled){p=null;return;}
+      p.direction=direction;leaf.setPointerCapture(e.pointerId);
+    }
+    if(animatedDiary()){
+      const angle=Math.min(58,Math.max(0,Math.abs(dx)/leaf.clientWidth*118)), sign=p.direction<0?1:-1;
+      leaf.classList.remove('diary-turn-left','diary-turn-right');
+      leaf.style.transformOrigin=p.direction<0?'right center':'left center';
+      leaf.style.transform='rotateY('+sign*angle+'deg) skewY('+sign*angle/16+'deg)';
+      leaf.style.setProperty('--leaf-shade',String(angle/70));
+    }
+  });
+  function finish(e,commit){
+    if(p?.id!==e.pointerId)return;
+    const dx=e.clientX-p.x, direction=p.direction;p=null;
+    leaf.style.transform='';leaf.style.transformOrigin='';leaf.style.removeProperty('--leaf-shade');
+    if(commit&&direction&&Math.abs(dx)>=48&&(dx>0?-1:1)===direction)$('#diaryPages [data-way="'+direction+'"]')?.click();
+  }
+  leaf.addEventListener('pointerup',e=>finish(e,true));
+  leaf.addEventListener('pointercancel',e=>finish(e,false));
+  leaf.addEventListener('lostpointercapture',e=>{if(e.target===leaf)finish(e,false);});
+}
+async function setDiaryDate(k){
+  if(!k||k===diaryDate||diaryChanging||!KEY||view!=='diary')return;
+  diaryChanging=true;
+  try{
+    if(!await flushDiary()||!KEY||view!=='diary')return;
+    diaryTurn=k<diaryDate?-1:1;diaryDate=k;diaryCache=null;
+    diaryArchiveOpen=false;diaryExtrasOpen=false;diaryReflectionOpen=false;
+    render();
+  }finally{diaryChanging=false;}
+}
+
+async function loadEntry(){ const k = diaryDate, diaryKey = KEY; let e = {}, readFailed = false;
+  if (S.diary[k]) { try { e = await decObj(diaryKey, S.diary[k]); if(!e || typeof e!=='object' || Array.isArray(e))readFailed=true; } catch(err){ readFailed=true; } }
   if (KEY !== diaryKey || diaryDate !== k || view !== 'diary' || diaryCache?.k === k) return;
-  diaryCache = {k, e, dirty:false}; render(); }
-let dTimer = null;
+  diaryCache = {k, e, dirty:false, revision:0, readFailed}; render(); }
+let dTimer = null, diaryWrites = Promise.resolve(true);
+function diaryDirty(){
+  diaryCache.revision++;
+  diaryCache.dirty=true;
+  const status=$('#dstatus');
+  if(status)status.textContent='Есть несохранённые изменения…';
+  clearTimeout(dTimer);dTimer=setTimeout(()=>saveEntry(true),1500);
+}
 async function saveEntry(silent){
-  if (!KEY || !diaryCache) return; const e = diaryCache.e, empty = !diaryHasWellbeing(e) && !['q1','q2','q3','free','line'].some(x=>(e[x]||'').trim());
-  if (empty){ delete S.diary[diaryCache.k]; } else { S.diary[diaryCache.k] = await encObj(KEY, e);
-    if ((e.q1||e.q2||e.q3||'').trim()) { const d = ensureDay(diaryCache.k); d.c.muhasaba = 1; } }
-  save(true); diaryCache.dirty = false; if (view==='diary' && !document.querySelector(`[data-act=dopen][data-k="${diaryCache.k}"]`) !== !S.diary[diaryCache.k]) { render(); if (!silent) toast('Запись сохранена'); return; } const st = $('#dstatus'); if (st) st.textContent = 'Сохранено, зашифровано'; if (!silent) toast('Запись сохранена');
+  const cache=diaryCache, secret=KEY, state=S;
+  if(!secret||!cache)return true;
+  if(cache.readFailed)return false;
+  const revision=cache.revision, entry={...cache.e};
+  const empty=!diaryHasWellbeing(entry)&&!['q1','q2','q3','free','line'].some(k=>String(entry[k]||'').trim());
+  diaryWrites=diaryWrites.then(async()=>{
+    if(S!==state||KEY!==secret)return false;
+    const existed=!!state.diary[cache.k];
+    const encrypted=empty?null:await encObj(secret,entry);
+    if(S!==state||KEY!==secret)return false;
+    if(encrypted){
+      state.diary[cache.k]=encrypted;
+      if((entry.q1||entry.q2||entry.q3||'').trim())ensureDay(cache.k).c.muhasaba=1;
+    }else delete state.diary[cache.k];
+    if(!save(true))return false;
+    if(cache.revision===revision)cache.dirty=false;
+    if(view==='diary'&&diaryCache===cache){
+      if(existed!==!!encrypted)diaryNavigation();
+      const status=$('#dstatus');
+      if(status&&!cache.dirty)status.textContent=encrypted?'Сохранено, зашифровано':'Новая запись';
+    }
+    if(!silent)toast(encrypted?'Запись сохранена':'Запись пуста');
+    return true;
+  }).catch(()=>{toast('Не удалось сохранить запись');return false;});
+  return diaryWrites;
 }
 
 /* ================== ПЛАН ================== */
@@ -2451,6 +2756,7 @@ function vSetup(){
 
 /* ================== ПРАКТИКА: ТАЙМЕР, ЧЁТКИ, КИБЛА ================== */
 let toolTab = 'namaz';
+function vBeads(){return topbar('Чётки')+tTasbih();}
 function vTools(){
   const fa = toolTab !== 'timer';
   let h = topbar(TOOL_N[toolTab] || 'Практика') + backTo(fa ? 'faith' : '');
@@ -2500,13 +2806,10 @@ setInterval(tTick, 500);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) tCheck(); });   // вернулся в приложение — закончившийся таймер сразу отмечает пункт
 const TICO = {read:'book', audio:'head', quran:'book', ilm:'mosque', str:'dumb', cardio:'heart', run:'run', walk:'walk'}, AXI = {faith:'crescent', mind:'book', spirit:'flame', body:'dumb'};
 const ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`, tIco = p => ic(TICO[p.id] || 'timer');
-// подсказка у пункта: идёт таймер — сколько осталось; есть таймер — «отметится сам по таймеру»
-function tHint(id, k){ if (k !== key(today())) return ''; const p = S.timers.list.find(x => x.item === id); if (!p) return ''; const r = S.timers.run[p.id];
-  return r ? `<div class="hint thint">⏱ ${r.st ? 'идёт' : 'на паузе'}: осталось <b data-tl="${esc(p.id)}">${fmtT(tRem(r))}</b> — отметится само</div>` : `<div class="hint">⏱ таймер «${esc(p.t)}» ${p.m} мин отметит этот пункт сам</div>`; }
 function tChip(p){ const r = S.timers.run[p.id];
   return `<button class="chip btn tchip ${r?(r.st?'run':'pause'):''}" data-act="tgo" data-id="${esc(p.id)}">${r ? `${r.st?'<svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg>':'<svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>'} ${esc(p.t)} <b data-tl="${esc(p.id)}">${fmtT(tRem(r))}</b>` : `<svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg> ${esc(p.t)} · ${p.m} мин`}</button>`; }
 function axTools(ax, isT){
-  let c = isT ? S.timers.list.filter(p=>tItem(p)?.ax===ax).map(tChip).join('') : '';
+  let c = '';
   if (ax === 'body' && isT) c += `<a class="chip btn" href="#path" data-act="ptab" data-t="gym" style="text-decoration:none">${ic('dumb')} Журнал тренировок</a>`;
   if (ax === 'faith') c += `<a class="chip btn" href="#tools" data-act="gotool" data-t="tasbih" style="text-decoration:none"><svg class="ic" aria-hidden="true"><use href="#i-beads"/></svg> Чётки</a><a class="chip btn" href="#tools" data-act="gotool" data-t="qibla" style="text-decoration:none"><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> Кибла</a>`;
   return c ? `<div class="sep"></div><div class="chips">${c}</div>` : ''; }
@@ -2542,12 +2845,12 @@ function tTasbih(){
   let h = `<div class="tabs">${T.list.map((d,i)=>`<button class="${i===T.cur?'on':''}" data-act="tbsel" data-i="${i}">${esc(d.t)}</button>`).join('')}</div>`;
   h += `<div class="card axis-faith" style="overflow:hidden"><div class="tbhead">${D.ar?`<div class="tbar" dir="rtl" lang="ar">${esc(D.ar)}</div>`:''}<div class="tbname">${esc(D.t)}</div>${D.s?`<div class="muted small">${esc(D.s)}</div>`:''}</div>
     <div class="tbcount"><span id="tbC">${D.c}</span><span class="muted"> / ${D.n}</span></div><div class="muted small" style="text-align:center" id="tbI">${tbInfo()}</div>
-    <div class="beads" id="beads" data-act="tbtap" role="button" aria-label="Отсчитать"><div class="tbhint">нажимай в любом месте нити</div></div>
-    <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-act="tbundo">↶ Назад на одну</button><button class="btn" data-act="tbreset">Сбросить</button></div>
+    <button class="beads" id="beads" data-act="tbtap" aria-label="Отсчитать бусину"><span class="tbhint">Нажми на нить чёток</span></button>
+    <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-act="tbundo">↶ Назад на одну</button><button class="btn" data-act="tbreset">Сбросить</button><button class="btn" data-act="tbsound" aria-pressed="${!!S.settings.beadSound}">Щелчок ${S.settings.beadSound?'вкл.':'выкл.'}</button></div>
     <div class="muted small" style="margin:14px 0 6px;text-align:center">Сколько раз в круге</div>
     <div class="chips" style="justify-content:center;align-items:center">${[33,99,100].map(n=>`<button class="chip btn ${D.n===n?'on':''}" data-act="tbn" data-n="${n}" style="padding:7px 16px;font-size:15px">${n}</button>`).join('')}
       <input class="in" id="tb_n" type="number" inputmode="numeric" min="1" placeholder="${[33,99,100].includes(D.n)?'своё':D.n}" style="width:84px;display:inline-block;margin:0;padding:6px 10px"><button class="chip btn" data-act="tbn" data-n="own" style="padding:7px 12px">OK</button></div>
-    <div class="muted tiny" style="text-align:center;margin-top:10px">Когда круг закончится, телефон коротко завибрирует и счёт начнётся заново. На компьютере можно нажимать пробел.</div></div>`;
+    <div class="muted tiny" style="text-align:center;margin-top:10px">После круга счёт начнётся заново. Со звуком последний щелчок сильнее. На компьютере можно нажимать пробел.</div></div>`;
   h += `<div class="card"><h2><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg> Свой азкар</h2><div class="nums"><label class="f">Что читаю<input class="in" id="tb_t" placeholder="Например: Субхана-Ллахи ва бихамдихи"></label><label class="f">Сколько раз<input class="in" id="tb_k" type="number" inputmode="numeric" min="1" value="100"></label></div>
     <button class="btn pri" style="margin-top:12px" data-act="tbadd">Добавить</button>${D.own?`<button class="btn danger" style="margin:12px 0 0 8px" data-act="tbdel">Удалить «${esc(D.t)}»</button>`:''}</div>`;
   h += tbBank();
@@ -2556,25 +2859,37 @@ function tTasbih(){
 }
 function drawBeads(){
   const box = $('#beads'); if (!box) return;
-  const D = curD(), c = beadSeq, H = box.clientHeight, cy = Math.round(H*.56), base = c - D.c;
-  const lo = c - Math.ceil((H-cy)/BG) - 1, hi = c + Math.ceil(cy/BG) + 1, have = {};
+  const D = curD(), c = beadSeq, w=box.clientWidth, center=Math.round(w/2), base = c - D.c;
+  const lo = c - Math.ceil(center/BG)-1, hi = c + Math.ceil((w-center)/BG)+1, have = {};
   box.querySelectorAll('.bead').forEach(b=>{ const i = +b.dataset.i; if (i < lo || i > hi) b.remove(); else have[i] = b; });
   for (let i=lo; i<=hi; i++){
     let b = have[i]; const fresh = !b;
     if (fresh){ b = document.createElement('i'); b.className = 'bead'; b.dataset.i = i; b.style.transition = 'none'; box.appendChild(b); }
-    const y = cy - (i-c)*BG, sc = i===c ? 1.55 : i<c ? .82 : 1;
-    b.style.transform = `translateY(${y}px) scale(${sc})`;
+    const x = center + (i-c)*BG, sc = i===c ? 1.42 : i<c ? .76 : 1;
+    b.style.transform = `translateX(${x}px) scale(${sc})`;
     b.classList.toggle('cur', i===c); b.classList.toggle('past', i<c);
     b.classList.toggle('last', i >= base && ((i-base) % D.n) === D.n-1);
     if (fresh) requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.transition = ''; }));
   }
 }
+function beadClick(final){
+  if(!S.settings.beadSound)return;
+  try{
+    audioUnlock();if(!AC)return;
+    const wave=AC.createOscillator(), gain=AC.createGain(), start=AC.currentTime, end=start+(final ? .115 : .058);
+    wave.type='triangle';wave.frequency.setValueAtTime(final?510:860,start);wave.frequency.exponentialRampToValueAtTime(final?160:310,end);
+    gain.gain.setValueAtTime(final ? .10 : .045,start);gain.gain.exponentialRampToValueAtTime(.001,end);
+    wave.connect(gain);gain.connect(AC.destination);wave.start(start);wave.stop(end+.01);
+  }catch(e){}
+}
 function tbTap(){
   const T = S.tasbih, D = curD(), dk = key(today());
   D.c++; beadSeq++; T.day[dk] = (T.day[dk]||0) + 1; T.dd = T.dd || {}; const dd = T.dd[dk] = T.dd[dk] || {}; dd[D.t] = (dd[D.t]||0) + 1;
-  if (D.c >= D.n){ D.c = 0; D.l = (D.l||0) + 1; vib([70,60,70,60,220]); toast(`Круг ${D.l} ✓ ${D.n} раз`);
+  const final=D.c>=D.n;
+  if (final){ D.c = 0; D.l = (D.l||0) + 1; vib([70,60,70,60,220]); toast(`Круг ${D.l} ✓ ${D.n} раз`);
     const bx = $('#beads'); if (bx){ bx.classList.remove('lap'); void bx.offsetWidth; bx.classList.add('lap'); } }
   else vib(12);
+  beadClick(final);
   save(); drawBeads(); const c = $('#tbC'); if (c) c.textContent = D.c; const inf = $('#tbI'); if (inf) inf.textContent = tbInfo();
 }
 function tbUndo(){ const T = S.tasbih, D = curD(), dk = key(today()); if (!D.c) return toast('В этом круге ещё нет счёта');
@@ -2650,10 +2965,10 @@ function qGps(){
     err=>toast(err.code === 1 ? 'Нет разрешения на геолокацию — разреши её для сайта или введи координаты' : 'Не получилось определить место. Попробуй на улице или введи координаты'),
     {enableHighAccuracy:false, timeout:15000, maximumAge:600000}); }
 document.addEventListener('keydown', e=>{
-  if (view !== 'tools' || toolTab !== 'tasbih' || e.repeat) return;
+  if ((view!=='beads'&&(view!=='tools'||toolTab!=='tasbih')) || e.repeat) return;
   const t = e.target; if (t && /INPUT|TEXTAREA|SELECT|BUTTON/.test(t.tagName)) return;
   if (e.code === 'Space' || e.key === 'Enter'){ e.preventDefault(); tbTap(); } });
-window.addEventListener('resize', ()=>{ if (view === 'tools' && toolTab === 'tasbih') drawBeads(); });
+window.addEventListener('resize', ()=>{ if (view==='beads'||(view==='tools'&&toolTab==='tasbih'))drawBeads(); });
 document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && townFull){ townFullSet(false); render(); setTimeout(()=>window.dispatchEvent(new Event('resize')), 30); } });
 document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tCheck(); });
 
@@ -2766,7 +3081,7 @@ function treeDetail(T){
   const c = T.c, n = c.n || 1, D = c.days, k = (v,l) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
   const avg = f => { const v = D.map(f).filter(x=>x>0); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
   if (treePart === 'trunk') return `<h2><span class="dot" style="background:var(--faith)"></span>Ствол — Вера</h2><div class="muted small" style="margin:-6px 0 10px">Ствол растёт в высоту и толщину от каждого дня с намазами, Кораном и азкарами.</div>
-    <div class="kpis">${k(pct(c.ax.faith)+'%','Вера в среднем за день')}${k(c.prDue ? pct(c.pr/c.prDue)+'%' : '—','намазов вовремя')}${k(c.quran,'минут Корана')}${k(D.filter(d=>d?.c?.azkar).length,'дней с азкарами')}${k(D.filter(d=>d?.c?.ilm).length,'дней учёбы по религии')}</div>`;
+    <div class="kpis">${k(pct(c.ax.faith)+'%','Вера в среднем за день')}${k(c.prDue ? pct(c.prOn/c.prDue)+'%' : '—','намазов вовремя')}${k(c.quran,'минут Корана')}${k(D.filter(d=>d?.c?.azkar).length,'дней с азкарами')}${k(D.filter(d=>d?.c?.ilm).length,'дней учёбы по религии')}</div>`;
   if (treePart === 'roots'){ const done = S.fears.map(f=>f).filter(f=>f.done);
     return `<h2><span class="dot" style="background:var(--spirit)"></span>Корни — Нафс</h2><div class="muted small" style="margin:-6px 0 10px">Под землёй, их не видно со стороны. Каждый пройденный страх, мухасаба и вызов удлиняет корни или даёт новый.</div>
     <div class="kpis">${k(T.fearsDone+' из '+S.fears.length,'страхов пройдено')}${k(c.fear,'шагов вопреки страху')}${k(T.muh,'вечеров мухасабы')}${k(T.wch,'вызовов недели')}${k(T.big+' из 4','больших вызовов')}</div>
@@ -4558,17 +4873,17 @@ document.addEventListener('click', async e => {
     case 'ctx': { const p = el.dataset.p, v = el.dataset.v, cur = chipSet(getPath(p)), j = cur.indexOf(v); j >= 0 ? cur.splice(j, 1) : cur.push(v); setPath(p, cur.join('; ')); save(); break; }
     case 'cset': { const p = el.dataset.p; setPath(p, getPath(p) === el.dataset.v ? '' : el.dataset.v); save(); break; }
     case 'ctog': { const p = el.dataset.p; setPath(p, !getPath(p)); if (p === 'settings|quickStart'){ quickDay = ''; quickOpen = false; } save(); break; }
-    case 'dctx': { if (!diaryCache) return; const q = el.dataset.q, cur = chipSet(diaryCache.e[q]), j = cur.indexOf(el.dataset.v); j >= 0 ? cur.splice(j, 1) : cur.push(el.dataset.v); diaryCache.e[q] = cur.join('; '); diaryCache.dirty = true; break; }
+    case 'dctx': { if (!diaryCache) return; const q = el.dataset.q, cur = chipSet(diaryCache.e[q]), j = cur.indexOf(el.dataset.v); j >= 0 ? cur.splice(j, 1) : cur.push(el.dataset.v); diaryCache.e[q] = cur.join('; '); const input = $(`[data-diary="${q}"]`); if(input)input.value=diaryCache.e[q]; el.classList.toggle('on',j<0); diaryDirty(); return; }
     case 'asyest': { const y = getDay(key(addD(viewDate,-1))); if (!y) return toast('За вчера отметок нет'); const d = ensureDay(k); yUndo = {k, snap:JSON.stringify(d)}; let n = 0;
       for (const id in (y.c || {})){ if (id === 'muhasaba' || id === 'fear') continue; if ((d.c[id]||0) < y.c[id]){ d.c[id] = y.c[id]; n++; } }
-      (y.p || []).forEach((v,i)=>{ if (v && !d.p[i] && !((cycleMask(dkey(y)) | cycleMask(k)) & (1 << i))){ d.p[i] = 1; n++; } }); if (y.tr && !d.tr) d.tr = y.tr; save(); toast(n ? `Отмечено как вчера: ${n}. Проверь и поправь, что не так` : 'Всё вчерашнее уже отмечено'); break; }
+      (y.p || []).forEach((v,i)=>{ if (v && !d.p[i] && !((cycleMask(dkey(y)) | cycleMask(k)) & (1 << i))){ d.p[i] = prayerMark(y,i); n++; } }); if (y.tr && !d.tr) d.tr = y.tr; save(); toast(n ? `Отмечено как вчера: ${n}. Проверь и поправь, что не так` : 'Всё вчерашнее уже отмечено'); break; }
     case 'asyundo': { if (yUndo && yUndo.k === k){ S.days[k] = JSON.parse(yUndo.snap); save(); } yUndo = null; break; }
-    case 'pr': { const j = +el.dataset.j; if (cycleMask(k) & (1 << j)) return; const d = ensureDay(k); d.p[j] = d.p[j] ? 0 : 1; save(); break; }
+    case 'pr': { const j = +el.dataset.j; if (cycleMask(k) & (1 << j)) return; const d = ensureDay(k); d.p[j] = (prayerMark(d,j)+1)%3; save(); break; }
     case 'tr': { const d = ensureDay(k); const t = el.dataset.t; d.tr = d.tr===t ? '' : t; if (d.tr && d.tr!=='Отдых') d.c.train = 1; save(); break; }
     case 'wprev': weekStart = addD(weekStart,-7); break;
     case 'wnext': weekStart = addD(weekStart,7); break;
     case 'wtog': { const d = ensureDay(el.dataset.k); const id = el.dataset.id; d.c[id] = cycle(d.c[id]||0); if (!d.c[id]) delete d.c[id]; save(); break; }
-    case 'wnamaz': { const dk = el.dataset.k, mask = cycleMask(dk); if (mask === 31) return; const d = ensureDay(dk), next = itemVal(d,'namaz') === 1 ? 0 : 1; d.p = PRAYERS.map((_,j)=>mask & (1 << j) ? d.p[j] : next); save(); break; }
+    case 'wnamaz': { const dk = el.dataset.k, mask = cycleMask(dk); if (mask === 31) return; const d = ensureDay(dk), next = itemVal(d,'namaz') === 1 ? 0 : 1; d.p = PRAYERS.map((_,j)=>mask & (1 << j) ? d.p[j] : next ? (prayerMark(d,j)||1) : 0); save(); break; }
     case 'stt': statT = el.dataset.t; statO = 0; break;
     case 'sprev': statO--; break;
     case 'snext': statO++; break;
@@ -4597,6 +4912,7 @@ document.addEventListener('click', async e => {
     case 'fdadd': { const F = fdG(), tk = key(today()); (F.log[tk] ||= []).push({n:fdDraft.n, k:+fdDraft.k, p:+fdDraft.p}); const d = ensureDay(tk); if (itemsOn(tk).some(i => i.id === 'food') && !d.c.food && F.log[tk].length >= 3){ d.c.food = .5; } save(); toast(`Записано: ${fdDraft.n} · ${fdDraft.k} ккал`); break; }
     case 'fddel': { const F = fdG(), tk = key(today()); (F.log[tk] || []).splice(+el.dataset.i, 1); save(); break; }
     case 'fdprof': fdG().prof[el.dataset.f] = el.dataset.f === 'act' ? +el.dataset.v : el.dataset.v; save(); break;
+    case 'wayroot': e.preventDefault(); goMainTab('way'); return;
     case 'wayax': wayTab = el.dataset.a || 'faith'; if (el.tagName === 'A') return; break;
     case 'wgo': { const v = el.dataset.v, t = el.dataset.t; if (v === 'tools') toolTab = t; if (v === 'path') pathTab = t; location.hash = '#' + v; return; }
     case 'axedit': axEdit = el.dataset.a || ''; break;
@@ -4627,11 +4943,11 @@ document.addEventListener('click', async e => {
     case 'diaryday': diaryDate = el.dataset.k; diaryCache = null; return;
     case 'wellDiary': diaryDate = el.dataset.k; diaryCache = null; diaryFocusWellbeing = true; return;
     case 'dforgot': if (!await ask('Удалить все записи дневника и начать новый с новым паролем? Это нельзя отменить.','Дальше') || !await ask(`Точно? Пропадут ${Object.keys(S.diary).length} записей.`,'Удалить и начать заново')) return; S.diary = {}; S.crypto = null; KEY = null; diaryCache = null; save(true); toast('Придумай новый пароль'); break;
-    case 'dlock': await flushDiary(); KEY = null; diaryCache = null; break;
+    case 'dlock': if(!await flushDiary())return; KEY = null; diaryCache = null; break;
     case 'dsave': await saveEntry(); return;
     case 'dpage':
-    case 'dopen': if (!el.dataset.k) return; await flushDiary(); diaryDate = el.dataset.k; diaryCache = null; break;
-    case 'dtodayd': await flushDiary(); diaryDate = key(today()); diaryCache = null; break;
+    case 'dopen': await setDiaryDate(el.dataset.k); return;
+    case 'dtodayd': await setDiaryDate(key(today())); return;
     case 'proom': plotSel = plotSel === el.dataset.r ? '' : el.dataset.r; if (plotSel && !e.target.closest('.plegend') && innerWidth < 900) afterFns.push(()=>{ const c = $('#room-'+plotSel); if (c) c.scrollIntoView({block:'center', behavior:'smooth'}); }); break;
     case 'gotree': location.hash = '#tree'; return;
     case 'twn': townTap(el.dataset.t); return;
@@ -4716,6 +5032,7 @@ document.addEventListener('click', async e => {
       S.timers.list.push({id:'u'+Date.now().toString(36), e:'⏱', t, m:Math.min(m,600), item:$('#t_i').value, own:true}); save(); toast('Добавлено'); break; }
     case 'tdel': if (await ask('Удалить эту задачу из списка?','Удалить')) { const id = el.dataset.id; S.timers.list = S.timers.list.filter(p=>p.id!==id); delete S.timers.run[id]; save(); } break;
     case 'tbtap': tbTap(); return;
+    case 'tbsound': S.settings.beadSound=!S.settings.beadSound; if(S.settings.beadSound)beadClick(false);save();break;
     case 'tbundo': tbUndo(); return;
     case 'tbsel': S.tasbih.cur = +el.dataset.i; save(); break;
     case 'tbreset': { const D = curD(); if ((D.c || D.l) && !await ask(`Сбросить счёт «${esc(D.t)}»?`,'Сбросить')) return; D.c = 0; D.l = 0; save(); break; }
@@ -4738,7 +5055,7 @@ document.addEventListener('click', async e => {
   }
   render();
 });
-async function flushDiary(){ if (diaryCache?.dirty) await saveEntry(true); }
+async function flushDiary(){ clearTimeout(dTimer); while(diaryCache?.dirty){ if(!await saveEntry(true))return false; } return true; }
 document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'prmethod'){ S.pray = {...prCfg(), method:t.value}; save(); render(); } if (t && t.dataset && t.dataset.pradj){ const c = prCfg(), v = Math.round(+t.value); c.adj[t.dataset.pradj] = isFinite(v) ? Math.max(-120, Math.min(120, v)) : 0; S.pray = c; save(); render(); } });
 document.addEventListener('input', e => {
   lastAct = Date.now();
@@ -4749,14 +5066,14 @@ document.addEventListener('input', e => {
   if (t.dataset.bind){ let v = t.value; if (t.dataset.type==='num') v = v===''? '' : +v; setPath(t.dataset.bind, v); save(); }
   if (t.dataset.diary && diaryCache){
     if (t.dataset.diary === 'panicCount' && !t.validity.valid) return;
-    diaryCache.e[t.dataset.diary] = t.value; diaryCache.dirty = true; const st = $('#dstatus'); if (st) st.textContent = 'Есть несохранённые изменения…'; clearTimeout(dTimer); dTimer = setTimeout(()=>saveEntry(true), 1500);
+    diaryCache.e[t.dataset.diary] = t.value; diaryDirty();
   }
 });
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.dataset.bindc){ setPath(t.dataset.bindc, t.checked); save(); }
   if (t.dataset.bind && t.tagName==='SELECT'){ render(); }
-  if (t.id === 'ddate' && t.value){ await flushDiary(); diaryDate = t.value; diaryCache = null; render(); }
+  if (t.id === 'ddate' && t.value)await setDiaryDate(t.value);
   if (t.dataset.photo && t.files[0]){ try { const url = await shrink(t.files[0]); PH[t.dataset.photo] = url; await idbSet('photo_'+t.dataset.photo, url); render(); } catch(err){ toast('Не удалось открыть фото'); } }
   if (t.id === 'importFile' && t.files[0]){ const fr = new FileReader(); fr.onload = async () => { try { const o = JSON.parse(fr.result); if (o.app !== 'chetyre-sily' || !o.state) throw 0;
       if (!await ask('Заменить все данные на этом устройстве данными из копии?','Заменить')) return;
@@ -4875,7 +5192,7 @@ async function doExport(){
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
     S.lastExport = Date.now(); save(); toast('Копия скачивается'); } catch(err){ toast('Скачивание не сработало — используй «Скопировать»'); }
 }
-setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then(()=>{ KEY = null; diaryCache = null; if (view==='diary') render(); }); } }, 30000);
+setInterval(()=>{ if (KEY && Date.now()-lastAct > 10*60*1000){ flushDiary().then(saved=>{ if(!saved)return; KEY = null; diaryCache = null; if (view==='diary') render(); }); } }, 30000);
 
 /* ================== СТАРТ ================== */
 (async function init(){
