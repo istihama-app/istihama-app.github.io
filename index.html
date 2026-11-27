@@ -536,6 +536,12 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 #quickCard[data-quick-swipe] h2{user-select:none}
 #quickCard[data-swipe="yes"]{border-color:var(--good)}
 #quickCard[data-swipe="no"]{border-color:var(--muted)}
+.stat-detail>summary{cursor:pointer;font-weight:650;padding:4px 0}
+.stat-detail[open]>summary{margin-bottom:9px}
+.stat-detail .card{margin:9px 0 0}
+.mood-pattern{margin:8px 0;padding:7px 10px;border-radius:10px;background:var(--soft)}
+.mood-pattern p{margin:0}
+.report-sheet .mood-pattern{background:none;padding:0}
 .week-compare table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .week-compare th,.week-compare td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:right}
 .week-compare th:first-child{text-align:left}
@@ -576,6 +582,8 @@ body{background:var(--pat,none) fixed, radial-gradient(1100px 480px at 50% -180p
 @media(display-mode:standalone){#reportDialog{--report-safe-top:max(env(safe-area-inset-top,0px),24px)}}
 #reportDialog::backdrop{background:#20181385}
 .report-tools{position:sticky;top:0;z-index:1;display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:var(--card);padding:8px 11px;border-bottom:1px solid var(--line)}
+[data-report-status]:empty{display:none}
+[data-report-status]{width:100%}
 .report-sheet{--report-accent:var(--faith);padding:clamp(13px,4vw,28px);background:var(--card);overflow-wrap:anywhere}
 .report-sheet h1{font:500 clamp(25px,5vw,36px)/1.15 Georgia,serif;margin:7px 0}
 .report-sheet h2{font:600 19px/1.24 Georgia,serif;margin:18px 0 7px;break-after:avoid}
@@ -1691,10 +1699,12 @@ function moodObservations(c, scores){
     const k = key(c.list[j]), day = c.days[j];
     const record = (id,title,v) => {
       if (v !== 1 && v !== 0) return;
-      if (!items.has(id)) items.set(id, {title, done:[], unmarked:[]});
+      if (!items.has(id)) items.set(id, {id, title, done:[], unmarked:[]});
       const group = items.get(id);
       (v === 1 ? group.done : group.unmarked).push(score);
     };
+    const hours = num(day?.n?.sleep);
+    if (hours!=null && hours>0 && hours<=24) record('sleep-duration','Сон и настроение', hours>=7 ? 1 : 0);
     for (const item of countedItems(k)){
       record(item.id,item.id==='namaz'?'Пять намазов':item.t,itemVal(day,item.id));
       if (item.id === 'namaz' && !(cycleMask(k) & 1))
@@ -1705,17 +1715,23 @@ function moodObservations(c, scores){
     .map(r=>({...r, a:mean(r.done), b:mean(r.unmarked)}));
   const observations = pairs.filter(r=>Math.abs(r.a-r.b) >= .3 - 1e-9)
     .sort((a,b)=>Math.abs(b.a-b.b)-Math.abs(a.a-a.b)).slice(0,3);
-  if (!observations.length) return `<p class="small muted">${pairs.length ? 'В этих записях средние оценки близки.' : 'Для сравнения по делу нужно хотя бы по 3 дня с настроением в каждой группе.'}</p>`;
-  return observations.map(r=>`<p class="small"><b>${esc(r.title)}</b><br>Среднее настроение: <b>${moodNumber(r.a)} из 5</b> с полной отметкой (${r.done.length} дн.) и <b>${moodNumber(r.b)} из 5</b> без отметки (${r.unmarked.length} дн.).</p>`).join('') +
-    '<p class="small muted">Эти оценки совпали с отметками в выбранные дни. На настроение могут влиять сон, нагрузка и другие обстоятельства. По записям нельзя определить причину.</p>';
+  if (!observations.length) return `<p class="small muted">${pairs.length ? 'В этих записях средние оценки близки.' : 'Для сравнения нужно хотя бы по 3 дня с оценкой настроения в каждой группе.'}</p>`;
+  return observations.map(r=>{
+    const sleep = r.id === 'sleep-duration';
+    const count = n => '('+n+' дн.)';
+    return '<div class="mood-pattern"><p class="small"><b>'+esc(r.title)+'</b><br>Среднее настроение: <b>'+moodNumber(r.a)+' из 5</b> '+(sleep?'при сне от 7 часов':'с полной отметкой')+' '+count(r.done.length)+' и <b>'+moodNumber(r.b)+' из 5</b> '+(sleep?'при сне меньше 7 часов':'без отметки')+' '+count(r.unmarked.length)+'.</p></div>';
+  }).join('') +
+    '<p class="small muted">Так совпали оценки в выбранные дни. На настроение могут влиять разные обстоятельства. По этим записям нельзя определить причину.</p>';
 }
-function moodCard(c){
+function moodCard(c, buckets){
   const scores = moodScores(c), marked = scores.filter(v=>v !== null);
-  return `<div class="card"><h2>${ic('heart')} Настроение и дела</h2>
-    ${marked.length ? `<div class="small">Среднее настроение: <b>${moodNumber(mean(marked))} из 5</b> · оценок: ${marked.length}.</div>
-      ${barChart(scores.map(v=>v === null ? null : v/5), c.list.map(d=>String(d.getDate())), 80, 5)}` : '<div class="small muted">Оценку настроения можно оставить на «Сегодня» или в итоге дня.</div>'}
-    ${moodObservations(c,scores)}</div>`;
+  return '<div class="card"><h2>'+ic('heart')+' Настроение и дела</h2>'+
+    (marked.length ? '<p class="small">Средняя оценка <b>'+moodNumber(mean(marked))+' из 5</b> · '+marked.length+' дн. с оценкой</p>'+
+      moodObservations(c,scores)+'<details class="stat-detail"><summary>График настроения</summary>'+
+      barChart(buckets.map(b=>b.mood), buckets.map(b=>b.label), 84, 5)+'</details>' :
+      '<p class="small muted">Оценку настроения можно оставить на «Сегодня» или в итоге дня.</p>')+'</div>';
 }
+
 const fdG = () => { S.food = S.food || {prof:{}, log:{}}; S.food.prof ||= {}; S.food.log ||= {}; return S.food; };
 function fdTarget(){ const F = fdG(), P = F.prof, wp = weightPoints(), w = +P.w || (wp.length ? wp[wp.length - 1].v : 0); const h = +P.h, a = +P.a; if (!w || !h || !a) return null;
   const bmr = 10*w + 6.25*h - 5*a + (P.sex === 'f' ? -161 : 5), tdee = bmr*({1:1.2, 2:1.375, 3:1.55, 4:1.725}[P.act || 2]), k = Math.round(tdee*({lose:.85, keep:1, gain:1.1}[P.goal || 'lose'])/10)*10;
@@ -1964,10 +1980,10 @@ function heatmap(){
     h += `<i style="background:${bg};${d>addD(startDate(),363)?'opacity:.2':''}" title="${fmtD(d)}: ${pct(sc)}%${sc < .5 && minDone(getDay(k)) ? ', минимум' : ''}"></i>`; }
   return h + `</div><div class="row tiny muted" style="margin-top:8px;gap:14px"><span><span class="dot" style="background:var(--line)"></span> пропуск</span><span><span class="dot" style="background:color-mix(in srgb, var(--gold) 70%, var(--soft))"></span> минимум</span><span><span class="dot" style="background:var(--gold)"></span> 50–74%</span><span><span class="dot" style="background:var(--good)"></span> от 75%</span></div>`;
 }
-function weeklyComparison(c){
+function weeklyComparison(c, title=true){
   const first = c.list[0], last = c.list.at(-1);
   const a = addD(first,-7), b = addD(last,-7), previous = collect(a,b);
-  const heading = '<h2>Сравнение с прошлой неделей</h2>';
+  const heading = title ? '<h2>Сравнение с прошлой неделей</h2>' : '';
   if (previous.n !== c.n || !c.days.some(Boolean) || !previous.days.some(Boolean))
     return heading + '<p class="small muted">Для сравнения нужны записи за обе недели.</p>';
   const range = (start,end) => key(start) === key(end) ? fmtD(start) : `${fmtD(start)} — ${fmtD(end)}`;
@@ -1993,7 +2009,12 @@ function vStats(){
   h += `<div class="datebar">${statT!=='year'?`<button class="navbtn" data-act="sprev">‹</button>`:''}<div class="d"><b style="font-size:17px">${R.title}</b><span class="muted small">${c.n} дн. учтено</span></div>${statT!=='year'?`<button class="navbtn" data-act="snext">›</button>`:''}</div>`;
   if (!c.n){ h += `<div class="card muted">За этот период ещё нет прошедших дней плана.</div>`; return h + reviewBlock(R); }
   h += `<div class="card row"><span class="grow small">${R.b > today() ? 'Предварительный отчёт' : 'Отчёт за период'}</span><button class="btn" data-act="report">Открыть отчёт для PDF</button></div>`;
-  if (R.weekly) h += `<div class="card week-compare">${weeklyComparison(c)}</div>`;
+  const buckets=reportBuckets(c,R), by=R.weekly?'дням':R.kind==='year'?'месяцам':'неделям';
+  h += moodCard(c,buckets);
+  h += '<div class="card"><h2>Выполнение по '+by+'</h2><p class="small muted">Средний балл · '+pct(c.avg)+'%  •  Дней засчитано · '+c.days.filter(dayKept).length+'</p>'+
+    barChart(buckets.map(({group})=>group.days.some(Boolean)?group.avg:null), buckets.map(b=>b.label))+'</div>';
+  if (R.weekly) h += '<details class="card stat-detail week-compare"><summary>Сравнение с прошлой неделей</summary>'+weeklyComparison(c,false)+'</details>';
+  h += '<details class="card stat-detail"><summary>Показатели и разделы</summary>';
   h += `<div class="kpis">
     <div class="kpi"><div class="v">${pct(c.avg)}%</div><div class="l">средний балл дня</div></div>
     <div class="kpi"><div class="v">${c.good}</div><div class="l">хороших дней (от 75%)</div></div>
@@ -2005,22 +2026,17 @@ function vStats(){
     <div class="kpi"><div class="v">${c.quran}</div><div class="l">минут Корана</div></div>
     <div class="kpi"><div class="v">${c.fear}</div><div class="l">шагов вопреки страху</div></div>
     ${c.sleep?`<div class="kpi"><div class="v">${c.sleep.toFixed(1)}</div><div class="l">сон в среднем, ч</div></div>`:''}</div>`;
-  h += moodCard(c);
   h += `<div class="card"><h2>Разделы за период</h2>${AXO.map(a=>`<div class="axrow axis-${a}"><span>${AX[a].n}</span><div class="bar"><i style="width:${pct(c.ax[a])}%"></i></div><b>${pct(c.ax[a])}%</b></div>`).join('')}
     <div class="muted small" style="margin-top:6px">${(()=>{const s=[...AXO].sort((x,y)=>c.ax[x]-c.ax[y]);return `Слабее всего сейчас — <b>${AX[s[0]].n}</b>. Сильнее всего — <b>${AX[s[3]].n}</b>.`})()}</div></div>`;
   if (statT === 'year'){
     h += `<a class="card yhero" href="#year" style="display:block;text-decoration:none;color:inherit"><b>Страница года</b><div class="muted small">Год в цифрах, город, эссе, «До / После», письмо себе${today() > yearEnd() ? ' и переход в следующий год' : ''} →</div></a>`;
-    const weeks = []; for (let w=0; w<52; w++){ const a = addD(monday(startDate()),7*w); const cc = collect(a, addD(a,6)); weeks.push(cc.n?cc.avg:null); }
-    h += `<div class="card"><h2>По неделям</h2>${barChart(weeks, weeks.map((_,i)=>String(i+1)))}</div>`;
     h += `<div class="card"><h2>Карта года</h2>${heatmap()}</div>`;
-  } else {
-    const labels = c.list.map(d=>statT==='week'?DN[(d.getDay()+6)%7]:String(d.getDate()));
-    h += `<div class="card"><h2>Баллы по дням</h2>${barChart(c.days.map(d=>dayScore(d)), labels)}</div>`;
   }
   h += `<div class="card"><h2>Вес</h2>${lineChart(weightPoints(statT==='year'?null:R.a, statT==='year'?null:R.b))}</div>`;
   const it = ITEMS_ON().map(i=>({i, v:c.days.reduce((x,d)=>x+itemVal(d,i.id),0)/(c.n||1)})).sort((a,b)=>a.v-b.v);
-  h += `<div class="card"><h2>Что проседает</h2>${it.slice(0,3).map(x=>`<div class="axrow axis-${x.i.ax}" style="grid-template-columns:1fr 90px 44px"><span>${x.i.t}</span><div class="bar"><i style="width:${pct(x.v)}%"></i></div><b>${pct(x.v)}%</b></div>`).join('')}</div>`;
-  return h + reviewBlock(R);
+  h += `<div class="card"><h2>Что отмечалось реже</h2>${it.slice(0,3).map(x=>`<div class="axrow axis-${x.i.ax}" style="grid-template-columns:1fr 90px 44px"><span>${x.i.t}</span><div class="bar"><i style="width:${pct(x.v)}%"></i></div><b>${pct(x.v)}%</b></div>`).join('')}</div>`;
+  h += '</details><details class="card stat-detail"><summary>Мои заметки за период</summary>'+reviewBlock(R)+'</details>';
+  return h;
 }
 function reportBuckets(c, R){
   const groups = new Map();
@@ -2128,30 +2144,268 @@ function reportHTML(R){
     '<p class="report-brand small">ИХСАН · ЛИЧНЫЕ ИТОГИ</p><h1 id="reportTitle">'+name+'</h1><p class="muted">'+dated(c.list[0],span)+' · '+c.n+' дн.'+(R.b>=today()?' · период ещё идёт':'')+'</p>'+
     '<div class="report-metrics"><div><strong>'+pct(c.avg)+'%</strong>Средний балл дня</div><div><strong>'+kept+'</strong>Засчитано дней</div><div><strong>'+c.best+'</strong>Лучшая серия, дн.</div></div>'+
     '<section class="report-chart"><h2>Отметки по '+by+'</h2><p class="muted small">Доля выполненных пунктов</p>'+barChart(buckets.map(({group})=>group.days.some(Boolean)?group.avg:null),labels,116)+'</section>'+
-    '<section class="report-chart"><h2>Как менялись четыре раздела</h2>'+reportAxisChart(buckets)+'</section>'+
     '<section class="report-insight"><h2>Что видно по отметкам</h2>'+
       (comparison?'<p>Средний балл '+(diff===0?'остался на прежнем уровне':diff>0?'выше на '+diff+' п. п.':'ниже на '+(-diff)+' п. п.')+' по сравнению с периодом '+dated(comparison.list[0],comparison.list.at(-1))+'.</p>':'')+
       (hasSignal?'<p>'+c.good+' дн. с результатом от 75%, '+low+' дн. без зачёта.</p>':'<p>За этот период пока нет выполненных дел в записях.</p>')+readingNote+
       (hasSignal&&best&&rare&&pct(best.points/best.due)>pct(rare.points/rare.due)?'<p>Чаще отмечалось «'+esc(best.t)+'» ('+pct(best.points/best.due)+'%). Реже — «'+esc(rare.t)+'» ('+pct(rare.points/rare.due)+'%).</p>':'')+'</section>'+
-    (R.kind==='year'?'<section class="report-chart"><h2>Карта дней за год</h2>'+reportYearMap(c)+'</section>':'')+
-    (R.weekly?'<section class="report-comparison">'+weeklyComparison(c)+'</section>':'')+
     '<section><h2>Настроение и привычки</h2>'+
       (mood.length?'<p>Средняя оценка '+moodNumber(mean(mood))+' из 5 · '+mood.length+' дн. с оценкой.</p><div class="report-chart">'+barChart(buckets.map(b=>b.mood),labels,78,5)+'</div>':'')+
       moodObservations(c,moodScores(c))+'</section>'+
+    '<section class="report-chart"><h2>Как менялись четыре раздела</h2>'+reportAxisChart(buckets)+'</section>'+
+    (R.kind==='year'?'<section class="report-chart"><h2>Карта дней за год</h2>'+reportYearMap(c)+'</section>':'')+
+    (R.weekly?'<section class="report-comparison">'+weeklyComparison(c)+'</section>':'')+
     (weights.length>=2?'<section class="report-chart"><h2>Вес по замерам</h2>'+lineChart(weights)+'</section>':'')+
     '<section><h2>Другие результаты</h2><table><thead><tr><th scope="col">Показатель</th><th scope="col">Этот период</th>'+(comparison?'<th scope="col">Предыдущий</th>':'')+'</tr></thead><tbody>'+
       amounts.map(([label,value])=>'<tr><th scope="row">'+label+'</th><td>'+value(c)+'</td>'+(comparison?'<td>'+value(comparison)+'</td>':'')+'</tr>').join('')+'</tbody></table></section>'+
     '<section><h2>Результат по каждому пункту</h2><table><thead><tr><th scope="col">Пункт</th><th scope="col">План</th><th scope="col">Готово</th><th scope="col">Часть</th><th scope="col">Без отметки</th></tr></thead><tbody>'+
       [...rows.values()].sort((a,b)=>rowOrder.indexOf(a.ax)-rowOrder.indexOf(b.ax)).map(r=>'<tr><th scope="row">'+esc(r.t)+'<br><span class="muted">'+(AX[r.ax]?.n||'Свои дела')+'</span></th><td>'+r.due+'</td><td>'+r.full+'</td><td>'+r.half+'</td><td>'+(r.due-r.full-r.half)+'</td></tr>').join('')+'</tbody></table></section></article>';
 }
+
+function reportPdfFile(pages, width, height){
+  const chunks=[], offsets=[0], encode=new TextEncoder();
+  let length=0;
+  const append=data=>{
+    const chunk=typeof data==='string'?encode.encode(data):data;
+    chunks.push(chunk);
+    length+=chunk.size ?? chunk.byteLength;
+  };
+  const object=(n,data,stream)=>{
+    offsets[n]=length;
+    append(n+' 0 obj\n'+data);
+    if(stream){
+      append('\nstream\n'); append(stream); append('\nendstream');
+    }
+    append('\nendobj\n');
+  };
+  append('%PDF-1.4\n');
+  object(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  object(2,'<< /Type /Pages /Count '+pages.length+' /Kids ['+pages.map((_,i)=>(3+i*3)+' 0 R').join(' ')+'] >>');
+  pages.forEach((image,i)=>{
+    const id=3+i*3, paint='q 595.28 0 0 841.89 0 0 cm /PageImage Do Q';
+    object(id,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents '+(id+1)+' 0 R /Resources << /XObject << /PageImage '+(id+2)+' 0 R >> >> >>');
+    object(id+1,'<< /Length '+paint.length+' >>',encode.encode(paint));
+    object(id+2,'<< /Type /XObject /Subtype /Image /Width '+width+' /Height '+height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+image.size+' >>',image);
+  });
+  const xref=length;
+  append('xref\n0 '+offsets.length+'\n0000000000 65535 f \n');
+  offsets.slice(1).forEach(offset=>append(String(offset).padStart(10,'0')+' 00000 n \n'));
+  append('trailer\n<< /Size '+offsets.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
+  return new Blob(chunks,{type:'application/pdf'});
+}
+async function buildReportPdf(sheet, active){
+  const canvas=document.createElement('canvas'), pages=[];
+  canvas.width=1240; canvas.height=1754;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  const margin=80, width=canvas.width-2*margin, bottom=canvas.height-110;
+  const colors={ink:'#20342a',muted:'#4f5f55',line:'#cbd8ce',good:'#23684f',gold:'#9c682e',
+    faith:'#23684f',mind:'#365e99',spirit:'#a05c32',body:'#9e4352'};
+  const heat={no:'#d2ccbe',low:'#c4a785',min:'#916339',kept:'#89a88e',good:'#285b48'};
+  let y;
+  function newPage(){
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    y=margin;
+  }
+  async function finishPage(){
+    ctx.font='21px Arial'; ctx.fillStyle=colors.muted;
+    ctx.fillText('ИХСАН  ·  '+(pages.length+1),margin,canvas.height-60);
+    const image=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
+    if(!image) throw new Error('PDF image');
+    pages.push(image);
+  }
+  async function room(height){
+    if(y+height<=bottom || y===margin)return;
+    await finishPage();
+    newPage();
+  }
+  const font=(size,bold,serif=false)=> (bold?'bold ':'')+size+'px '+(serif?'Georgia':'Arial');
+  function lines(text, max){
+    const result=[];
+    for(const part of text.split('\n')){
+      let line='';
+      for(const word of part.trim().split(/\s+/)){
+        const combined=line?line+' '+word:word;
+        if(ctx.measureText(combined).width<=max){line=combined;continue;}
+        if(line)result.push(line);
+        line='';
+        for(const ch of word){
+          if(line && ctx.measureText(line+ch).width>max){result.push(line);line='';}
+          line+=ch;
+        }
+      }
+      result.push(line);
+    }
+    return result;
+  }
+  function label(text,x,baseline,style,color){
+    ctx.font=style; ctx.fillStyle=color;
+    ctx.fillText(text,x,baseline);
+  }
+  async function paragraph(text,{size=27,bold=false,serif=false,color=colors.ink,lead=0,tail=12,keep=0}={}){
+    const style=font(size,bold,serif), step=Math.ceil(size*1.27);
+    ctx.font=style;
+    const wrapped=lines(text,width);
+    await room(lead+Math.min(wrapped.length,2)*step+tail+keep);
+    y+=lead;
+    for(const line of wrapped){
+      await room(step);
+      label(line,margin,y+size,style,color);
+      y+=step;
+    }
+    y+=tail;
+  }
+  async function table(el){
+    const rows=[...el.rows], columns=rows[0]?.cells.length;
+    if(!columns)return;
+    const first=width*(columns>3?.37:.49), other=(width-first)/(columns-1 || 1);
+    const cellWidth=i=>i===0?first:other;
+    const style=font(24,false), strong=font(24,true);
+    function layout(row){
+      return [...row.cells].map((cell,i)=>{
+        ctx.font=cell.tagName==='TH'?strong:style;
+        return lines(cell.innerText,cellWidth(i)-20);
+      });
+    }
+    const header=layout(rows[0]);
+    const height=values=>Math.max(...values.map(v=>v.length))*30+18;
+    function draw(values,isHeader){
+      const h=height(values);
+      if(isHeader){ctx.fillStyle='#e8f1eb';ctx.fillRect(margin,y,width,h);}
+      values.forEach((cell,i)=>cell.forEach((line,j)=>label(line,margin+10+(i?first+(i-1)*other:0),y+31+j*30,
+        isHeader||i===0?strong:style,colors.ink)));
+      y+=h;
+      ctx.fillStyle=colors.line;ctx.fillRect(margin,y,width,1);
+    }
+    await room(height(header)+(rows[1]?height(layout(rows[1])):0));
+    draw(header,true);
+    for(const row of rows.slice(1)){
+      const values=layout(row);
+      if(y+height(values)>bottom && height(values)+height(header)<bottom-margin){
+        await room(height(values));
+        draw(header,true);
+      }
+      draw(values,false);
+    }
+    y+=22;
+  }
+  async function chart(el){
+    const xml=new XMLSerializer().serializeToString(el)
+      .replace(/var\(--([a-z-]+)\)/g,(_,name)=>colors[name] || colors.muted);
+    const image=new Image();
+    await new Promise((resolve,reject)=>{
+      image.onload=resolve; image.onerror=reject;
+      image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
+    });
+    const view=el.viewBox.baseVal, height=Math.round(width*view.height/view.width);
+    await room(height+16);
+    ctx.drawImage(image,margin,y,width,height);
+    y+=height+16;
+  }
+  async function calendar(el){
+    const months=[...el.querySelectorAll('section')];
+    const groupWidth=width/4, size=27;
+    for(let j=0;j<months.length;j+=4){
+      await room(209);
+      months.slice(j,j+4).forEach((month,i)=>{
+        const x=margin+i*groupWidth;
+        label(month.querySelector('h3').textContent,x,y+28,font(24,true),colors.ink);
+        [...month.querySelectorAll('.report-days i')].forEach((cell,k)=>{
+          const fill=heat[cell.className.slice(5)];
+          if(!fill)return;
+          ctx.fillStyle=fill;
+          ctx.fillRect(x+k%7*size,y+42+Math.floor(k/7)*size,size-5,size-5);
+        });
+      });
+      y+=209;
+    }
+  }
+  async function walk(el){
+    if(!active())return;
+    if(el.tagName.toLowerCase()==='svg'){await chart(el);return;}
+    if(el.tagName==='TABLE'){await table(el);return;}
+    if(el.classList.contains('report-map')){await calendar(el);return;}
+    if(el.classList.contains('report-metrics')){
+      await room(108);
+      ctx.fillStyle='#e8f1eb';ctx.fillRect(margin,y,width,99);
+      [...el.children].forEach((metric,i)=>{
+        const x=margin+20+i*width/3, number=metric.firstElementChild.textContent;
+        label(number,x,y+44,font(37,true),colors.good);
+        label(metric.textContent.slice(number.length),x,y+77,font(22,false),colors.ink);
+      });
+      y+=115;
+      return;
+    }
+    if(el.classList.contains('report-legend')){
+      await room(48);
+      let x=margin;
+      for(const item of el.children){
+        const marker=item.querySelector('i');
+        const axis=marker?.style.background.match(/var\(--([a-z-]+)\)/);
+        const fill=heat[marker?.className.match(/heat-(\w+)/)?.[1]] || colors[axis?.[1]] || colors.good;
+        const text=item.textContent.trim(), style=font(23,false);
+        ctx.fillStyle=fill;ctx.fillRect(x,y+5,16,16);
+        label(text,x+23,y+22,style,colors.muted);
+        x+=ctx.measureText(text).width+46;
+      }
+      y+=48;
+      return;
+    }
+    if(el.matches('h1,h2,h3,p,.week-compare > .small,.report-comparison > .small')){
+      const heading=el.matches('h1,h2,h3');
+      await paragraph(el.innerText,{size:el.tagName==='H1'?53:heading?33:26,serif:heading,
+        bold:heading||el.classList.contains('report-brand'),lead:heading?13:0,keep:heading?56:0,
+        color:el.classList.contains('muted')?colors.muted:colors.ink});
+      return;
+    }
+    for(const child of el.children)await walk(child);
+  }
+  newPage();
+  await walk(sheet);
+  if(!active())return null;
+  await finishPage();
+  const pdf=reportPdfFile(pages,canvas.width,canvas.height);
+  canvas.width=1; canvas.height=1;
+  return pdf;
+}
+function downloadReport(file){
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(file); link.download=file.name;
+  document.body.append(link);
+  link.click(); link.remove();
+  setTimeout(()=>URL.revokeObjectURL(link.href),60000);
+}
 function openReport(){
   const range=periodRange(), dialog=$('#reportDialog');
   if(dialog.open || !collect(range.a,range.b).n)return;
-  dialog.innerHTML='<header class="report-tools"><button type="button" class="btn" data-report-close autofocus>‹ Закрыть</button><button type="button" class="btn pri" data-report-print>Сохранить PDF</button></header>'+reportHTML(range);
+  dialog.innerHTML='<header class="report-tools"><button type="button" class="btn" data-report-close autofocus>‹ Закрыть</button><button type="button" class="btn pri" data-report-print disabled>Готовим PDF…</button><span class="small muted" data-report-status role="status"></span></header>'+reportHTML(range);
+  const button=dialog.querySelector('[data-report-print]'), status=dialog.querySelector('[data-report-status]');
+  const sheet=dialog.querySelector('.report-sheet'), active=()=>dialog.open&&sheet.isConnected;
   dialog.querySelector('[data-report-close]').onclick=()=>dialog.close();
-  dialog.querySelector('[data-report-print]').onclick=()=>window.print();
   dialog.addEventListener('close',()=>{if(!dialog.open)dialog.replaceChildren();},{once:true});
   dialog.showModal();dialog.scrollTop=0;
+  buildReportPdf(sheet,active).then(pdf=>{
+    if(!pdf || !active())return;
+    const file=new File([pdf],'ihsan-'+range.kind+'-'+key(range.a)+'.pdf',{type:'application/pdf'});
+    const files=[file], share=isPhone()&&navigator.share&&navigator.canShare?.({files});
+    button.textContent='Сохранить PDF';
+    button.disabled=false;
+    button.onclick=()=>{
+      if(!share){downloadReport(file);return;}
+      navigator.share({files}).catch(error=>{
+        if(error.name==='AbortError'||!active())return;
+        status.textContent='Системное меню недоступно. Нажмите «Скачать PDF».';
+        button.textContent='Скачать PDF';
+        button.onclick=()=>downloadReport(file);
+      });
+    };
+    if(share) status.textContent='В системном меню выбери «Сохранить в Файлы».';
+  }).catch(error=>{
+    if(!active())return;
+    console.warn('PDF report:',error);
+    status.textContent='Не удалось подготовить файл.';
+    button.textContent='Открыть меню печати';
+    button.disabled=false;
+    button.onclick=()=>window.print();
+  });
 }
 
 function reviewBlock(R){
